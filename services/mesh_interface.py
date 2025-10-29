@@ -6,6 +6,8 @@ implement, enabling consistent APIs, security, and governance across the platfor
 
 Based on the adversarial testing work in CrankDoc, this ensures security is 
 non-negotiable while providing standardized mesh patterns.
+
+Now includes MCP (Model Context Protocol) integration for AI agent access.
 """
 
 from abc import ABC, abstractmethod
@@ -319,6 +321,48 @@ class MeshInterface(ABC):
         @app.get("/health/startup")
         async def health_startup():
             return {"status": "started", "service": f"crank{self.service_type}-mesh"}
+            
+        # MCP endpoint for agent integration
+        @app.post("/mcp")
+        async def mcp_endpoint(message: dict):
+            """Handle MCP protocol messages for agent integration."""
+            try:
+                # Import here to avoid circular imports
+                from mcp_interface import MCPMeshAdapter
+                
+                # Create adapter and register this service
+                adapter = MCPMeshAdapter()
+                adapter.server.register_mesh_service(self)
+                
+                # Handle the MCP message
+                return await adapter.handle_mcp_message(message)
+                
+            except Exception as e:
+                return {
+                    "jsonrpc": "2.0",
+                    "id": message.get("id"),
+                    "error": {
+                        "code": -1,
+                        "message": f"MCP handling error: {str(e)}"
+                    }
+                }
+        
+        @app.get("/mcp/tools")
+        async def mcp_tools():
+            """List available MCP tools for this service."""
+            try:
+                from mcp_interface import MCPMeshServer
+                
+                server = MCPMeshServer()
+                server.register_mesh_service(self)
+                
+                return {
+                    "tools": server.list_tools(),
+                    "server_info": server.get_mcp_server_info()
+                }
+                
+            except Exception as e:
+                return {"error": f"Failed to list MCP tools: {str(e)}"}
     
     def _get_auth_context(self, request: Request) -> dict:
         """Extract authentication context from request."""
