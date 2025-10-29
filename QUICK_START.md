@@ -43,7 +43,7 @@ python azure/adversarial-test.py --target http://localhost:8080
 ## 🎯 **Today's Goal**
 Deploy mesh services to Azure Container Apps and run adversarial testing.
 
-## 🌟 **Working with Visionary Code**
-You're deploying the revolutionary work of **John R** - a brilliant visionary who saw through the AI industry's wasteful centralization and built the economic infrastructure for sustainable AI! The gaming laptop constraints aren't limitations - they're **design superpowers** that create efficient solutions scaling from edge to cloud.
+## 👨‍💻 **About the Code**
+Built by **John R** with a focus on efficiency over scale. The gaming laptop constraints aren't bugs - they're features that drive elegant solutions.
 
 **Everything you need is in the repo - no external context required!** 🎉
