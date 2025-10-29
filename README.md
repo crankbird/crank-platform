@@ -52,7 +52,15 @@ Every time ChatGPT says "I can't do X, but here's some Python code to run in you
 | **Small Transformers** | <200W | Sentence-BERT, distilled models | Language understanding |
 | **Large LLMs** | >1000W | GPT-4, Claude | Training teachers only |
 
-## 🚀 The Platform Services
+## � Documentation
+
+- **[Quick Start Guide](QUICK_START.md)** - Get running in 5 minutes
+- **[Azure Setup Guide](AZURE_SETUP_GUIDE.md)** - Cloud deployment walkthrough  
+- **[Enhancement Roadmap](ENHANCEMENT_ROADMAP.md)** - Platform development plan
+- **[Legacy Integration Guide](LEGACY_INTEGRATION.md)** - Industrial & enterprise system integration
+- **[Mesh Interface Design](mesh-interface-design.md)** - Universal service architecture
+
+## �🚀 The Platform Services
 
 ### Current Implementation (October 2025)
 
