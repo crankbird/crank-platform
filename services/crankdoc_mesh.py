@@ -3,6 +3,8 @@ CrankDoc Mesh Service - Security-First Document Processing
 
 Implements the security-hardened mesh interface for document conversion,
 based on the adversarial testing work that proved security measures.
+
+Includes built-in diagnostic operations for testing infrastructure vs business logic.
 """
 
 import asyncio
@@ -16,13 +18,16 @@ from uuid import uuid4
 from fastapi import UploadFile
 
 from mesh_interface import MeshInterface, MeshRequest, MeshResponse, MeshCapability, MeshReceipt
+from mesh_diagnostics import DiagnosticMixin
 
 
-class CrankDocMeshService(MeshInterface):
-    """Security-first document conversion service implementing mesh interface."""
+class CrankDocMeshService(MeshInterface, DiagnosticMixin):
+    """Security-first document conversion service implementing mesh interface with diagnostics."""
     
     def __init__(self):
-        super().__init__("document")
+        MeshInterface.__init__(self, "document")
+        DiagnosticMixin.__init__(self)
+        self.receipts: Dict[str, MeshReceipt] = {}
         
         # Initialize document processing capabilities
         self.supported_formats = {
@@ -31,8 +36,8 @@ class CrankDocMeshService(MeshInterface):
         }
     
     def get_capabilities(self) -> List[MeshCapability]:
-        """Return CrankDoc capabilities with security requirements."""
-        return [
+        """Return CrankDoc capabilities with security requirements plus diagnostics."""
+        business_capabilities = [
             MeshCapability(
                 operation="convert",
                 description="Convert documents between formats with security validation",
@@ -103,15 +108,24 @@ class CrankDocMeshService(MeshInterface):
                 limits={"max_file_size": "50MB"}
             )
         ]
+        
+        # Add diagnostic capabilities
+        diagnostic_capabilities = self.get_diagnostic_capabilities()
+        return business_capabilities + diagnostic_capabilities
     
     async def process_request(self, request: MeshRequest, auth_context: Dict[str, Any]) -> MeshResponse:
         """
         Process document request with mandatory security context.
         
         This integrates with the proven security patterns from CrankDoc adversarial testing.
+        Includes diagnostic operations for infrastructure testing.
         """
         try:
-            if request.operation == "convert":
+            # Check if it's a diagnostic operation first
+            diagnostic_ops = ["ping", "echo_file", "load_test", "error_test"]
+            if request.operation in diagnostic_ops:
+                result = await self.handle_diagnostic_request(request)
+            elif request.operation == "convert":
                 result = await self._handle_conversion(request, auth_context)
             elif request.operation == "validate":
                 result = await self._handle_validation(request, auth_context)
