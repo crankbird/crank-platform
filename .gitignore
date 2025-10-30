@@ -1,0 +1,42 @@
+# Copilot Context Security - Critical Guidelines
+
+# ⚠️ NEVER PUT COPILOT CONVERSATION CONTEXT IN GIT!
+
+# VS Code / GitHub Copilot conversation context
+.vscode-server/
+**/*copilot-chat*
+**/*conversation*
+**/*chat-history*
+**/copilot-chat/
+
+# ✅ Exception: IP documentation files with 'copilot' in name are SAFE
+# These are sanitized documentation, not raw conversation context:
+# intellectual-property/copilot-context.md (SAFE)
+
+# Sensitive backup files (UNENCRYPTED ONLY)
+**/ip-context-*.tar.gz
+**/copilot-backup-*
+**/*conversation-backup*
+
+# ✅ ENCRYPTED backups are SAFE (these are allowed):
+# intellectual-property/encrypted-backups/*.gpg
+
+# Patent development working files (before review)
+**/patent-drafts-working/
+**/prior-art-raw/
+**/brainstorming-sessions/
+
+# Commercial sensitive data
+**/customer-validation-raw/
+**/pricing-analysis-internal/
+**/competitive-intelligence/
+
+# Personal notes and unfiltered thoughts
+**/personal-notes/
+**/strategy-thoughts/
+**/unfiltered-analysis/
+
+# Decryption passwords and keys
+**/*password*
+**/*passphrase*
+**/private-keys/
