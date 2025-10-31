@@ -17,25 +17,24 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy all service files
 COPY *.py ./
 
-# Create platform startup script
+# Create platform startup script with HTTPS support
 RUN echo '#!/usr/bin/env python3' > run_platform.py && \
-    echo 'from platform_app import create_platform_app' >> run_platform.py && \
-    echo 'import uvicorn' >> run_platform.py && \
+    echo 'import platform_app' >> run_platform.py && \
     echo 'if __name__ == "__main__":' >> run_platform.py && \
-    echo '    app = create_platform_app()' >> run_platform.py && \
-    echo '    uvicorn.run(app, host="0.0.0.0", port=8080)' >> run_platform.py && \
+    echo '    # Use the main block from platform_app.py with HTTPS auto-detection' >> run_platform.py && \
+    echo '    platform_app.main()' >> run_platform.py && \
     chmod +x run_platform.py
 
-# Health check
+# Health check (try HTTPS first, fallback to HTTP)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/health/live || exit 1
+    CMD curl -k -f https://localhost:8443/health/live || curl -f http://localhost:8000/health/live || exit 1
 
-# Expose platform port  
-EXPOSE 8080
+# Expose platform ports (HTTP fallback + HTTPS)
+EXPOSE 8000 8443
 
 # Set environment variables
 ENV PYTHONPATH=/app
 ENV MESH_AUTH_KEY=dev-mesh-key
 
-# Run platform
-CMD ["python", "run_platform.py"]
+# Run platform with HTTPS auto-detection
+CMD ["python", "platform_app.py"]

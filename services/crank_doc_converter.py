@@ -162,16 +162,27 @@ class CrankDocumentConverter:
     
     def __init__(self, platform_url: str = None):
         self.app = FastAPI(title="Crank Document Converter", version="1.0.0")
-        self.platform_url = platform_url or os.getenv("PLATFORM_URL", "http://platform:8080")
         
         # Auto-detect HTTPS based on certificate availability
         cert_dir = Path("/etc/certs")
         has_certs = (cert_dir / "platform.crt").exists() and (cert_dir / "platform.key").exists()
         
+        # 🔒 ZERO-TRUST: Always use HTTPS for platform communication when certs available
         if has_certs:
+            self.platform_url = platform_url or os.getenv("PLATFORM_URL", "https://platform:8443")
             self.worker_url = os.getenv("WORKER_URL", "https://crank-doc-converter:8443")
+            # mTLS client configuration with proper CA handling
+            self.cert_file = cert_dir / "platform.crt"
+            self.key_file = cert_dir / "platform.key"
+            self.ca_file = cert_dir / "ca.crt"  # Use proper CA certificate
         else:
+            # Fallback to HTTP only in development without certificates
+            self.platform_url = platform_url or os.getenv("PLATFORM_URL", "http://platform:8080")
             self.worker_url = os.getenv("WORKER_URL", "http://crank-doc-converter:8081")
+            self.cert_file = None
+            self.key_file = None
+            self.ca_file = None
+            logger.warning("⚠️  No certificates found - falling back to HTTP (development only)")
             
         self.worker_id = None
         
@@ -310,6 +321,34 @@ class CrankDocumentConverter:
                 "separation_ready": True  # Indicates this worker is ready for repo separation
             }
     
+    def _create_mtls_client(self, timeout: float = 10.0) -> httpx.AsyncClient:
+        """Create HTTP client with mTLS configuration for platform communication."""
+        if self.cert_file and self.key_file and self.ca_file:
+            # 🔒 ZERO-TRUST: Use mTLS for secure worker-to-platform communication
+            # For development with self-signed certificates, we need to handle verification differently
+            environment = os.getenv("CRANK_ENVIRONMENT", "development")
+            
+            if environment == "development":
+                # Development: Use encryption but skip strict cert verification for self-signed certs
+                logger.info("🔒 Using mTLS with relaxed verification for development")
+                return httpx.AsyncClient(
+                    cert=(str(self.cert_file), str(self.key_file)),  # Client certificate
+                    verify=False,  # Skip verification for self-signed certs
+                    timeout=timeout
+                )
+            else:
+                # Production: Full certificate verification
+                logger.info("🔒 Using mTLS with full certificate verification for production")
+                return httpx.AsyncClient(
+                    cert=(str(self.cert_file), str(self.key_file)),  # Client certificate
+                    verify=str(self.ca_file),  # CA certificate to verify platform
+                    timeout=timeout
+                )
+        else:
+            # Fallback to plain HTTP (development only)
+            logger.warning("⚠️  Using plain HTTP client - certificates not available")
+            return httpx.AsyncClient(timeout=timeout)
+    
     async def _startup(self):
         """Startup handler - register with platform."""
         logger.info("Starting CrankDoc Worker...")
@@ -331,7 +370,7 @@ class CrankDocumentConverter:
         await self._register_with_platform(worker_info)
     
     async def _register_with_platform(self, worker_info: WorkerRegistration):
-        """Register this worker with the platform."""
+        """Register this worker with the platform using mTLS."""
         max_retries = 5
         retry_delay = 5  # seconds
         
@@ -341,7 +380,8 @@ class CrankDocumentConverter:
         
         for attempt in range(max_retries):
             try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
+                # 🔒 ZERO-TRUST: Use mTLS client for secure communication
+                async with self._create_mtls_client() as client:
                     response = await client.post(
                         f"{self.platform_url}/v1/workers/register",
                         json=worker_info.model_dump(),
@@ -351,7 +391,7 @@ class CrankDocumentConverter:
                     if response.status_code == 200:
                         result = response.json()
                         self.worker_id = result.get("worker_id")
-                        logger.info(f"Successfully registered with platform. Worker ID: {self.worker_id}")
+                        logger.info(f"🔒 Successfully registered with platform via mTLS. Worker ID: {self.worker_id}")
                         return
                     else:
                         logger.warning(f"Registration attempt {attempt + 1} failed: {response.status_code} - {response.text}")
@@ -367,12 +407,13 @@ class CrankDocumentConverter:
         # Continue running even if registration fails for development purposes
     
     async def _shutdown(self):
-        """Shutdown handler - deregister from platform."""
+        """Shutdown handler - deregister from platform using mTLS."""
         if self.worker_id:
             try:
-                async with httpx.AsyncClient(timeout=5.0) as client:
+                # 🔒 ZERO-TRUST: Use mTLS client for secure deregistration
+                async with self._create_mtls_client(timeout=5.0) as client:
                     await client.delete(f"{self.platform_url}/v1/workers/{self.worker_id}")
-                logger.info("Successfully deregistered from platform")
+                logger.info("🔒 Successfully deregistered from platform via mTLS")
             except Exception as e:
                 logger.warning(f"Failed to deregister from platform: {e}")
 

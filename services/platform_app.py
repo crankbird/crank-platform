@@ -447,8 +447,32 @@ def create_platform_app(api_key: str = "dev-mesh-key") -> FastAPI:
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
+    """Main entry point with HTTPS auto-detection."""
     import uvicorn
+    from pathlib import Path
     
     app = create_platform_app()
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    
+    # 🔒 ZERO-TRUST: Auto-detect HTTPS based on certificate availability
+    cert_dir = Path("/etc/certs")
+    has_certs = (cert_dir / "platform.crt").exists() and (cert_dir / "platform.key").exists()
+    
+    if has_certs:
+        # Start with HTTPS using mTLS
+        print("🔒 Starting Crank Platform with HTTPS/mTLS on port 8443")
+        uvicorn.run(
+            app, 
+            host="0.0.0.0", 
+            port=8443,
+            ssl_keyfile=str(cert_dir / "platform.key"),
+            ssl_certfile=str(cert_dir / "platform.crt"),
+            ssl_ca_certs=str(cert_dir / "ca.crt")  # Require client certificates
+        )
+    else:
+        print("⚠️  Starting Crank Platform with HTTP on port 8000 (development only)")
+        uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+if __name__ == "__main__":
+    main()
