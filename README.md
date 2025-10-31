@@ -942,7 +942,38 @@ def bangladesh_farmer_impact():
 - **Economic Efficiency**: 99% reduction in AI processing costs
 - **Innovation Velocity**: 1000+ new services launched monthly
 
-## 🚀 Call to Action
+## � Docker Development Environment
+
+### Quick Start with Docker
+
+```bash
+# Build and run GPU-enabled environment
+docker-compose up aiml-dev
+
+# Or CPU-only for lighter development
+docker-compose up aiml-cpu
+
+# Build manually
+docker build -t aiml-hybrid-gpu .
+docker run --gpus all -p 8888:8888 -v $(pwd):/workspace aiml-hybrid-gpu
+```
+
+### Container Features
+
+- **Hybrid Package Management**: Validated conda+uv approach (41x speed improvement)
+- **GPU Support**: NVIDIA Container Runtime with CUDA 12.2
+- **Development Ports**: Jupyter (8888), TensorBoard (6006), Web apps (8080)
+- **Volume Mounting**: Code, data, and model persistence
+- **Environment Isolation**: Clean, reproducible development environments
+
+### Container Strategy Benefits
+
+- **Simplified GPU Access**: Native Docker GPU support vs complex WSL2 setup
+- **Predictable Networking**: Standard port mapping without virtualization issues
+- **Production Alignment**: Same runtime as production deployments
+- **Clean Environments**: Easy to reset, no system pollution
+
+## �🚀 Call to Action
 
 The future of AI is inevitable. But who controls it isn't.
 
