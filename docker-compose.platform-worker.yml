@@ -14,8 +14,11 @@ services:
     container_name: crank-platform
     ports:
       - "8080:8080"
+    volumes:
+      - certs-volume:/etc/certs  # Share certificates with workers
     environment:
       - PLATFORM_ENV=docker
+      - CRANK_ENVIRONMENT=development  # Use development with HTTPS testing
       - LOG_LEVEL=INFO
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
@@ -35,11 +38,14 @@ services:
     container_name: crankdoc-worker
     ports:
       - "8081:8081"
+      - "8443:8443"  # Add HTTPS port
+    volumes:
+      - certs-volume:/etc/certs  # Share certificates with platform
     environment:
-      - PLATFORM_URL=http://platform:8080
-      - WORKER_URL=http://crankdoc-worker:8081
-      - PLATFORM_AUTH_TOKEN=dev-mesh-key
+      - PLATFORM_URL=http://platform:8080  # Keep platform registration as HTTP
+      - CRANK_ENVIRONMENT=development  # Use development with HTTPS testing
       - LOG_LEVEL=INFO
+      - PLATFORM_AUTH_TOKEN=dev-mesh-key
     depends_on:
       platform:
         condition: service_healthy
@@ -61,3 +67,5 @@ networks:
 volumes:
   platform-data:
     name: crank-platform-data
+  certs-volume:
+    name: crank-platform-certs

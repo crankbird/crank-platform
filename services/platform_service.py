@@ -18,10 +18,14 @@ from dataclasses import dataclass, asdict
 import asyncio
 import json
 
+# Import security configuration for zero-trust architecture
+from security_config import SecurePlatformService
+
 # =============================================================================
 # SHARED INTERFACES (Extract-Ready)
 # =============================================================================
 
+@dataclass
 @dataclass
 class User:
     """User identity."""
@@ -29,6 +33,7 @@ class User:
     username: str
     roles: List[str]
     tier: str = "free"
+    is_active: bool = True
 
 @dataclass
 class WorkerInfo:
@@ -324,7 +329,7 @@ class PlatformService:
     async def route_document_request(self, operation: str, file_content: bytes, 
                                    filename: str, source_format: str, 
                                    target_format: str, user: User) -> Dict[str, Any]:
-        """Route document processing request to CrankDoc worker."""
+        """Route document processing request to CrankDoc worker with HTTPS security."""
         
         # Check authorization
         if not await self.auth.authorize(user, operation, "document"):
@@ -338,24 +343,28 @@ class PlatformService:
         start_time = datetime.now()
         
         try:
-            # Import httpx for HTTP calls
-            import httpx
-            from io import BytesIO
+            # Initialize secure platform service
+            import os
+            environment = os.getenv("CRANK_ENVIRONMENT", "development")
+            secure_service = SecurePlatformService(environment)
             
-            # Call worker with file upload
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                url = f"{worker.endpoint}/convert"
-                
-                # Create file-like object for upload
-                files = {"file": (filename, BytesIO(file_content), "application/octet-stream")}
-                data = {
-                    "source_format": source_format,
-                    "target_format": target_format
-                }
-                
-                response = await client.post(url, files=files, data=data)
-                response.raise_for_status()
-                worker_result = response.json()
+            # Create file-like object for upload
+            from io import BytesIO
+            files = {"file": (filename, BytesIO(file_content), "application/octet-stream")}
+            data = {
+                "source_format": source_format,
+                "target_format": target_format
+            }
+            
+            # Make secure call to worker
+            response = await secure_service.secure_worker_call(
+                worker.endpoint, 
+                "/convert",
+                files=files,
+                data=data
+            )
+            
+            worker_result = response.json()
                 
         except Exception as e:
             # If worker call fails, return error

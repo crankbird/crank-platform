@@ -44,7 +44,16 @@ class CrankDocWorker:
     def __init__(self, platform_url: str = None):
         self.app = FastAPI(title="CrankDoc Worker", version="1.0.0")
         self.platform_url = platform_url or os.getenv("PLATFORM_URL", "http://platform:8080")
-        self.worker_url = os.getenv("WORKER_URL", "http://crankdoc-worker:8081")
+        
+        # Auto-detect HTTPS based on certificate availability
+        cert_dir = Path("/etc/certs")
+        has_certs = (cert_dir / "platform.crt").exists() and (cert_dir / "platform.key").exists()
+        
+        if has_certs:
+            self.worker_url = os.getenv("WORKER_URL", "https://crankdoc-worker:8443")
+        else:
+            self.worker_url = os.getenv("WORKER_URL", "http://crankdoc-worker:8081")
+            
         self.worker_id = None
         
         # Initialize CrankDoc business logic
@@ -203,5 +212,26 @@ def create_crankdoc_worker(platform_url: str = None) -> FastAPI:
 # For direct running
 if __name__ == "__main__":
     import uvicorn
+    import ssl
+    import os
+    from pathlib import Path
+    
     app = create_crankdoc_worker()
-    uvicorn.run(app, host="0.0.0.0", port=8081)
+    
+    # Check if we should run HTTPS
+    cert_dir = Path("/etc/certs")
+    use_https = (cert_dir / "platform.crt").exists() and (cert_dir / "platform.key").exists()
+    
+    if use_https:
+        # Start with HTTPS using uvicorn SSL parameters
+        logger.info("🔒 Starting CrankDoc worker with HTTPS on port 8443")
+        uvicorn.run(
+            app, 
+            host="0.0.0.0", 
+            port=8443,
+            ssl_keyfile=str(cert_dir / "platform.key"),
+            ssl_certfile=str(cert_dir / "platform.crt")
+        )
+    else:
+        logger.info("🔓 Starting CrankDoc worker with HTTP on port 8081")
+        uvicorn.run(app, host="0.0.0.0", port=8081)
