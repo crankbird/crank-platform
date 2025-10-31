@@ -1,0 +1,80 @@
+# Platform + Worker Architecture
+# 
+# This docker-compose sets up:
+# - Platform service (PaaS layer) with auth, billing, discovery, routing
+# - CrankDoc worker that registers with platform
+# - Proper networking for service discovery
+
+version: '3.8'
+
+services:
+  # Platform Service (PaaS Layer)
+  platform:
+    build:
+      context: services
+      dockerfile: Dockerfile.platform
+    container_name: crank-platform
+    ports:
+      - "8080:8080"
+    environment:
+      - PLATFORM_ENV=docker
+      - LOG_LEVEL=INFO
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - crank-net
+    restart: unless-stopped
+
+  # CrankDoc Worker
+  crankdoc-worker:
+    build:
+      context: services
+      dockerfile: Dockerfile.crankdoc-worker
+    container_name: crankdoc-worker
+    ports:
+      - "8081:8081"
+    environment:
+      - PLATFORM_URL=http://platform:8080
+      - WORKER_URL=http://crankdoc-worker:8081
+      - PLATFORM_AUTH_TOKEN=dev-mesh-key
+      - LOG_LEVEL=INFO
+    depends_on:
+      platform:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - crank-net
+    restart: unless-stopped
+
+  # AI/ML Development Environment (Optional)
+  # aiml-dev:
+  #   image: aiml-hybrid-cpu:latest
+  #   container_name: aiml-dev
+  #   ports:
+  #     - "8888:8888"  # Jupyter
+  #     - "6006:6006"  # TensorBoard  
+  #   volumes:
+  #     - ./workspace:/workspace
+  #     - ./data:/data
+  #   networks:
+  #     - crank-net
+  #   profiles:
+  #     - aiml
+
+networks:
+  crank-net:
+    driver: bridge
+    name: crank-network
+
+volumes:
+  platform-data:
+    name: crank-platform-data
