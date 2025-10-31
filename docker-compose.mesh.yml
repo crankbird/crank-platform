@@ -1,0 +1,73 @@
+version: '3.8'
+
+# Bare Mesh Services - Core Crank Platform
+# Document processing, Email processing, and Gateway
+
+services:
+  crankdoc-mesh:
+    build:
+      context: ./services
+      dockerfile: Dockerfile.crankdoc
+    image: crankdoc-mesh:latest
+    container_name: crankdoc-mesh
+    ports:
+      - "8000:8000"  # Document service
+    environment:
+      - MESH_AUTH_KEY=dev-mesh-key
+      - SERVICE_TYPE=document
+    volumes:
+      - ./services:/app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  crankemail-mesh:
+    build:
+      context: ./services
+      dockerfile: Dockerfile.crankemail
+    image: crankemail-mesh:latest
+    container_name: crankemail-mesh
+    ports:
+      - "8001:8001"  # Email service
+    environment:
+      - MESH_AUTH_KEY=dev-mesh-key
+      - SERVICE_TYPE=email
+    volumes:
+      - ./services:/app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  crank-gateway:
+    build:
+      context: ./services
+      dockerfile: Dockerfile.gateway
+    image: crank-gateway:latest
+    container_name: crank-gateway
+    ports:
+      - "8080:8080"  # Gateway
+    environment:
+      - MESH_AUTH_KEY=dev-mesh-key
+      - DOC_SERVICE_URL=http://crankdoc-mesh:8000
+      - EMAIL_SERVICE_URL=http://crankemail-mesh:8001
+    volumes:
+      - ./services:/app
+    depends_on:
+      - crankdoc-mesh
+      - crankemail-mesh
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  default:
+    name: crank-mesh
