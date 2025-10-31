@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  diagnostic-mesh-v2:
+    build:
+      context: ./services
+      dockerfile: Dockerfile.diagnostic.v2
+    container_name: diagnostic-mesh-v2
+    ports:
+      - "8000:8000"
+    environment:
+      - MESH_API_KEY=dev-mesh-key
+      - MESH_NODE_ID=diagnostic-refactored
+    networks:
+      - crank-mesh-refactored
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  crank-mesh-refactored:
+    driver: bridge
+    name: crank-mesh-refactored
