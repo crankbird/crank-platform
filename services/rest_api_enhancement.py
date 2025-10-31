@@ -113,7 +113,7 @@ def _add_rest_endpoints(app: FastAPI, service: MeshInterface):
             return capability_handler
         
         # Add the endpoint to FastAPI
-        handler = await create_capability_endpoint()
+        handler = create_capability_endpoint()
         app.post(
             endpoint_path,
             summary=capability.description,

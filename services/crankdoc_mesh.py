@@ -239,6 +239,34 @@ if __name__ == "__main__":
     app = service.create_app("dev-mesh-key")
     port = int(os.getenv('CRANKDOC_MESH_PORT', '8000'))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+
+class CrankDocMeshService(MeshInterface):
+    """CrankDoc mesh service implementation"""
+    
+    def __init__(self):
+        super().__init__()
+        self.service_type = "crankdoc"
+        self.supported_formats = {
+            "input": ["md", "docx", "pdf", "html", "txt", "rtf"],
+            "output": ["md", "docx", "pdf", "html", "txt", "rtf"]
+        }
+    
+    async def _handle_conversion(self, request: MeshRequest, file: UploadFile) -> MeshResponse:
+        """Handle document conversion requests."""
+        if not file:
+            return MeshResponse(
+                job_id=request.job_id,
+                service_type=self.service_type,
+                operation="convert",
+                status="failed",
+                result={"error": "No file provided"}
+            )
+
+        # Get parameters from request
+        source_format = request.input_data.get("source_format", "auto")
+        target_format = request.input_data.get("target_format")
+        options = request.input_data.get("options", {})
         
         # Validate formats
         if target_format not in self.supported_formats["output"]:

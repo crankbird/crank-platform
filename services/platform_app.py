@@ -11,6 +11,7 @@ JEMM Implementation: Modular monolith with extract-ready design.
 """
 
 import asyncio
+import os
 import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional

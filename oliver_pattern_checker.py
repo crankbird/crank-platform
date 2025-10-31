@@ -70,6 +70,36 @@ class OliverPatternChecker:
                 "severity": "high",
                 "description": "Secrets must never be stored in plaintext or hardcoded"
             },
+            "command_injection": {
+                "authorities": [
+                    "OWASP Top 10 - A03:2021 Injection",
+                    "CWE-78: OS Command Injection",
+                    "NIST SP 800-53 - Input Validation",
+                    "SANS Top 25 - CWE-78"
+                ],
+                "severity": "critical",
+                "description": "Command execution must use safe subprocess methods with input validation"
+            },
+            "path_traversal": {
+                "authorities": [
+                    "OWASP Top 10 - A01:2021 Broken Access Control", 
+                    "CWE-22: Path Traversal",
+                    "OWASP File Upload Security",
+                    "NIST SP 800-53 - Access Control"
+                ],
+                "severity": "high",
+                "description": "File paths must be validated and sanitized to prevent directory traversal"
+            },
+            "unsafe_deserialization": {
+                "authorities": [
+                    "OWASP Top 10 - A08:2021 Software and Data Integrity Failures",
+                    "CWE-502: Deserialization of Untrusted Data",
+                    "SANS Top 25 - CWE-502",
+                    "Python Security - Pickle Dangers"
+                ],
+                "severity": "critical",
+                "description": "Use safe deserialization methods to prevent code execution"
+            },
             "shared_database": {
                 "authorities": [
                     "Newman, S. 'Building Microservices' - Database per service",
@@ -175,6 +205,93 @@ class OliverPatternChecker:
         
         return violations
     
+    def check_command_injection(self, file_path: str, content: str) -> List[PatternViolation]:
+        """🐰 Wendy's concern: Check for command injection vulnerabilities"""
+        violations = []
+        lines = content.split('\n')
+        
+        # Dangerous patterns that could lead to command injection
+        dangerous_patterns = [
+            (r'subprocess\.run\([^)]*\+', "String concatenation in subprocess.run"),
+            (r'subprocess\.call\([^)]*\+', "String concatenation in subprocess.call"),
+            (r'subprocess\.Popen\([^)]*\+', "String concatenation in subprocess.Popen"),
+            (r'os\.system\(', "Use of os.system() - inherently unsafe"),
+        ]
+        
+        for line_num, line in enumerate(lines, 1):
+            for pattern, description in dangerous_patterns:
+                if re.search(pattern, line):
+                    authority = self.authority_sources["command_injection"]
+                    violations.append(PatternViolation(
+                        file_path=file_path,
+                        line_number=line_num,
+                        violation_type="Command Injection Risk",
+                        description=f"{description}: {authority['description']}",
+                        authority_sources=authority["authorities"],
+                        severity=authority["severity"],
+                        remediation="Use subprocess with list arguments and proper input validation"
+                    ))
+        
+        return violations
+    
+    def check_path_traversal(self, file_path: str, content: str) -> List[PatternViolation]:
+        """🐰 Wendy's concern: Check for path traversal vulnerabilities"""
+        violations = []
+        lines = content.split('\n')
+        
+        # Patterns that could lead to path traversal
+        dangerous_patterns = [
+            (r'Path\([^)]*\+', "String concatenation in Path construction"),
+            (r'open\([^)]*\+', "String concatenation in file operations"),
+            (r'\.\.[\\/]', "Direct path traversal pattern detected"),
+            (r'pathlib.*\+', "String concatenation with pathlib"),
+        ]
+        
+        for line_num, line in enumerate(lines, 1):
+            for pattern, description in dangerous_patterns:
+                if re.search(pattern, line):
+                    authority = self.authority_sources["path_traversal"]
+                    violations.append(PatternViolation(
+                        file_path=file_path,
+                        line_number=line_num,
+                        violation_type="Path Traversal Risk",
+                        description=f"{description}: {authority['description']}",
+                        authority_sources=authority["authorities"], 
+                        severity=authority["severity"],
+                        remediation="Validate and sanitize file paths, use allowlist validation"
+                    ))
+        
+        return violations
+    
+    def check_unsafe_deserialization(self, file_path: str, content: str) -> List[PatternViolation]:
+        """🐰 Wendy's concern: Check for unsafe deserialization"""
+        violations = []
+        lines = content.split('\n')
+        
+        # Unsafe deserialization patterns
+        dangerous_patterns = [
+            (r'pickle\.loads?\(', "Use of pickle.load/loads - code execution risk"),
+            (r'yaml\.load\(', "Use of yaml.load instead of yaml.safe_load"),
+            (r'eval\(', "Use of eval() - code execution risk"),
+            (r'exec\(', "Use of exec() - code execution risk"),
+        ]
+        
+        for line_num, line in enumerate(lines, 1):
+            for pattern, description in dangerous_patterns:
+                if re.search(pattern, line):
+                    authority = self.authority_sources["unsafe_deserialization"]
+                    violations.append(PatternViolation(
+                        file_path=file_path,
+                        line_number=line_num,
+                        violation_type="Unsafe Deserialization",
+                        description=f"{description}: {authority['description']}",
+                        authority_sources=authority["authorities"],
+                        severity=authority["severity"], 
+                        remediation="Use safe methods: json.loads, yaml.safe_load"
+                    ))
+        
+        return violations
+    
     def check_plaintext_secrets(self, file_path: str, content: str) -> List[PatternViolation]:
         """Check for plaintext secrets - violates Zero Trust principles"""
         violations = []
@@ -245,6 +362,11 @@ class OliverPatternChecker:
             violations.extend(self.check_plaintext_secrets(file_path, content))
             violations.extend(self.check_dockerfile_antipatterns(file_path, content))
             
+            # 🐰 Wendy's security checks
+            violations.extend(self.check_command_injection(file_path, content))
+            violations.extend(self.check_path_traversal(file_path, content))
+            violations.extend(self.check_unsafe_deserialization(file_path, content))
+            
         except Exception as e:
             print(f"🦅 Oliver couldn't analyze {file_path}: {e}")
         
@@ -279,9 +401,15 @@ class OliverPatternChecker:
         report = ["🦅 Oliver's Anti-Pattern Analysis Report", "=" * 50, ""]
         
         # Group by severity
+        critical_severity = [v for v in violations if v.severity == 'critical']
         high_severity = [v for v in violations if v.severity == 'high']
         medium_severity = [v for v in violations if v.severity == 'medium']
         low_severity = [v for v in violations if v.severity == 'low']
+        
+        if critical_severity:
+            report.extend(["🔥 CRITICAL SEVERITY - Immediate Security Action Required:", ""])
+            for violation in critical_severity:
+                report.extend(self._format_violation(violation))
         
         if high_severity:
             report.extend(["🚨 HIGH SEVERITY - Immediate Action Required:", ""])
@@ -303,11 +431,12 @@ class OliverPatternChecker:
             "",
             f"📊 Oliver's Summary:",
             f"   Total violations: {len(violations)}",
+            f"   Critical severity: {len(critical_severity)}",
             f"   High severity: {len(high_severity)}",
             f"   Medium severity: {len(medium_severity)}",
             f"   Low severity: {len(low_severity)}",
             "",
-            "🦅 Oliver's Recommendation: Address high severity items first!",
+            "🦅 Oliver's Recommendation: Address critical and high severity items first!",
             ""
         ])
         

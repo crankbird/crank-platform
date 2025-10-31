@@ -347,17 +347,22 @@ if __name__ == "__main__":
     app = service.create_app("dev-mesh-key")
     port = int(os.getenv('CRANKEMAIL_MESH_PORT', '8001'))
     uvicorn.run(app, host="0.0.0.0", port=port)
-            return await self._handle_classification(request, file)
-        elif request.operation == "analyze":
-            return await self._handle_analysis(request, file)
-        elif request.operation == "extract":
-            return await self._handle_extraction(request, file)
-        else:
-            return MeshResponse(
-                job_id=request.job_id,
-                service_type=self.service_type,
-                operation=request.operation,
-                status="failed",
+
+
+async def handle_classification_operation(self, request, file):
+    """Handle classification operations"""
+    if request.operation == "classify":
+        return await self._handle_classification(request, file)
+    elif request.operation == "analyze":
+        return await self._handle_analysis(request, file)
+    elif request.operation == "extract":
+        return await self._handle_extraction(request, file)
+    else:
+        return MeshResponse(
+            job_id=request.job_id,
+            service_type=self.service_type,
+            operation=request.operation,
+            status="failed",
                 result={"error": f"Unknown operation: {request.operation}"}
             )
     
