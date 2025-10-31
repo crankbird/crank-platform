@@ -1,7 +1,7 @@
 # AI/ML Development Environment with Hybrid Package Management
 # Based on validated Azure testing with 41x speed improvement
 
-FROM nvidia/cuda:12.2-devel-ubuntu22.04
+FROM nvidia/cuda:11.8-devel-ubuntu22.04
 
 LABEL maintainer="AI/ML Development Team"
 LABEL description="Hybrid conda+uv environment for GPU-accelerated AI/ML development"

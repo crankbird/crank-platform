@@ -1,43 +1,60 @@
-# Container Strategy for GPU Development
+# Container Strategy for Cross-Platform AI/ML Development
 
-## Decision: Docker Desktop for Local GPU Development
+## Architecture Decision: Control Plane + Host Container Execution
 
-After testing WSL2 GPU environments, we've decided to use Docker Desktop for local GPU development due to:
+After exploring WSL2 and virtualization approaches, we've settled on a clean separation:
+
+### New Architecture
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Host Platform                            │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐  │
+│  │ Docker Desktop  │  │ Docker Desktop  │  │ Cloud       │  │
+│  │ (Windows)       │  │ (Mac)           │  │ Containers  │  │
+│  │ GPU: CUDA       │  │ GPU: Metal      │  │ GPU: Various│  │
+│  └─────────────────┘  └─────────────────┘  └─────────────┘  │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────────────┐
+│              WSL2 Control Plane                            │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐  │
+│  │ Orchestration   │  │ Deployment      │  │ Monitoring  │  │
+│  │ Scripts         │  │ Automation      │  │ & Logging   │  │
+│  └─────────────────┘  └─────────────────┘  └─────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ### Benefits
-- **Simplified GPU Access**: Native `--gpus all` support
-- **Clean Networking**: Predictable port mapping without virtualization complexity
-- **Reproducible Environments**: Container isolation with consistent behavior
-- **Production Alignment**: Same runtime as production deployments
-
-### Architecture
-```
-Host (Windows/WSL2) → Docker Desktop → GPU-enabled Container
-```
+- **Platform Agnostic**: Same containers work on Windows, Mac, Cloud
+- **GPU Optimization**: Native Docker Desktop GPU support on each platform
+- **Lightweight WSL**: Only automation and control logic, not heavy workloads
+- **Migration Ready**: Easy movement between development environments
 
 ## Implementation Plan
 
-### 1. Base Hybrid Environment (Validated)
-- `setup_hybrid_environment.sh` - Production-ready hybrid package management
-- Conda for system dependencies, uv for Python packages (41x speed improvement)
-- Bash-safe output, proper error handling, TOS acceptance
+### 1. WSL Control Plane Scripts
+- `scripts/deploy-to-windows.sh` - Deploy containers to Windows Docker Desktop
+- `scripts/deploy-to-mac.sh` - Deploy containers to Mac Docker Desktop  
+- `scripts/deploy-to-cloud.sh` - Deploy to cloud container platforms
+- `scripts/monitor-workloads.sh` - Monitor container status across platforms
 
-### 2. Docker GPU Container
-- Adapt `setup_hybrid_environment_gpu.sh` for container use
-- Base image: `nvidia/cuda:12.2-devel-ubuntu22.04`
-- NVIDIA Container Runtime for GPU access
+### 2. Host Platform Containers
+- **Windows**: Docker Desktop with CUDA support
+- **Mac**: Docker Desktop with Metal Performance Shaders
+- **Cloud**: Azure Container Apps, AWS ECS, Google Cloud Run
 
 ### 3. Development Workflow
 ```bash
-# Build GPU container
-docker build -t aiml-hybrid-gpu .
-
-# Run with GPU access
-docker run --gpus all -p 8888:8888 -v $(pwd):/workspace aiml-hybrid-gpu
-
-# Or use Docker Compose for complex setups
-docker-compose up gpu-dev
+# From WSL control plane
+./scripts/deploy-to-windows.sh --gpu --service aiml-dev
+./scripts/monitor-workloads.sh --platform windows
+./scripts/deploy-to-cloud.sh --provider azure --region eastus
 ```
+
+### 4. Cross-Platform Container Definitions
+- `docker-compose.windows.yml` - Windows-specific GPU configuration
+- `docker-compose.mac.yml` - Mac Metal GPU configuration  
+- `docker-compose.cloud.yml` - Cloud provider configurations
 
 ## WSL2 Experiments (Archive)
 

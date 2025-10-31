@@ -944,34 +944,51 @@ def bangladesh_farmer_impact():
 
 ## � Docker Development Environment
 
-### Quick Start with Docker
+## 🐳 Cross-Platform Container Development
 
-```bash
-# Build and run GPU-enabled environment
-docker-compose up aiml-dev
+### Architecture: Control Plane + Host Execution
 
-# Or CPU-only for lighter development
-docker-compose up aiml-cpu
-
-# Build manually
-docker build -t aiml-hybrid-gpu .
-docker run --gpus all -p 8888:8888 -v $(pwd):/workspace aiml-hybrid-gpu
+```
+WSL Control Plane  →  Host Platform Containers
+     (Lightweight)      (Heavy AI/ML Workloads)
 ```
 
-### Container Features
+### Quick Start
 
-- **Hybrid Package Management**: Validated conda+uv approach (41x speed improvement)
-- **GPU Support**: NVIDIA Container Runtime with CUDA 12.2
-- **Development Ports**: Jupyter (8888), TensorBoard (6006), Web apps (8080)
-- **Volume Mounting**: Code, data, and model persistence
-- **Environment Isolation**: Clean, reproducible development environments
+```bash
+# Deploy to Windows Docker Desktop (from WSL)
+./scripts/deploy-to-windows.sh --gpu --service aiml-dev
+
+# Deploy to Mac Docker Desktop  
+./scripts/deploy-to-mac.sh --metal --service aiml-dev
+
+# Monitor all platforms
+./scripts/monitor-workloads.sh --platform all --watch
+```
+
+### Platform-Specific Features
+
+**Windows Docker Desktop:**
+- NVIDIA CUDA GPU support
+- Windows filesystem integration (`/mnt/c/Users`)
+- Portainer management UI (port 9000)
+
+**Mac Docker Desktop:**
+- Metal Performance Shaders
+- macOS filesystem integration (`/Users`)
+- Optimized for Apple Silicon
+
+**Cloud Platforms:**
+- Azure Container Apps
+- AWS ECS with GPU instances
+- Google Cloud Run
 
 ### Container Strategy Benefits
 
-- **Simplified GPU Access**: Native Docker GPU support vs complex WSL2 setup
-- **Predictable Networking**: Standard port mapping without virtualization issues
-- **Production Alignment**: Same runtime as production deployments
-- **Clean Environments**: Easy to reset, no system pollution
+- **Platform Agnostic**: Same containers work everywhere
+- **Lightweight WSL**: Only control plane, not heavy workloads  
+- **Native GPU**: Docker Desktop handles GPU optimization per platform
+- **Migration Ready**: Easy movement between development environments
 
 ## �🚀 Call to Action
 
