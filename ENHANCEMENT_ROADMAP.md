@@ -1,6 +1,19 @@
 # Crank Platform Enhancement Roadmap
 
-## 🎯 Current Status (Q4 2025)
+## �️ Architecture Principles
+
+### JEMM: Just Enough Microservices and Monoliths
+Following the **JEMM principle** - we use the simplest architecture that solves actual constraints:
+
+- **Platform Monolith**: Auth, billing, routing, service discovery in single container
+  - Clean internal module boundaries with interface-based design
+  - Extract-ready architecture (services can be pulled out when team/scaling forces it)
+- **Worker Containers**: Business logic services (CrankDoc, CrankEmail) as separate scalable units
+- **No Premature Decomposition**: Extract services only when measurements prove it improves velocity/scaling
+
+*Constraint-driven, measurable, reversible decisions over architectural purity.*
+
+## �🎯 Current Status (Q4 2025)
 
 ### ✅ Completed (Phase 1)
 - **Mesh Interface Architecture**: Universal base class for all services

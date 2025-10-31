@@ -61,6 +61,30 @@ Every time ChatGPT says "I can't do X, but here's some Python code to run in you
 | **Small Transformers** | <200W | Sentence-BERT, distilled models | Language understanding |
 | **Large LLMs** | >1000W | GPT-4, Claude | Training teachers only |
 
+### JEMM: Just Enough Microservices and Monoliths
+
+**The JEMM Principle**: *Use the simplest architecture that solves your actual constraints, not your imagined future constraints.*
+
+```
+JEMM Decision Framework:
+├─ Team Size < 8 engineers? → Modular Monolith
+├─ Deployment conflicts? → Extract ONE service, measure impact
+├─ Technology constraints? → Selective extraction only
+└─ Performance/scaling needs? → Worker containers (not platform services)
+```
+
+**Crank Platform Implementation:**
+- **Platform Monolith**: Auth, billing, routing in single container (clean internal boundaries)
+- **Worker Containers**: CrankDoc, CrankEmail as separate scalable units
+- **Extract-Ready Design**: Interface-based modules that can become services if needed
+
+**JEMM vs. Alternatives:**
+- ❌ **Microservices First**: Premature complexity, distributed debugging nightmares
+- ❌ **Monolith Forever**: Ignores real team/scaling constraints  
+- ✅ **JEMM**: Right-sized architecture that evolves with actual needs
+
+*Architecture serves business value, not resume building.*
+
 ## � Documentation
 
 - **[Quick Start Guide](QUICK_START.md)** - Get running in 5 minutes

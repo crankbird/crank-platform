@@ -1,0 +1,41 @@
+# Enhanced Crank Platform - Modular Monolith
+# Evolves diagnostic container into full platform with auth, billing, discovery
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy all service files
+COPY *.py ./
+
+# Create platform startup script
+RUN echo '#!/usr/bin/env python3' > run_platform.py && \
+    echo 'from platform_app import create_platform_app' >> run_platform.py && \
+    echo 'import uvicorn' >> run_platform.py && \
+    echo 'if __name__ == "__main__":' >> run_platform.py && \
+    echo '    app = create_platform_app()' >> run_platform.py && \
+    echo '    uvicorn.run(app, host="0.0.0.0", port=8000)' >> run_platform.py && \
+    chmod +x run_platform.py
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health/live || exit 1
+
+# Expose port
+EXPOSE 8000
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV MESH_AUTH_KEY=dev-mesh-key
+
+# Run platform
+CMD ["python", "run_platform.py"]
