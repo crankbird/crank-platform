@@ -91,6 +91,36 @@ services:
       - crank-net
     restart: unless-stopped
 
+  # Crank Streaming Service (SSE, WebSocket, Real-time)
+  crank-streaming:
+    build:
+      context: services
+      dockerfile: Dockerfile.crank-streaming
+    container_name: crank-streaming
+    ports:
+      - "8011:8011"  # HTTP streaming endpoints and WebSocket
+    volumes:
+      - certs-volume:/etc/certs  # Share certificates with platform
+      - /home/johnr/projects/parse-email-archive/tests/data:/test-data:ro  # Mount test data
+    environment:
+      - CRANK_PLATFORM_URL=https://platform:8443
+      - CRANK_ENVIRONMENT=development
+      - LOG_LEVEL=INFO
+    depends_on:
+      platform:
+        condition: service_healthy
+      crank-email-classifier:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8011/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - crank-net
+    restart: unless-stopped
+
   # Crank Email Parser Worker  
   crank-email-parser:
     build:
