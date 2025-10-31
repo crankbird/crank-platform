@@ -91,6 +91,35 @@ services:
       - crank-net
     restart: unless-stopped
 
+  # Crank Email Parser Worker  
+  crank-email-parser:
+    build:
+      context: services
+      dockerfile: Dockerfile.crank-email-parser
+    container_name: crank-email-parser
+    ports:
+      - "8009:8003"  # Use different external port - 8003 is taken by email-classifier
+      - "8010:8443"  # Map to different external port to avoid conflict
+    volumes:
+      - certs-volume:/etc/certs  # Share certificates with platform
+    environment:
+      - CRANK_PLATFORM_URL=https://platform:8443  # 🔒 ZERO-TRUST: Use HTTPS for platform communication
+      - CRANK_ENVIRONMENT=development  # 🔒 Development with HTTPS testing
+      - LOG_LEVEL=INFO
+      - PLATFORM_AUTH_TOKEN=dev-mesh-key
+    depends_on:
+      platform:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s  # Email parser initialization time
+    networks:
+      - crank-net
+    restart: unless-stopped
+
   # Crank Image Classifier Worker
   crank-image-classifier:
     build:

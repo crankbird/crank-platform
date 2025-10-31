@@ -1,0 +1,15 @@
+# Email Parser Service Dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+httpx==0.25.2
+pydantic==2.5.0
+python-multipart==0.0.6
+
+# Email processing
+email-validator==2.1.0
+
+# File handling
+aiofiles==23.2.1
+
+# Logging and monitoring
+structlog==23.2.0

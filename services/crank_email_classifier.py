@@ -52,7 +52,7 @@ except LookupError:
 class EmailClassificationRequest(BaseModel):
     """Request model for email classification."""
     email_content: str
-    classification_types: List[str] = ["spam_detection", "sentiment_analysis", "category"]
+    classification_types: List[str] = ["spam_detection", "bill_detection", "receipt_detection", "sentiment_analysis", "category"]
     confidence_threshold: float = 0.7
 
 
@@ -86,6 +86,8 @@ class SimpleEmailClassifier:
     
     def __init__(self):
         self.spam_classifier = None
+        self.bill_classifier = None
+        self.receipt_classifier = None
         self.category_classifier = None
         self._initialize_models()
         
@@ -105,6 +107,42 @@ class SimpleEmailClassifier:
             ("Your password has been reset", "not_spam"),
             ("Limited time offer! Act now!", "spam"),
             ("Project update: milestone completed", "not_spam")
+        ]
+        
+        # Bill detection training data
+        bill_data = [
+            ("Your monthly electricity bill is ready for review", "bill"),
+            ("Statement for account ending 1234 is now available", "bill"),
+            ("Your invoice for services rendered", "bill"),
+            ("Amount due: $150.00 - Payment due by", "bill"),
+            ("Monthly subscription charge processed", "bill"),
+            ("Thanks for your business meeting yesterday", "not_bill"),
+            ("Happy birthday! Hope you have a great day", "not_bill"),
+            ("Meeting scheduled for next Tuesday", "not_bill"),
+            ("Water utility bill - March 2024", "bill"),
+            ("Credit card statement available online", "bill"),
+            ("Dinner reservation confirmed", "not_bill"),
+            ("Your order has been shipped", "not_bill"),
+            ("Phone bill is ready for payment", "bill"),
+            ("Insurance premium due notice", "bill")
+        ]
+        
+        # Receipt detection training data  
+        receipt_data = [
+            ("Thank you for your purchase at Coffee Shop", "receipt"),
+            ("Receipt for your order #12345", "receipt"),
+            ("Transaction complete - here's your receipt", "receipt"),
+            ("Purchase confirmation: Total $25.99", "receipt"),
+            ("Your receipt from Amazon", "receipt"),
+            ("Meeting agenda for tomorrow", "not_receipt"),
+            ("Project status update", "not_receipt"),
+            ("Happy anniversary!", "not_receipt"),
+            ("Grocery store receipt - thank you for shopping", "receipt"),
+            ("Payment processed successfully", "receipt"),
+            ("Weekend plans discussion", "not_receipt"),
+            ("Book club meeting notes", "not_receipt"),
+            ("Restaurant receipt - tip included", "receipt"),
+            ("Purchase total: $49.99 - paid with card", "receipt")
         ]
         
         # Category classification data
@@ -127,6 +165,22 @@ class SimpleEmailClassifier:
         ])
         self.spam_classifier.fit(spam_texts, spam_labels)
         
+        # Train bill classifier
+        bill_texts, bill_labels = zip(*bill_data)
+        self.bill_classifier = Pipeline([
+            ('tfidf', TfidfVectorizer(stop_words='english', max_features=1000)),
+            ('classifier', MultinomialNB())
+        ])
+        self.bill_classifier.fit(bill_texts, bill_labels)
+        
+        # Train receipt classifier
+        receipt_texts, receipt_labels = zip(*receipt_data)
+        self.receipt_classifier = Pipeline([
+            ('tfidf', TfidfVectorizer(stop_words='english', max_features=1000)),
+            ('classifier', MultinomialNB())
+        ])
+        self.receipt_classifier.fit(receipt_texts, receipt_labels)
+        
         # Train category classifier  
         category_texts, category_labels = zip(*category_data)
         self.category_classifier = Pipeline([
@@ -135,7 +189,7 @@ class SimpleEmailClassifier:
         ])
         self.category_classifier.fit(category_texts, category_labels)
         
-        logger.info("✅ ML models initialized successfully")
+        logger.info("✅ ML models initialized successfully (spam, bill, receipt, category detection)")
     
     def _preprocess_email(self, email_content: str) -> str:
         """Preprocess email content for classification."""
@@ -194,6 +248,36 @@ class SimpleEmailClassifier:
         # Get prediction probabilities
         probabilities = self.category_classifier.predict_proba([processed_text])[0]
         classes = self.category_classifier.classes_
+        
+        # Find best prediction
+        best_idx = np.argmax(probabilities)
+        prediction = classes[best_idx]
+        confidence = float(probabilities[best_idx])
+        
+        return prediction, confidence
+    
+    def detect_bill(self, email_content: str, threshold: float = 0.7) -> Tuple[str, float]:
+        """Detect if email is a bill or statement."""
+        processed_text = self._preprocess_email(email_content)
+        
+        # Get prediction probabilities
+        probabilities = self.bill_classifier.predict_proba([processed_text])[0]
+        classes = self.bill_classifier.classes_
+        
+        # Find best prediction
+        best_idx = np.argmax(probabilities)
+        prediction = classes[best_idx]
+        confidence = float(probabilities[best_idx])
+        
+        return prediction, confidence
+    
+    def detect_receipt(self, email_content: str, threshold: float = 0.7) -> Tuple[str, float]:
+        """Detect if email is a receipt or purchase confirmation."""
+        processed_text = self._preprocess_email(email_content)
+        
+        # Get prediction probabilities
+        probabilities = self.receipt_classifier.predict_proba([processed_text])[0]
+        classes = self.receipt_classifier.classes_
         
         # Find best prediction
         best_idx = np.argmax(probabilities)
@@ -284,7 +368,7 @@ class CrankEmailClassifier:
             return {
                 "status": "healthy",
                 "service": "crank-email-classifier",
-                "capabilities": ["spam_detection", "sentiment_analysis", "category", "priority", "language_detection"],
+                "capabilities": ["spam_detection", "bill_detection", "receipt_detection", "sentiment_analysis", "category", "priority", "language_detection"],
                 "ml_models": "initialized",
                 "timestamp": datetime.now().isoformat()
             }
@@ -292,7 +376,7 @@ class CrankEmailClassifier:
         @self.app.post("/classify", response_model=ClassificationResponse)
         async def classify_email(
             email_content: str = Form(...),
-            classification_types: str = Form(default="spam_detection,sentiment_analysis,category")
+            classification_types: str = Form(default="spam_detection,bill_detection,receipt_detection")
         ):
             """Classify email content using ML models."""
             try:
@@ -310,6 +394,24 @@ class CrankEmailClassifier:
                         prediction, confidence = self.classifier.detect_spam(email_content)
                         results.append(EmailClassificationResult(
                             classification_type="spam_detection",
+                            prediction=prediction,
+                            confidence=confidence,
+                            details={"algorithm": "naive_bayes"}
+                        ))
+                    
+                    elif class_type == "bill_detection":
+                        prediction, confidence = self.classifier.detect_bill(email_content)
+                        results.append(EmailClassificationResult(
+                            classification_type="bill_detection",
+                            prediction=prediction,
+                            confidence=confidence,
+                            details={"algorithm": "naive_bayes"}
+                        ))
+                    
+                    elif class_type == "receipt_detection":
+                        prediction, confidence = self.classifier.detect_receipt(email_content)
+                        results.append(EmailClassificationResult(
+                            classification_type="receipt_detection",
                             prediction=prediction,
                             confidence=confidence,
                             details={"algorithm": "naive_bayes"}
