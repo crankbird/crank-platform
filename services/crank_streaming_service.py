@@ -11,6 +11,7 @@ Demonstrates true streaming patterns for real-time data processing:
 import asyncio
 import json
 import logging
+import os
 from datetime import datetime
 from typing import AsyncGenerator, Dict, Any, List, Optional
 from uuid import uuid4
@@ -34,7 +35,10 @@ class StreamingEmailProcessor:
     
     def __init__(self):
         self.active_streams: Dict[str, Dict] = {}
-        self.classifier_url = "https://localhost:8004"
+        # 🚢 PORT CONFIGURATION: Use environment variables for service discovery
+        classifier_port = os.getenv("EMAIL_CLASSIFIER_PORT", "8200")
+        classifier_host = os.getenv("EMAIL_CLASSIFIER_HOST", "localhost") 
+        self.classifier_url = f"http://{classifier_host}:{classifier_port}"
         
     # Pattern 1: Server-Sent Events (SSE) for Progressive Processing
     async def stream_email_processing_sse(
@@ -395,4 +399,9 @@ app = streaming_service.app
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8011)
+    # 🚢 PORT CONFIGURATION: Use environment variables for flexible deployment
+    service_port = int(os.getenv("STREAMING_PORT", "8500"))  # New default: 8500
+    service_host = os.getenv("STREAMING_HOST", "0.0.0.0")
+    
+    print(f"🌊 Starting Crank Streaming Service on {service_host}:{service_port}")
+    uvicorn.run(app, host=service_host, port=service_port)

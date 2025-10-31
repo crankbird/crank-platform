@@ -1,11 +1,14 @@
-# Platform + Multi-Worker Architecture
+# Platform + Multi-Worker Architecture with Proper Port Configuration
 # 
 # This docker-compose sets up:
 # - Platform service (PaaS layer) with auth, billing, discovery, routing  
-# - CrankDoc worker (document conversion)
-# - CrankEmail worker (ML email classification)
+# - CrankDoc worker (document conversion) - Port 8100
+# - CrankEmail Classifier worker (ML email classification) - Port 8200
+# - CrankEmail Parser worker (bulk email parsing) - Port 8300
+# - CrankStreaming worker (real-time streaming) - Port 8500
 # - Proper networking for service discovery
 # - Zero-trust mTLS security for all services
+# - NO PORT CONFLICTS - Each service has dedicated port range
 
 services:
   # Platform Service (PaaS Layer)
@@ -15,16 +18,18 @@ services:
       dockerfile: Dockerfile.platform
     container_name: crank-platform
     ports:
-      - "8080:8000"  # HTTP fallback for development
-      - "8443:8443"  # HTTPS with mTLS for production
+      - "${PLATFORM_PORT:-8000}:${PLATFORM_PORT:-8000}"  # HTTP fallback for development
+      - "${PLATFORM_HTTPS_PORT:-8443}:${PLATFORM_HTTPS_PORT:-8443}"  # HTTPS with mTLS for production
     volumes:
       - certs-volume:/etc/certs  # Share certificates with workers
     environment:
       - PLATFORM_ENV=docker
       - CRANK_ENVIRONMENT=development  # 🔒 Development with HTTPS testing
       - LOG_LEVEL=INFO
+      - PLATFORM_PORT=${PLATFORM_PORT:-8000}
+      - PLATFORM_HTTPS_PORT=${PLATFORM_HTTPS_PORT:-8443}
     healthcheck:
-      test: ["CMD", "curl", "-k", "-f", "https://localhost:8443/health/live"]  # 🔒 Use HTTPS health check
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:${PLATFORM_HTTPS_PORT:-8443}/health/live"]  # 🔒 Use HTTPS health check
       interval: 30s
       timeout: 10s
       retries: 3
@@ -33,27 +38,30 @@ services:
       - crank-net
     restart: unless-stopped
 
-  # Crank Document Converter Worker
+  # Crank Document Converter Worker - Port Range: 8100-8199
   crank-doc-converter:
     build:
       context: services
       dockerfile: Dockerfile.crank-doc-converter
     container_name: crank-doc-converter
     ports:
-      - "8081:8081"
-      - "8002:8443"  # Map to different external port to avoid conflict
+      - "${DOC_CONVERTER_PORT:-8100}:${DOC_CONVERTER_PORT:-8100}"
+      - "${DOC_CONVERTER_HTTPS_PORT:-8101}:${DOC_CONVERTER_HTTPS_PORT:-8101}"
     volumes:
       - certs-volume:/etc/certs  # Share certificates with platform
     environment:
-      - PLATFORM_URL=https://platform:8443  # 🔒 ZERO-TRUST: Use HTTPS for platform communication
+      - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}  # 🔒 ZERO-TRUST: Use HTTPS for platform communication
       - CRANK_ENVIRONMENT=development  # 🔒 Development with HTTPS testing
       - LOG_LEVEL=INFO
       - PLATFORM_AUTH_TOKEN=dev-mesh-key
+      - DOC_CONVERTER_PORT=${DOC_CONVERTER_PORT:-8100}
+      - DOC_CONVERTER_HOST=0.0.0.0
+      - DOC_CONVERTER_HTTPS_PORT=${DOC_CONVERTER_HTTPS_PORT:-8101}
     depends_on:
       platform:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:${DOC_CONVERTER_PORT:-8100}/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -62,27 +70,30 @@ services:
       - crank-net
     restart: unless-stopped
 
-  # Crank Email Classifier Worker  
+  # Crank Email Classifier Worker - Port Range: 8200-8299  
   crank-email-classifier:
     build:
       context: services
       dockerfile: Dockerfile.crank-email-classifier
     container_name: crank-email-classifier
     ports:
-      - "8003:8003"
-      - "8004:8443"  # Map to different external port to avoid conflict
+      - "${EMAIL_CLASSIFIER_PORT:-8200}:${EMAIL_CLASSIFIER_PORT:-8200}"
+      - "${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}:${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}"
     volumes:
       - certs-volume:/etc/certs  # Share certificates with platform
     environment:
-      - PLATFORM_URL=https://platform:8443  # 🔒 ZERO-TRUST: Use HTTPS for platform communication
+      - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}  # 🔒 ZERO-TRUST: Use HTTPS for platform communication
       - CRANK_ENVIRONMENT=development  # 🔒 Development with HTTPS testing
       - LOG_LEVEL=INFO
       - PLATFORM_AUTH_TOKEN=dev-mesh-key
+      - EMAIL_CLASSIFIER_PORT=${EMAIL_CLASSIFIER_PORT:-8200}
+      - EMAIL_CLASSIFIER_HOST=0.0.0.0
+      - EMAIL_CLASSIFIER_HTTPS_PORT=${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}
     depends_on:
       platform:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:${EMAIL_CLASSIFIER_PORT:-8200}/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -91,57 +102,30 @@ services:
       - crank-net
     restart: unless-stopped
 
-  # Crank Streaming Service (SSE, WebSocket, Real-time)
-  crank-streaming:
-    build:
-      context: services
-      dockerfile: Dockerfile.crank-streaming
-    container_name: crank-streaming
-    ports:
-      - "8011:8011"  # HTTP streaming endpoints and WebSocket
-    volumes:
-      - certs-volume:/etc/certs  # Share certificates with platform
-      - /home/johnr/projects/parse-email-archive/tests/data:/test-data:ro  # Mount test data
-    environment:
-      - CRANK_PLATFORM_URL=https://platform:8443
-      - CRANK_ENVIRONMENT=development
-      - LOG_LEVEL=INFO
-    depends_on:
-      platform:
-        condition: service_healthy
-      crank-email-classifier:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8011/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    networks:
-      - crank-net
-    restart: unless-stopped
-
-  # Crank Email Parser Worker  
+  # Crank Email Parser Worker - Port Range: 8300-8399
   crank-email-parser:
     build:
       context: services
       dockerfile: Dockerfile.crank-email-parser
     container_name: crank-email-parser
     ports:
-      - "8009:8003"  # Use different external port - 8003 is taken by email-classifier
-      - "8010:8443"  # Map to different external port to avoid conflict
+      - "${EMAIL_PARSER_PORT:-8300}:${EMAIL_PARSER_PORT:-8300}"
+      - "${EMAIL_PARSER_HTTPS_PORT:-8301}:${EMAIL_PARSER_HTTPS_PORT:-8301}"
     volumes:
       - certs-volume:/etc/certs  # Share certificates with platform
     environment:
-      - CRANK_PLATFORM_URL=https://platform:8443  # 🔒 ZERO-TRUST: Use HTTPS for platform communication
+      - CRANK_PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}  # 🔒 ZERO-TRUST: Use HTTPS for platform communication
       - CRANK_ENVIRONMENT=development  # 🔒 Development with HTTPS testing
       - LOG_LEVEL=INFO
       - PLATFORM_AUTH_TOKEN=dev-mesh-key
+      - EMAIL_PARSER_PORT=${EMAIL_PARSER_PORT:-8300}
+      - EMAIL_PARSER_HOST=0.0.0.0
+      - EMAIL_PARSER_HTTPS_PORT=${EMAIL_PARSER_HTTPS_PORT:-8301}
     depends_on:
       platform:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-k", "-f", "https://localhost:8003/health"]
+      test: ["CMD", "curl", "-k", "-f", "http://localhost:${EMAIL_PARSER_PORT:-8300}/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -150,27 +134,62 @@ services:
       - crank-net
     restart: unless-stopped
 
-  # Crank Image Classifier Worker
+  # Crank Streaming Service - Port Range: 8500-8599 (SSE, WebSocket, Real-time)
+  crank-streaming:
+    build:
+      context: services
+      dockerfile: Dockerfile.crank-streaming
+    container_name: crank-streaming
+    ports:
+      - "${STREAMING_PORT:-8500}:${STREAMING_PORT:-8500}"  # HTTP streaming endpoints and WebSocket
+    volumes:
+      - certs-volume:/etc/certs  # Share certificates with platform
+      - /home/johnr/projects/parse-email-archive/tests/data:/test-data:ro  # Mount test data
+    environment:
+      - CRANK_PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}
+      - CRANK_ENVIRONMENT=development
+      - LOG_LEVEL=INFO
+      - STREAMING_PORT=${STREAMING_PORT:-8500}
+      - STREAMING_HOST=0.0.0.0
+    depends_on:
+      platform:
+        condition: service_healthy
+      crank-email-classifier:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${STREAMING_PORT:-8500}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - crank-net
+    restart: unless-stopped
+
+  # Crank Image Classifier Worker - Port Range: 8400-8499
   crank-image-classifier:
     build:
       context: .
       dockerfile: image-classifier/Dockerfile
     container_name: crank-image-classifier
     ports:
-      - "8005:8005"
-      - "8006:8443"  # Map to different external port to avoid conflict
+      - "${IMAGE_CLASSIFIER_PORT:-8400}:${IMAGE_CLASSIFIER_PORT:-8400}"
+      - "${IMAGE_CLASSIFIER_HTTPS_PORT:-8401}:${IMAGE_CLASSIFIER_HTTPS_PORT:-8401}"
     volumes:
       - certs-volume:/etc/certs  # Share certificates with platform
     environment:
-      - PLATFORM_URL=https://platform:8443  # 🔒 ZERO-TRUST: Use HTTPS for platform communication
+      - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}  # 🔒 ZERO-TRUST: Use HTTPS for platform communication
       - CRANK_ENVIRONMENT=development  # 🔒 Development with HTTPS testing
       - LOG_LEVEL=INFO
       - PLATFORM_AUTH_TOKEN=dev-mesh-key
+      - IMAGE_CLASSIFIER_PORT=${IMAGE_CLASSIFIER_PORT:-8400}
+      - IMAGE_CLASSIFIER_HOST=0.0.0.0
+      - IMAGE_CLASSIFIER_HTTPS_PORT=${IMAGE_CLASSIFIER_HTTPS_PORT:-8401}
     depends_on:
       platform:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:${IMAGE_CLASSIFIER_PORT:-8400}/health"]
       interval: 30s
       timeout: 10s
       retries: 3

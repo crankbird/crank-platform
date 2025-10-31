@@ -497,17 +497,22 @@ if __name__ == "__main__":
     ssl_ca_certs = os.getenv("SSL_CA_CERTS", "/certs/ca.crt")
     
     # Run with or without SSL based on certificate availability
+    # 🚢 PORT CONFIGURATION: Use environment variables for flexible deployment
+    service_port = int(os.getenv("EMAIL_PARSER_PORT", "8300"))  # New default: 8300
+    service_host = os.getenv("EMAIL_PARSER_HOST", "0.0.0.0")
+    https_port = int(os.getenv("EMAIL_PARSER_HTTPS_PORT", "8443"))
+    
     if os.path.exists(ssl_certfile) and os.path.exists(ssl_keyfile):
-        logger.info("Starting with mTLS enabled")
+        logger.info(f"Starting with mTLS enabled on port {https_port}")
         uvicorn.run(
             app,
-            host="0.0.0.0",
-            port=8003,
+            host=service_host,
+            port=https_port,
             ssl_keyfile=ssl_keyfile,
             ssl_certfile=ssl_certfile,
             ssl_ca_certs=ssl_ca_certs if os.path.exists(ssl_ca_certs) else None,
             ssl_cert_reqs=2  # CERT_REQUIRED for mTLS
         )
     else:
-        logger.info("Starting without SSL (development mode)")
-        uvicorn.run(app, host="0.0.0.0", port=8003)
+        logger.info(f"Starting without SSL on port {service_port} (development mode)")
+        uvicorn.run(app, host=service_host, port=service_port)

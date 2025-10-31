@@ -437,16 +437,21 @@ if __name__ == "__main__":
     cert_dir = Path("/etc/certs")
     use_https = (cert_dir / "platform.crt").exists() and (cert_dir / "platform.key").exists()
     
+    # 🚢 PORT CONFIGURATION: Use environment variables for flexible deployment  
+    service_port = int(os.getenv("DOC_CONVERTER_PORT", "8100"))  # New default: 8100
+    service_host = os.getenv("DOC_CONVERTER_HOST", "0.0.0.0")
+    https_port = int(os.getenv("DOC_CONVERTER_HTTPS_PORT", "8443"))
+    
     if use_https:
         # Start with HTTPS using uvicorn SSL parameters
-        logger.info("🔒 Starting Crank Document Converter with HTTPS on port 8443")
+        logger.info(f"🔒 Starting Crank Document Converter with HTTPS on port {https_port}")
         uvicorn.run(
             app, 
-            host="0.0.0.0", 
-            port=8443,
+            host=service_host, 
+            port=https_port,
             ssl_keyfile=str(cert_dir / "platform.key"),
             ssl_certfile=str(cert_dir / "platform.crt")
         )
     else:
-        logger.info("🔓 Starting Crank Document Converter with HTTP on port 8081")
-        uvicorn.run(app, host="0.0.0.0", port=8081)
+        logger.info(f"🔓 Starting Crank Document Converter with HTTP on port {service_port}")
+        uvicorn.run(app, host=service_host, port=service_port)

@@ -600,23 +600,28 @@ def main():
     
     app = create_crank_email_classifier()
     
-    # 🔒 ZERO-TRUST: Auto-detect HTTPS based on certificate availability
+    # � PORT CONFIGURATION: Use environment variables for flexible deployment
+    service_port = int(os.getenv("EMAIL_CLASSIFIER_PORT", "8200"))  # New default: 8200
+    service_host = os.getenv("EMAIL_CLASSIFIER_HOST", "0.0.0.0")
+    
+    # �🔒 ZERO-TRUST: Auto-detect HTTPS based on certificate availability
     cert_dir = Path("/etc/certs")
     has_certs = (cert_dir / "platform.crt").exists() and (cert_dir / "platform.key").exists()
     
     if has_certs:
-        # Start with HTTPS using mTLS
-        print("🔒 Starting Crank Email Classifier with HTTPS on port 8443")
+        # HTTPS port: standard 8443 for production
+        https_port = int(os.getenv("EMAIL_CLASSIFIER_HTTPS_PORT", "8443"))
+        print(f"🔒 Starting Crank Email Classifier with HTTPS on port {https_port}")
         uvicorn.run(
             app, 
-            host="0.0.0.0", 
-            port=8443,
+            host=service_host, 
+            port=https_port,
             ssl_keyfile=str(cert_dir / "platform.key"),
             ssl_certfile=str(cert_dir / "platform.crt")
         )
     else:
-        print("⚠️  Starting Crank Email Classifier with HTTP on port 8003 (development only)")
-        uvicorn.run(app, host="0.0.0.0", port=8003)
+        print(f"⚠️  Starting Crank Email Classifier with HTTP on port {service_port} (development only)")
+        uvicorn.run(app, host=service_host, port=service_port)
 
 
 # For direct running
