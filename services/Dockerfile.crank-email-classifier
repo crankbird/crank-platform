@@ -1,0 +1,36 @@
+# Crank Email Classifier Container
+FROM python:3.12-slim
+
+# Create non-root user
+RUN addgroup --gid 1000 worker && \
+    adduser --uid 1000 --gid 1000 --disabled-password worker
+
+# Install system dependencies needed for ML and NLP
+RUN apt-get update && apt-get install -y \
+    curl \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Install Python dependencies (worker-specific)
+COPY requirements-crank-email-classifier.txt .
+RUN pip install --no-cache-dir -r requirements-crank-email-classifier.txt
+
+# Copy worker code and metadata
+COPY crank_email_classifier.py .
+COPY crank-email-classifier.plugin.yaml ./plugin.yaml
+
+# Security hardening
+USER worker
+
+# Expose worker ports (HTTP fallback + HTTPS)
+EXPOSE 8003 8443
+
+# Health check (try HTTPS first, fallback to HTTP)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD curl -k -f https://localhost:8443/health || curl -f http://localhost:8003/health || exit 1
+
+# Run Crank Email Classifier with HTTPS auto-detection
+CMD ["python", "crank_email_classifier.py"]

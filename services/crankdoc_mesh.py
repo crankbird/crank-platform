@@ -237,27 +237,6 @@ if __name__ == "__main__":
     service = create_crankdoc_mesh_service()
     app = service.create_app("dev-mesh-key")
     uvicorn.run(app, host="0.0.0.0", port=8000)
-        if not file:
-            return MeshResponse(
-                job_id=request.job_id,
-                service_type=self.service_type,
-                operation="convert",
-                status="failed",
-                result={"error": "File is required for conversion"}
-            )
-        
-        # Extract conversion parameters
-        source_format = request.parameters.get("source_format", "auto")
-        target_format = request.parameters.get("target_format")
-        
-        if not target_format:
-            return MeshResponse(
-                job_id=request.job_id,
-                service_type=self.service_type,
-                operation="convert",
-                status="failed",
-                result={"error": "target_format parameter is required"}
-            )
         
         # Validate formats
         if target_format not in self.supported_formats["output"]:

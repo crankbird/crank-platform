@@ -1,0 +1,39 @@
+# CrankDoc Worker Container
+FROM python:3.12-slim
+
+# Create non-root user
+RUN addgroup --gid 1000 worker && \
+    adduser --uid 1000 --gid 1000 --disabled-password worker
+
+# Install system dependencies needed for document processing
+RUN apt-get update && apt-get install -y \
+    curl \
+    pandoc \
+    texlive-latex-base \
+    texlive-latex-extra \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Install Python dependencies (worker-specific)
+COPY requirements-crank-doc-converter.txt .
+RUN pip install --no-cache-dir -r requirements-crank-doc-converter.txt
+
+# Copy worker code and metadata
+COPY crank_doc_converter.py .
+COPY crankdoc_mesh_minimal.py .
+COPY crank-doc-converter.plugin.yaml ./plugin.yaml
+
+# Security hardening
+USER worker
+
+# Expose worker port
+EXPOSE 8081
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8081/health || exit 1
+
+# Run Crank Document Converter
+CMD ["python", "crank_doc_converter.py"]

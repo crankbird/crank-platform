@@ -1,0 +1,67 @@
+# Crank Email Classifier Plugin
+name: crank-email-classifier
+version: 1.0.0
+description: ML-based email classification for spam detection, sentiment analysis, and categorization
+author: Crank Platform Team
+platform_version_min: "0.1.0"
+platform_version_max: "1.0.0"
+
+# Service Configuration
+service:
+  port: 8003
+  health_endpoint: "/health"
+  base_path: "/classify"
+
+# Classification Capabilities
+capabilities:
+  - operation: "classify_email"
+    description: "Classify email content using machine learning models"
+    classifications:
+      - "spam_detection"      # Binary: spam/not-spam
+      - "sentiment_analysis"  # Positive/Negative/Neutral
+      - "category"           # Business/Personal/Marketing/Support
+      - "priority"           # High/Medium/Low
+      - "language_detection" # Auto-detect email language
+    max_email_size: "5MB"
+    timeout: 10
+    confidence_threshold: 0.7
+
+# Dependencies
+dependencies:
+  system:
+    - python3
+  python:
+    - fastapi
+    - uvicorn
+    - scikit-learn
+    - transformers
+    - torch
+    - pandas
+    - numpy
+    - email-validator
+    - python-multipart
+
+# Resource Requirements
+resources:
+  memory_min: "512MB"
+  memory_max: "2GB"
+  cpu_min: "0.2"
+  cpu_max: "2.0"
+
+# Security Configuration
+security:
+  requires_https: true
+  requires_mtls: true
+  certificate_path: "/app/certs"
+
+# ML Models
+models:
+  spam_detector: "scikit-learn/naive_bayes"
+  sentiment_analyzer: "huggingface/cardiffnlp/twitter-roberta-base-sentiment-latest"
+  category_classifier: "custom/email_categories"
+  language_detector: "langdetect"
+
+# Development Metadata
+repository: "https://github.com/crankbird/crank-email-classifier"
+documentation: "https://docs.crankplatform.com/workers/email-classifier"
+license: "MIT"

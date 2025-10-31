@@ -1,0 +1,51 @@
+name: crank-image-classifier-gpu
+version: 1.0.0
+description: GPU-accelerated computer vision ML classification with YOLOv8, CLIP, and modern deep learning models
+author: Crank Platform Team
+
+capabilities:
+  - yolo_object_detection      # YOLOv8/v9 real-time object detection
+  - clip_image_understanding   # CLIP for image-text similarity
+  - advanced_scene_analysis    # Deep learning scene classification
+  - content_moderation        # Advanced content safety with neural networks
+  - image_embeddings          # Feature extraction and similarity
+  - batch_processing          # GPU-optimized batch inference
+  - video_analysis            # Frame-by-frame video processing
+  - image_enhancement         # Super-resolution and denoising
+
+requirements:
+  gpu: required
+  vram_min: 4GB
+  cuda_version: ">=11.8"
+  docker_runtime: nvidia
+
+health_endpoint: /health
+separation_ready: true
+
+model_info:
+  primary_models:
+    - name: YOLOv8n
+      purpose: Fast object detection
+      vram_usage: ~500MB
+    - name: CLIP-ViT-B/32
+      purpose: Image-text understanding
+      vram_usage: ~600MB
+  
+  optional_models:
+    - name: YOLOv8x
+      purpose: High-accuracy object detection
+      vram_usage: ~2GB
+    - name: Segment Anything (SAM)
+      purpose: Instance segmentation
+      vram_usage: ~1.5GB
+
+deployment:
+  node_selector:
+    gpu.nvidia.com/class: "GeForce,Quadro,Tesla"
+  resource_limits:
+    memory: 8Gi
+    nvidia.com/gpu: 1
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+      effect: NoSchedule
