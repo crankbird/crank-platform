@@ -29,4 +29,4 @@ FROM mesh-base as crank-doc
 COPY crankdoc_mesh.py .
 
 # Run CrankDoc mesh service
-CMD ["python", "-c", "from crankdoc_mesh import create_crankdoc_service; import uvicorn; uvicorn.run(create_crankdoc_service(), host='0.0.0.0', port=8000)"]
+CMD ["python", "-c", "from crankdoc_mesh import create_crankdoc_service; import uvicorn, os; port=int(os.getenv('CRANKDOC_SERVICE_PORT','8000')); uvicorn.run(create_crankdoc_service(), host='0.0.0.0', port=port)"]

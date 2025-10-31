@@ -342,9 +342,11 @@ def create_crankemail_mesh_service() -> CrankEmailMeshService:
 # For running directly  
 if __name__ == "__main__":
     import uvicorn
+    import os
     service = create_crankemail_mesh_service()
     app = service.create_app("dev-mesh-key")
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    port = int(os.getenv('CRANKEMAIL_MESH_PORT', '8001'))
+    uvicorn.run(app, host="0.0.0.0", port=port)
             return await self._handle_classification(request, file)
         elif request.operation == "analyze":
             return await self._handle_analysis(request, file)
@@ -778,5 +780,7 @@ def create_crankemail_service() -> Any:
 # For running directly
 if __name__ == "__main__":
     import uvicorn
+    import os
     app = create_crankemail_service()
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    port = int(os.getenv('CRANKEMAIL_SERVICE_PORT', '8001'))
+    uvicorn.run(app, host="0.0.0.0", port=port)

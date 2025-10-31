@@ -234,9 +234,11 @@ def create_crankdoc_mesh_service() -> CrankDocMeshService:
 # For running directly  
 if __name__ == "__main__":
     import uvicorn
+    import os
     service = create_crankdoc_mesh_service()
     app = service.create_app("dev-mesh-key")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv('CRANKDOC_MESH_PORT', '8000'))
+    uvicorn.run(app, host="0.0.0.0", port=port)
         
         # Validate formats
         if target_format not in self.supported_formats["output"]:
@@ -451,5 +453,7 @@ def create_crankdoc_service() -> Any:
 # For running directly
 if __name__ == "__main__":
     import uvicorn
+    import os
     app = create_crankdoc_service()
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv('CRANKDOC_SERVICE_PORT', '8000'))
+    uvicorn.run(app, host="0.0.0.0", port=port)

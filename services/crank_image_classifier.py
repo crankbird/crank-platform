@@ -607,17 +607,21 @@ def main():
     
     if has_certs:
         # Start with HTTPS using mTLS
-        print("🔒 Starting Crank Image Classifier with HTTPS on port 8443")
+        # Kevin's port configuration - environment-based for maximum portability
+        https_port = int(os.getenv('CLASSIFIER_HTTPS_PORT', '8443'))
+        http_port = int(os.getenv('CLASSIFIER_HTTP_PORT', '8005'))
+        
+        print(f"🔒 Starting Crank Image Classifier with HTTPS on port {https_port}")
         uvicorn.run(
             app, 
             host="0.0.0.0", 
-            port=8443,
+            port=https_port,
             ssl_keyfile=str(cert_dir / "platform.key"),
             ssl_certfile=str(cert_dir / "platform.crt")
         )
     else:
-        print("⚠️  Starting Crank Image Classifier with HTTP on port 8005 (development only)")
-        uvicorn.run(app, host="0.0.0.0", port=8005)
+        print(f"⚠️  Starting Crank Image Classifier with HTTP on port {http_port} (development only)")
+        uvicorn.run(app, host="0.0.0.0", port=http_port)
 
 
 # For direct running

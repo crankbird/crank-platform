@@ -653,18 +653,22 @@ def main():
     cert_dir = Path("/etc/certs")
     has_certs = (cert_dir / "platform.crt").exists() and (cert_dir / "platform.key").exists()
     
+    # Kevin's port configuration - environment-based for maximum portability
+    https_port = int(os.getenv('GPU_CLASSIFIER_HTTPS_PORT', '8443'))
+    http_port = int(os.getenv('GPU_CLASSIFIER_HTTP_PORT', '8007'))
+    
     if has_certs:
-        print("🔒 Starting Crank GPU Image Classifier with HTTPS on port 8443")
+        print(f"🔒 Starting Crank GPU Image Classifier with HTTPS on port {https_port}")
         uvicorn.run(
             app, 
             host="0.0.0.0", 
-            port=8443,
+            port=https_port,
             ssl_keyfile=str(cert_dir / "platform.key"),
             ssl_certfile=str(cert_dir / "platform.crt")
         )
     else:
-        print("⚠️  Starting Crank GPU Image Classifier with HTTP on port 8007 (development only)")
-        uvicorn.run(app, host="0.0.0.0", port=8007)
+        print(f"⚠️  Starting Crank GPU Image Classifier with HTTP on port {http_port} (development only)")
+        uvicorn.run(app, host="0.0.0.0", port=http_port)
 
 
 if __name__ == "__main__":

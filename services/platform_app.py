@@ -458,20 +458,24 @@ def main():
     cert_dir = Path("/etc/certs")
     has_certs = (cert_dir / "platform.crt").exists() and (cert_dir / "platform.key").exists()
     
+    # Kevin's port configuration - environment-based for maximum portability
+    https_port = int(os.getenv('PLATFORM_HTTPS_PORT', '8443'))
+    http_port = int(os.getenv('PLATFORM_HTTP_PORT', '8000'))
+    
     if has_certs:
         # Start with HTTPS using mTLS
-        print("🔒 Starting Crank Platform with HTTPS/mTLS on port 8443")
+        print(f"🔒 Starting Crank Platform with HTTPS/mTLS on port {https_port}")
         uvicorn.run(
             app, 
             host="0.0.0.0", 
-            port=8443,
+            port=https_port,
             ssl_keyfile=str(cert_dir / "platform.key"),
             ssl_certfile=str(cert_dir / "platform.crt"),
             ssl_ca_certs=str(cert_dir / "ca.crt")  # Require client certificates
         )
     else:
-        print("⚠️  Starting Crank Platform with HTTP on port 8000 (development only)")
-        uvicorn.run(app, host="0.0.0.0", port=8000)
+        print(f"⚠️  Starting Crank Platform with HTTP on port {http_port} (development only)")
+        uvicorn.run(app, host="0.0.0.0", port=http_port)
 
 
 if __name__ == "__main__":

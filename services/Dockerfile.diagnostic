@@ -24,11 +24,12 @@ COPY mesh_diagnostics.py .
 # Create a simple diagnostic service runner
 RUN echo '#!/usr/bin/env python3' > run_diagnostic.py && \
     echo 'from mesh_diagnostics import DiagnosticMeshService' >> run_diagnostic.py && \
-    echo 'import uvicorn' >> run_diagnostic.py && \
+    echo 'import uvicorn, os' >> run_diagnostic.py && \
     echo 'if __name__ == "__main__":' >> run_diagnostic.py && \
     echo '    service = DiagnosticMeshService()' >> run_diagnostic.py && \
     echo '    app = service.create_app("dev-mesh-key")' >> run_diagnostic.py && \
-    echo '    uvicorn.run(app, host="0.0.0.0", port=8000)' >> run_diagnostic.py
+    echo '    port = int(os.getenv("DIAGNOSTICS_PORT", "8000"))' >> run_diagnostic.py && \
+    echo '    uvicorn.run(app, host="0.0.0.0", port=port)' >> run_diagnostic.py
 
 # Switch to non-root user
 USER mesh

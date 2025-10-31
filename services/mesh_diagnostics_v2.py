@@ -337,6 +337,8 @@ def create_diagnostic_app(api_key: str = "dev-mesh-key") -> "FastAPI":
 
 if __name__ == "__main__":
     import uvicorn
+    import os
     
     app = create_diagnostic_app()
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv('DIAGNOSTICS_PORT', '8000'))
+    uvicorn.run(app, host="0.0.0.0", port=port)

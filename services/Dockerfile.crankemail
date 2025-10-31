@@ -24,4 +24,4 @@ USER mesh
 EXPOSE 8000
 
 # Run CrankEmail mesh service
-CMD ["python", "-c", "from crankemail_mesh import create_crankemail_service; import uvicorn; uvicorn.run(create_crankemail_service(), host='0.0.0.0', port=8000)"]
+CMD ["python", "-c", "from crankemail_mesh import create_crankemail_service; import uvicorn, os; port=int(os.getenv('CRANKEMAIL_SERVICE_PORT','8000')); uvicorn.run(create_crankemail_service(), host='0.0.0.0', port=port)"]
