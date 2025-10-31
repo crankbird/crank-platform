@@ -91,6 +91,35 @@ services:
       - crank-net
     restart: unless-stopped
 
+  # Crank Image Classifier Worker
+  crank-image-classifier:
+    build:
+      context: .
+      dockerfile: image-classifier/Dockerfile
+    container_name: crank-image-classifier
+    ports:
+      - "8005:8005"
+      - "8006:8443"  # Map to different external port to avoid conflict
+    volumes:
+      - certs-volume:/etc/certs  # Share certificates with platform
+    environment:
+      - PLATFORM_URL=https://platform:8443  # 🔒 ZERO-TRUST: Use HTTPS for platform communication
+      - CRANK_ENVIRONMENT=development  # 🔒 Development with HTTPS testing
+      - LOG_LEVEL=INFO
+      - PLATFORM_AUTH_TOKEN=dev-mesh-key
+    depends_on:
+      platform:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s  # Computer vision models need time to initialize
+    networks:
+      - crank-net
+    restart: unless-stopped
+
 networks:
   crank-net:
     driver: bridge
