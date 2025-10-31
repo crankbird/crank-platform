@@ -1,0 +1,190 @@
+# Azure Container Instance Deployment Configuration
+# 
+# This docker-compose configures the Crank Platform for Azure deployment:
+# - Uses Azure Container Registry images
+# - Optimized for Azure Container Instances (ACI) 
+# - Environment-based configuration for Azure environments
+# - Proper networking and security for cloud deployment
+
+version: '3.8'
+
+services:
+  # Platform Service (PaaS Layer)
+  platform:
+    image: crankplatformregistry.azurecr.io/crank-platform:latest
+    container_name: crank-platform-azure
+    ports:
+      - "${PLATFORM_PORT:-8000}:${PLATFORM_PORT:-8000}"
+      - "${PLATFORM_HTTPS_PORT:-8443}:${PLATFORM_HTTPS_PORT:-8443}"
+    environment:
+      - PLATFORM_ENV=azure
+      - CRANK_ENVIRONMENT=production  # 🔒 Production with full security
+      - LOG_LEVEL=INFO
+      - PLATFORM_PORT=${PLATFORM_PORT:-8000}
+      - PLATFORM_HTTPS_PORT=${PLATFORM_HTTPS_PORT:-8443}
+      # Azure-specific configurations
+      - AZURE_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID:-}
+      - AZURE_RESOURCE_GROUP=${AZURE_RESOURCE_GROUP:-crank-platform}
+      - AZURE_LOCATION=${AZURE_LOCATION:-australiaeast}
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:${PLATFORM_HTTPS_PORT:-8443}/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - crank-azure-net
+
+  # Document Converter Worker - Azure Optimized
+  crank-doc-converter:
+    image: crankplatformregistry.azurecr.io/crank-doc-converter:latest
+    container_name: crank-doc-converter-azure
+    ports:
+      - "${DOC_CONVERTER_PORT:-8100}:${DOC_CONVERTER_PORT:-8100}"
+      - "${DOC_CONVERTER_HTTPS_PORT:-8101}:${DOC_CONVERTER_HTTPS_PORT:-8101}"
+    environment:
+      - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}
+      - CRANK_ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - PLATFORM_AUTH_TOKEN=${PLATFORM_AUTH_TOKEN:-azure-mesh-key}
+      - DOC_CONVERTER_PORT=${DOC_CONVERTER_PORT:-8100}
+      - DOC_CONVERTER_HOST=0.0.0.0
+      - DOC_CONVERTER_HTTPS_PORT=${DOC_CONVERTER_HTTPS_PORT:-8101}
+    depends_on:
+      platform:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:${DOC_CONVERTER_HTTPS_PORT:-8101}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - crank-azure-net
+
+  # Email Classifier Worker - Azure ML Optimized
+  crank-email-classifier:
+    image: crankplatformregistry.azurecr.io/crank-email-classifier:latest
+    container_name: crank-email-classifier-azure
+    ports:
+      - "${EMAIL_CLASSIFIER_PORT:-8200}:${EMAIL_CLASSIFIER_PORT:-8200}"
+      - "${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}:${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}"
+    environment:
+      - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}
+      - CRANK_ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - PLATFORM_AUTH_TOKEN=${PLATFORM_AUTH_TOKEN:-azure-mesh-key}
+      - EMAIL_CLASSIFIER_PORT=${EMAIL_CLASSIFIER_PORT:-8200}
+      - EMAIL_CLASSIFIER_HOST=0.0.0.0
+      - EMAIL_CLASSIFIER_HTTPS_PORT=${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}
+    depends_on:
+      platform:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s  # ML models need more time in cloud environment
+    restart: unless-stopped
+    networks:
+      - crank-azure-net
+
+  # Email Parser Worker - Azure Optimized
+  crank-email-parser:
+    image: crankplatformregistry.azurecr.io/crank-email-parser:latest
+    container_name: crank-email-parser-azure
+    ports:
+      - "${EMAIL_PARSER_PORT:-8300}:${EMAIL_PARSER_PORT:-8300}"
+      - "${EMAIL_PARSER_HTTPS_PORT:-8301}:${EMAIL_PARSER_HTTPS_PORT:-8301}"
+    environment:
+      - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}
+      - CRANK_ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - PLATFORM_AUTH_TOKEN=${PLATFORM_AUTH_TOKEN:-azure-mesh-key}
+      - EMAIL_PARSER_PORT=${EMAIL_PARSER_PORT:-8300}
+      - EMAIL_PARSER_HOST=0.0.0.0
+      - EMAIL_PARSER_HTTPS_PORT=${EMAIL_PARSER_HTTPS_PORT:-8301}
+    depends_on:
+      platform:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:${EMAIL_PARSER_HTTPS_PORT:-8301}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 25s
+    restart: unless-stopped
+    networks:
+      - crank-azure-net
+
+  # Image Classifier Worker - Azure Computer Vision Optimized
+  crank-image-classifier:
+    image: crankplatformregistry.azurecr.io/crank-image-classifier:latest
+    container_name: crank-image-classifier-azure
+    ports:
+      - "${IMAGE_CLASSIFIER_PORT:-8400}:${IMAGE_CLASSIFIER_PORT:-8400}"
+      - "${IMAGE_CLASSIFIER_HTTPS_PORT:-8401}:${IMAGE_CLASSIFIER_HTTPS_PORT:-8401}"
+    environment:
+      - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}
+      - CRANK_ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - PLATFORM_AUTH_TOKEN=${PLATFORM_AUTH_TOKEN:-azure-mesh-key}
+      - IMAGE_CLASSIFIER_PORT=${IMAGE_CLASSIFIER_PORT:-8400}
+      - IMAGE_CLASSIFIER_HOST=0.0.0.0
+      - IMAGE_CLASSIFIER_HTTPS_PORT=${IMAGE_CLASSIFIER_HTTPS_PORT:-8401}
+    depends_on:
+      platform:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:${IMAGE_CLASSIFIER_HTTPS_PORT:-8401}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s  # Computer vision models need extra time in cloud
+    restart: unless-stopped
+    networks:
+      - crank-azure-net
+
+  # Streaming Service - Azure Event Hub Compatible
+  crank-streaming:
+    image: crankplatformregistry.azurecr.io/crank-streaming:latest
+    container_name: crank-streaming-azure
+    ports:
+      - "${STREAMING_PORT:-8500}:${STREAMING_PORT:-8500}"
+      - "${STREAMING_HTTPS_PORT:-8501}:${STREAMING_HTTPS_PORT:-8501}"
+    environment:
+      - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}
+      - CRANK_ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - STREAMING_PORT=${STREAMING_PORT:-8500}
+      - STREAMING_HOST=0.0.0.0
+      - STREAMING_HTTPS_PORT=${STREAMING_HTTPS_PORT:-8501}
+    depends_on:
+      platform:
+        condition: service_healthy
+      crank-email-classifier:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:${STREAMING_HTTPS_PORT:-8501}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - crank-azure-net
+
+networks:
+  crank-azure-net:
+    driver: bridge
+    name: crank-azure-network
+
+# Azure-specific volumes for persistent storage
+volumes:
+  azure-certs:
+    name: crank-azure-certs
+  azure-data:
+    name: crank-azure-data
