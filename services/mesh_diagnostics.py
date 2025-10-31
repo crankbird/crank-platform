@@ -34,8 +34,17 @@ class MeshDiagnostics:
                         "delay_ms": {"type": "integer", "default": 0, "minimum": 0, "maximum": 5000}
                     }
                 },
+                output_schema={
+                    "type": "object",
+                    "properties": {
+                        "echo": {"type": "string"},
+                        "timestamp": {"type": "string"},
+                        "processing_time_ms": {"type": "number"},
+                        "test_passed": {"type": "boolean"}
+                    }
+                },
                 policies_required=["basic_auth"],
-                limits={"max_delay_ms": 5000}
+                limits={"max_delay_ms": "5000"}
             ),
             MeshCapability(
                 operation="echo_file",
@@ -47,8 +56,16 @@ class MeshDiagnostics:
                         "return_size": {"type": "boolean", "default": True}
                     }
                 },
+                output_schema={
+                    "type": "object",
+                    "properties": {
+                        "filename": {"type": "string"},
+                        "size": {"type": "integer"},
+                        "hash": {"type": "string", "description": "SHA256 hash of file"}
+                    }
+                },
                 policies_required=["basic_auth", "file_validation"],
-                limits={"max_file_size": 1048576}  # 1MB for diagnostic
+                limits={"max_file_size": "1048576"}  # 1MB for diagnostic
             ),
             MeshCapability(
                 operation="load_test",
@@ -61,8 +78,17 @@ class MeshDiagnostics:
                         "response_size_kb": {"type": "integer", "default": 1, "maximum": 100}
                     }
                 },
+                output_schema={
+                    "type": "object",
+                    "properties": {
+                        "load_test_completed": {"type": "boolean"},
+                        "cpu_work_ms": {"type": "integer"},
+                        "memory_used_mb": {"type": "integer"},
+                        "response_size_kb": {"type": "integer"}
+                    }
+                },
                 policies_required=["basic_auth"],
-                limits={"max_cpu_work_ms": 1000, "max_memory_mb": 10}
+                limits={"max_cpu_work_ms": "1000", "max_memory_mb": "10"}
             ),
             MeshCapability(
                 operation="error_test",
@@ -76,6 +102,14 @@ class MeshDiagnostics:
                             "default": "validation"
                         },
                         "error_message": {"type": "string", "default": "Diagnostic error test"}
+                    }
+                },
+                output_schema={
+                    "type": "object",
+                    "properties": {
+                        "error_triggered": {"type": "boolean"},
+                        "error_type": {"type": "string"},
+                        "error_message": {"type": "string"}
                     }
                 },
                 policies_required=["basic_auth"],
@@ -96,13 +130,13 @@ class MeshDiagnostics:
             import asyncio
             await asyncio.sleep(delay_ms / 1000)
         
-        processing_time = (time.time() - start_time) * 1000
+        processing_time = int((time.time() - start_time) * 1000)
         
         return {
             "echo": message,
             "timestamp": datetime.now().isoformat(),
             "processing_time_ms": processing_time,
-            "service_node": request.metadata.get("mesh_node_id", "unknown"),
+            "service_node": (request.metadata or {}).get("mesh_node_id", "unknown"),
             "test_passed": True,
             "diagnostic_info": {
                 "request_id": request.job_id,
@@ -139,7 +173,7 @@ class MeshDiagnostics:
         if request.input_data.get("return_size", True):
             result["size_bytes"] = len(content)
         
-        processing_time = (time.time() - start_time) * 1000
+        processing_time = int((time.time() - start_time) * 1000)
         result["processing_time_ms"] = processing_time
         
         return result
@@ -174,7 +208,7 @@ class MeshDiagnostics:
         # Generate response data of requested size
         response_data = "x" * (response_size_kb * 1024)
         
-        processing_time = (time.time() - start_time) * 1000
+        processing_time = int((time.time() - start_time) * 1000)
         
         return {
             "test_passed": True,
@@ -217,6 +251,15 @@ class DiagnosticMeshService(MeshInterface):
     def get_capabilities(self) -> list[MeshCapability]:
         """Return only diagnostic capabilities."""
         return self.diagnostics.get_diagnostic_capabilities()
+
+    def generate_receipt(self, request: MeshRequest, response: MeshResponse, auth_context: dict):
+        """Simple receipt generation for diagnostics."""
+        # Return a simple object with receipt_id attribute
+        class SimpleReceipt:
+            def __init__(self, receipt_id):
+                self.receipt_id = receipt_id
+                
+        return SimpleReceipt(f"mesh_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
     
     async def process_request(self, request: MeshRequest, auth_context: dict) -> MeshResponse:
         """Process diagnostic requests."""
@@ -235,7 +278,7 @@ class DiagnosticMeshService(MeshInterface):
             else:
                 raise ValueError(f"Unknown diagnostic operation: {request.operation}")
             
-            processing_time = (time.time() - start_time) * 1000
+            processing_time = int((time.time() - start_time) * 1000)
             
             return MeshResponse(
                 success=True,
@@ -246,7 +289,7 @@ class DiagnosticMeshService(MeshInterface):
             )
             
         except Exception as e:
-            processing_time = (time.time() - start_time) * 1000
+            processing_time = int((time.time() - start_time) * 1000)
             
             return MeshResponse(
                 success=False,
@@ -323,7 +366,7 @@ class EnhancedCrankDocService(MeshInterface, DiagnosticMixin):
                 else:
                     raise ValueError(f"Unknown operation: {request.operation}")
             
-            processing_time = (time.time() - start_time) * 1000
+            processing_time = int((time.time() - start_time) * 1000)
             
             return MeshResponse(
                 success=True,
@@ -334,7 +377,7 @@ class EnhancedCrankDocService(MeshInterface, DiagnosticMixin):
             )
             
         except Exception as e:
-            processing_time = (time.time() - start_time) * 1000
+            processing_time = int((time.time() - start_time) * 1000)
             
             return MeshResponse(
                 success=False,

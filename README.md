@@ -942,7 +942,55 @@ def bangladesh_farmer_impact():
 - **Economic Efficiency**: 99% reduction in AI processing costs
 - **Innovation Velocity**: 1000+ new services launched monthly
 
-## 🚀 Call to Action
+## � Docker Development Environment
+
+## 🐳 Cross-Platform Container Development
+
+### Architecture: Control Plane + Host Execution
+
+```
+WSL Control Plane  →  Host Platform Containers
+     (Lightweight)      (Heavy AI/ML Workloads)
+```
+
+### Quick Start
+
+```bash
+# Deploy to Windows Docker Desktop (from WSL)
+./scripts/deploy-to-windows.sh --gpu --service aiml-dev
+
+# Deploy to Mac Docker Desktop  
+./scripts/deploy-to-mac.sh --metal --service aiml-dev
+
+# Monitor all platforms
+./scripts/monitor-workloads.sh --platform all --watch
+```
+
+### Platform-Specific Features
+
+**Windows Docker Desktop:**
+- NVIDIA CUDA GPU support
+- Windows filesystem integration (`/mnt/c/Users`)
+- Portainer management UI (port 9000)
+
+**Mac Docker Desktop:**
+- Metal Performance Shaders
+- macOS filesystem integration (`/Users`)
+- Optimized for Apple Silicon
+
+**Cloud Platforms:**
+- Azure Container Apps
+- AWS ECS with GPU instances
+- Google Cloud Run
+
+### Container Strategy Benefits
+
+- **Platform Agnostic**: Same containers work everywhere
+- **Lightweight WSL**: Only control plane, not heavy workloads  
+- **Native GPU**: Docker Desktop handles GPU optimization per platform
+- **Migration Ready**: Easy movement between development environments
+
+## �🚀 Call to Action
 
 The future of AI is inevitable. But who controls it isn't.
 

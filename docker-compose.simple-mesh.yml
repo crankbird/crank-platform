@@ -1,0 +1,29 @@
+version: '3.8'
+
+# Simple Bare Mesh - Using Diagnostic Service Only
+# Perfect for testing the basic mesh functionality
+
+services:
+  diagnostic-mesh:
+    build:
+      context: ./services
+      dockerfile: Dockerfile.diagnostic
+    image: diagnostic-mesh:latest
+    container_name: diagnostic-mesh
+    ports:
+      - "8000:8000"  # Diagnostic service
+    environment:
+      - MESH_AUTH_KEY=dev-mesh-key
+      - SERVICE_TYPE=diagnostic
+    volumes:
+      - ./services:/app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  default:
+    name: crank-mesh-simple
