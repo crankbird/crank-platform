@@ -1,6 +1,15 @@
 # The Crank Platform: Sustainable AI for the Agent Economy
 
-> *"AI doesn't have to be evil. It doesn't have to be wasteful. It just has to be inevitable."*
+> *"AI doesn't have to be evil. It doesn't have to be wasteful. It just has to be inevitable."*  
+> **Platform as a Service (PaaS) layer for the Crank ecosystem**
+
+## 🏗️ Architecture Role
+
+The Crank Platform serves as the **PaaS layer** in a clean three-tier architecture:
+
+- **🏗️ IaaS**: [crank-infrastructure](https://github.com/crankbird/crank-infrastructure) - Environment provisioning, containers, VMs
+- **🕸️ PaaS**: **crank-platform** (this repo) - Service mesh, security, governance patterns  
+- **📱 SaaS**: [crankdoc](https://github.com/crankbird/crankdoc), [parse-email-archive](https://github.com/crankbird/parse-email-archive) - Business logic services
 
 ## 🌟 Vision Statement
 
@@ -51,6 +60,30 @@ Every time ChatGPT says "I can't do X, but here's some Python code to run in you
 | **Specialized AI** | <50W | Document classifiers, CNNs | Domain-specific intelligence |
 | **Small Transformers** | <200W | Sentence-BERT, distilled models | Language understanding |
 | **Large LLMs** | >1000W | GPT-4, Claude | Training teachers only |
+
+### JEMM: Just Enough Microservices and Monoliths
+
+**The JEMM Principle**: *Use the simplest architecture that solves your actual constraints, not your imagined future constraints.*
+
+```
+JEMM Decision Framework:
+├─ Team Size < 8 engineers? → Modular Monolith
+├─ Deployment conflicts? → Extract ONE service, measure impact
+├─ Technology constraints? → Selective extraction only
+└─ Performance/scaling needs? → Worker containers (not platform services)
+```
+
+**Crank Platform Implementation:**
+- **Platform Monolith**: Auth, billing, routing in single container (clean internal boundaries)
+- **Worker Containers**: CrankDoc, CrankEmail as separate scalable units
+- **Extract-Ready Design**: Interface-based modules that can become services if needed
+
+**JEMM vs. Alternatives:**
+- ❌ **Microservices First**: Premature complexity, distributed debugging nightmares
+- ❌ **Monolith Forever**: Ignores real team/scaling constraints  
+- ✅ **JEMM**: Right-sized architecture that evolves with actual needs
+
+*Architecture serves business value, not resume building.*
 
 ## � Documentation
 
@@ -942,7 +975,34 @@ def bangladesh_farmer_impact():
 - **Economic Efficiency**: 99% reduction in AI processing costs
 - **Innovation Velocity**: 1000+ new services launched monthly
 
-## � Docker Development Environment
+## 🏗️ Platform Setup
+
+### Prerequisites: Infrastructure Layer
+
+This platform runs on top of the [crank-infrastructure](https://github.com/crankbird/crank-infrastructure) layer, which provides:
+- Development environment setup (Python, Docker, WSL)
+- Container orchestration and deployment tools
+- Cloud infrastructure provisioning (Azure, AWS)
+- Cross-platform compatibility testing
+
+### Architecture: Three-Tier Design
+
+```
+┌─────────────────────────────────────────────────┐
+│               SaaS Applications                 │
+│   (crankdoc, email-parsing, custom services)   │
+└─────────────────┬───────────────────────────────┘
+                  │
+┌─────────────────▼───────────────────────────────┐
+│            PaaS Platform Layer                  │
+│   (mesh interface, security, governance)       │  ← This Repository
+└─────────────────┬───────────────────────────────┘
+                  │
+┌─────────────────▼───────────────────────────────┐
+│            IaaS Infrastructure                  │
+│   (containers, environments, cloud setup)      │
+└─────────────────────────────────────────────────┘
+```
 
 ## 🐳 Cross-Platform Container Development
 
@@ -956,27 +1016,35 @@ WSL Control Plane  →  Host Platform Containers
 ### Quick Start
 
 ```bash
-# Deploy to Windows Docker Desktop (from WSL)
-./scripts/deploy-to-windows.sh --gpu --service aiml-dev
+# 1. Set up infrastructure layer (one-time setup)
+git clone https://github.com/crankbird/crank-infrastructure ../crank-infrastructure
+cd ../crank-infrastructure && ./setup.sh --environment ai-ml
 
-# Deploy to Mac Docker Desktop  
-./scripts/deploy-to-mac.sh --metal --service aiml-dev
+# 2. Validate environment is ready
+cd ../crank-platform && ./scripts/validate-environment.sh
 
-# Monitor all platforms
-./scripts/monitor-workloads.sh --platform all --watch
+# 3. Start platform services
+uv venv .venv && source .venv/bin/activate
+uv pip install -r requirements.txt
+
+# 4. Deploy diagnostic mesh service
+docker-compose -f docker-compose.refactored-mesh.yml up -d
+
+# 5. Test platform functionality
+python test-refactored-mesh.py
 ```
 
-### Platform-Specific Features
+### Architecture Integration
 
-**Windows Docker Desktop:**
-- NVIDIA CUDA GPU support
-- Windows filesystem integration (`/mnt/c/Users`)
-- Portainer management UI (port 9000)
+**Infrastructure Layer (crank-infrastructure):**
+- Environment provisioning and container setup
+- VM creation and configuration  
+- Cross-platform development environment
 
-**Mac Docker Desktop:**
-- Metal Performance Shaders
-- macOS filesystem integration (`/Users`)
-- Optimized for Apple Silicon
+**Platform Layer (this repo):**
+- Service mesh interface and security patterns
+- Business logic governance and audit trails
+- Service discovery and routing
 
 **Cloud Platforms:**
 - Azure Container Apps
@@ -1022,14 +1090,26 @@ We're building the economic infrastructure that makes AI:
 - ✅ **Azure Ready**: Complete deployment strategy and adversarial testing
 - 🚧 **Production Testing**: Azure Container Apps deployment in progress
 
-### External Documentation
-- [CrankDoc Service](https://github.com/crankbird/crankdoc) - Document processing service
-- [Email Archive Service](https://github.com/crankbird/parse-email-archive) - Email parsing and classification
-- [Development Environment](https://github.com/crankbird/dotfiles) - Tools and configuration
+### Architecture Integration
+- [Infrastructure Layer](https://github.com/crankbird/crank-infrastructure) - Environment setup and container orchestration
+- [Platform Layer](https://github.com/crankbird/crank-platform) - Service mesh and governance (this repository)
+- [Application Services](https://github.com/crankbird/crankdoc) - Document processing and AI services
+- [Data Processing](https://github.com/crankbird/parse-email-archive) - Email parsing and classification
+- [Development Tools](https://github.com/crankbird/dotfiles) - Personal configuration and tooling
 
-## 🔗 Repositories
+## 🏗️ Three-Tier Architecture
 
-- **Platform Vision**: [crank-platform](https://github.com/crankbird/crank-platform)
-- **Document Service**: [crankdoc](https://github.com/crankbird/crankdoc)
-- **Email Service**: [parse-email-archive](https://github.com/crankbird/parse-email-archive)
-- **Development Environment**: [dotfiles](https://github.com/crankbird/dotfiles)
+### IaaS (Infrastructure as a Service)
+- **Repository**: [crank-infrastructure](https://github.com/crankbird/crank-infrastructure)
+- **Purpose**: Environment provisioning, container orchestration, cloud deployment
+- **Components**: VM setup, Docker environments, Azure infrastructure, development tools
+
+### PaaS (Platform as a Service) - This Repository
+- **Repository**: [crank-platform](https://github.com/crankbird/crank-platform)
+- **Purpose**: Service mesh, security patterns, governance, and platform services
+- **Components**: Mesh interface, authentication, policy enforcement, service discovery
+
+### SaaS (Software as a Service)
+- **Repositories**: [crankdoc](https://github.com/crankbird/crankdoc), [parse-email-archive](https://github.com/crankbird/parse-email-archive)
+- **Purpose**: AI applications, document processing, email analysis, business logic
+- **Components**: Application-specific services built on the platform foundation
