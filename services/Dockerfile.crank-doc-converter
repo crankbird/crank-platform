@@ -16,16 +16,14 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies (worker-specific)
+COPY requirements-crank-doc-converter.txt .
+RUN pip install --no-cache-dir -r requirements-crank-doc-converter.txt
 
-# Add httpx for platform communication
-RUN pip install --no-cache-dir httpx
-
-# Copy worker code and dependencies
+# Copy worker code and metadata
 COPY crank_doc_converter.py .
 COPY crankdoc_mesh_minimal.py .
+COPY crank-doc-converter.plugin.yaml ./plugin.yaml
 
 # Security hardening
 USER worker

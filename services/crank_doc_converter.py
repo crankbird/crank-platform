@@ -284,6 +284,31 @@ class CrankDocumentConverter:
                     for cap in capabilities
                 ]
             }
+        
+        @self.app.get("/plugin")
+        async def get_plugin_metadata():
+            """Get plugin metadata for platform integration."""
+            # Read plugin metadata from file (prepared for future separation)
+            plugin_file = Path("/app/plugin.yaml")
+            if plugin_file.exists():
+                import yaml
+                try:
+                    with open(plugin_file) as f:
+                        plugin_data = yaml.safe_load(f)
+                    return plugin_data
+                except Exception as e:
+                    logger.warning(f"Failed to read plugin metadata: {e}")
+            
+            # Fallback to hardcoded metadata
+            return {
+                "name": "crank-doc-converter",
+                "version": "1.0.0",
+                "description": "Real document format conversion powered by pandoc",
+                "author": "Crank Platform Team",
+                "capabilities": [cap.operation for cap in self.fallback_service.get_capabilities()],
+                "health_endpoint": "/health",
+                "separation_ready": True  # Indicates this worker is ready for repo separation
+            }
     
     async def _startup(self):
         """Startup handler - register with platform."""
