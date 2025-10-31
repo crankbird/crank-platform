@@ -17,7 +17,7 @@ from uuid import uuid4
 from uuid import uuid4
 
 import httpx
-from fastapi import FastAPI, UploadFile, HTTPException
+from fastapi import FastAPI, UploadFile, HTTPException, Form
 from pydantic import BaseModel
 
 # Import existing CrankDoc mesh service for business logic
@@ -72,8 +72,8 @@ class CrankDocWorker:
         @self.app.post("/convert")
         async def convert_document(
             file: UploadFile,
-            source_format: str,
-            target_format: str,
+            source_format: str = Form("auto"),
+            target_format: str = Form(...),
             options: Optional[Dict[str, Any]] = None
         ):
             """Convert document between formats."""

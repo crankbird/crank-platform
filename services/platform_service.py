@@ -245,17 +245,68 @@ class PlatformService:
         if not worker:
             raise ValueError(f"No workers available for {service_type}")
         
-        # For now, return mock response
-        # TODO: Actually call worker via HTTP
+        # Actually call worker via HTTP
         start_time = datetime.now()
         
-        # Simulate work
-        await asyncio.sleep(0.1)
+        try:
+            # Import httpx for HTTP calls
+            import httpx
+            
+            # Map operations to worker endpoints
+            endpoint_map = {
+                "convert": "/convert",
+                "validate": "/validate"
+            }
+            
+            worker_endpoint = endpoint_map.get(operation)
+            if not worker_endpoint:
+                raise ValueError(f"Unknown operation: {operation}")
+            
+            # Call worker
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                url = f"{worker.endpoint}{worker_endpoint}"
+                
+                # For document operations, handle file data specially
+                if operation == "convert" and "file" in request_data:
+                    # Create form data for file upload
+                    files = {"file": ("document", request_data["file"])}
+                    form_data = {
+                        "source_format": request_data.get("source_format", "auto"),
+                        "target_format": request_data.get("target_format", "pdf")
+                    }
+                    
+                    response = await client.post(url, files=files, data=form_data)
+                else:
+                    # Standard JSON request
+                    response = await client.post(url, json=request_data)
+                
+                response.raise_for_status()
+                worker_result = response.json()
+                
+        except Exception as e:
+            # If worker call fails, return error
+            end_time = datetime.now()
+            duration_ms = int((end_time - start_time).total_seconds() * 1000)
+            
+            # Still track usage for failed requests
+            usage = await self.billing.track_usage(
+                user.user_id, operation, service_type, duration_ms
+            )
+            
+            return {
+                "status": "error",
+                "worker_id": worker.worker_id,
+                "service_type": service_type,
+                "operation": operation,
+                "duration_ms": duration_ms,
+                "cost_cents": usage.cost_cents,
+                "error": f"Worker call failed: {str(e)}"
+            }
         
         end_time = datetime.now()
         duration_ms = int((end_time - start_time).total_seconds() * 1000)
         
-        # Track usage
+        # Track usage for successful requests
         usage = await self.billing.track_usage(
             user.user_id, operation, service_type, duration_ms
         )
@@ -267,5 +318,79 @@ class PlatformService:
             "operation": operation,
             "duration_ms": duration_ms,
             "cost_cents": usage.cost_cents,
-            "data": request_data  # Echo for now
+            "data": worker_result
+        }
+    
+    async def route_document_request(self, operation: str, file_content: bytes, 
+                                   filename: str, source_format: str, 
+                                   target_format: str, user: User) -> Dict[str, Any]:
+        """Route document processing request to CrankDoc worker."""
+        
+        # Check authorization
+        if not await self.auth.authorize(user, operation, "document"):
+            raise ValueError(f"User {user.username} not authorized for document {operation}")
+        
+        # Find document worker
+        worker = await self.discovery.find_worker("document")
+        if not worker:
+            raise ValueError("No document workers available")
+        
+        start_time = datetime.now()
+        
+        try:
+            # Import httpx for HTTP calls
+            import httpx
+            from io import BytesIO
+            
+            # Call worker with file upload
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                url = f"{worker.endpoint}/convert"
+                
+                # Create file-like object for upload
+                files = {"file": (filename, BytesIO(file_content), "application/octet-stream")}
+                data = {
+                    "source_format": source_format,
+                    "target_format": target_format
+                }
+                
+                response = await client.post(url, files=files, data=data)
+                response.raise_for_status()
+                worker_result = response.json()
+                
+        except Exception as e:
+            # If worker call fails, return error
+            end_time = datetime.now()
+            duration_ms = int((end_time - start_time).total_seconds() * 1000)
+            
+            # Still track usage for failed requests
+            usage = await self.billing.track_usage(
+                user.user_id, operation, "document", duration_ms
+            )
+            
+            return {
+                "status": "error",
+                "worker_id": worker.worker_id,
+                "service_type": "document",
+                "operation": operation,
+                "duration_ms": duration_ms,
+                "cost_cents": usage.cost_cents,
+                "error": f"Document worker call failed: {str(e)}"
+            }
+        
+        end_time = datetime.now()
+        duration_ms = int((end_time - start_time).total_seconds() * 1000)
+        
+        # Track usage for successful requests
+        usage = await self.billing.track_usage(
+            user.user_id, operation, "document", duration_ms
+        )
+        
+        return {
+            "status": "success",
+            "worker_id": worker.worker_id,
+            "service_type": "document",
+            "operation": operation,
+            "duration_ms": duration_ms,
+            "cost_cents": usage.cost_cents,
+            "result": worker_result
         }

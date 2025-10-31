@@ -14,7 +14,7 @@ import asyncio
 import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi import FastAPI, HTTPException, Depends, Header, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -296,6 +296,35 @@ class CrankPlatformApp:
                 )
                 
                 return PlatformResponse(**result)
+                
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        @self.app.post("/v1/documents/convert")
+        async def convert_document(
+            file: UploadFile,
+            target_format: str = Form(...),
+            source_format: str = Form("auto"),
+            user: User = Depends(self.get_current_user)
+        ):
+            """Convert document via CrankDoc worker - file upload interface."""
+            try:
+                # Read file content
+                file_content = await file.read()
+                
+                # Route to document worker
+                result = await self.platform.route_document_request(
+                    operation="convert",
+                    file_content=file_content,
+                    filename=file.filename,
+                    source_format=source_format,
+                    target_format=target_format,
+                    user=user
+                )
+                
+                return result
                 
             except ValueError as e:
                 raise HTTPException(status_code=400, detail=str(e))
