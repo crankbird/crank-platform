@@ -24,7 +24,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir httpx
 
 # Copy worker code and dependencies
-COPY crankdoc_worker.py .
+COPY crank_doc_converter.py .
 COPY crankdoc_mesh_minimal.py .
 
 # Security hardening
@@ -37,5 +37,5 @@ EXPOSE 8081
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8081/health || exit 1
 
-# Run CrankDoc worker
-CMD ["python", "crankdoc_worker.py"]
+# Run Crank Document Converter
+CMD ["python", "crank_doc_converter.py"]

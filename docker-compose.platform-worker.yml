@@ -30,12 +30,12 @@ services:
       - crank-net
     restart: unless-stopped
 
-  # CrankDoc Worker
-  crankdoc-worker:
+  # Crank Document Converter Worker
+  crank-doc-converter:
     build:
       context: services
-      dockerfile: Dockerfile.crankdoc-worker
-    container_name: crankdoc-worker
+      dockerfile: Dockerfile.crank-doc-converter
+    container_name: crank-doc-converter
     ports:
       - "8081:8081"
       - "8443:8443"  # Add HTTPS port
