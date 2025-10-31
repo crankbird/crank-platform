@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import httpx
 
-from mesh_interface import MeshRequest, MeshResponse, MeshCapabilities
+from .mesh_interface import MeshRequest, MeshResponse, MeshCapability
 
 
 class CrankPlatformGateway:
@@ -282,8 +282,11 @@ def create_gateway() -> FastAPI:
     return gateway.app
 
 
+# Module-level app for uvicorn
+app = create_gateway()
+
+
 # For running directly
 if __name__ == "__main__":
     import uvicorn
-    app = create_gateway()
     uvicorn.run(app, host="0.0.0.0", port=8080)
