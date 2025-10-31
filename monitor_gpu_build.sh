@@ -19,23 +19,30 @@ else
 fi
 
 # Check if log file exists and show recent progress
-if [ -f "gpu_build.log" ]; then
-    echo "📊 Build Log Status:"
-    echo "File size: $(du -h gpu_build.log | cut -f1)"
-    echo "Last modified: $(stat -c %y gpu_build.log)"
+LOG_FILE="gpu_build_v2.log"
+if [ ! -f "$LOG_FILE" ]; then
+    LOG_FILE="gpu_build.log"
+fi
+
+if [ -f "$LOG_FILE" ]; then
+    echo "📊 Build Log Status ($LOG_FILE):"
+    echo "File size: $(du -h $LOG_FILE | cut -f1)"
+    echo "Last modified: $(stat -c %y $LOG_FILE)"
     echo
     
     echo "📜 Last 10 lines of build log:"
     echo "────────────────────────────────"
-    tail -10 gpu_build.log
+    tail -10 $LOG_FILE
     echo "────────────────────────────────"
     echo
     
     # Check for common progress indicators
-    if grep -q "Successfully built" gpu_build.log; then
+    if grep -q "Successfully built" $LOG_FILE; then
         echo "🎉 BUILD COMPLETED SUCCESSFULLY!"
-    elif grep -q "failed to solve\|ERROR\|Error" gpu_build.log; then
+    elif grep -q "failed to solve\|ERROR\|Error" $LOG_FILE; then
         echo "❌ Build errors detected - check full log"
+        echo "Last error:"
+        grep -E "failed to solve|ERROR|Error" $LOG_FILE | tail -1
     else
         echo "🔄 Build in progress..."
     fi
