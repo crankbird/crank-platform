@@ -3,7 +3,22 @@
 > *"AI doesn't have to be evil. It doesn't have to be wasteful. It just has to be inevitable."*  
 > **Platform as a Service (PaaS) layer for the Crank ecosystem**
 
-## 🏗️ Architecture Role
+## � **Meet Our Architectural Menagerie**
+
+Our platform is guided by architectural mascots who ensure quality and consistency:
+
+| Mascot | Role | Code References | Mission |
+|--------|------|-----------------|---------|
+| 🐰 **Wendy** | Zero-Trust Security Bunny | `*security*`, `*mTLS*`, `*auth*`, `*certs*` | Ensures encrypted communication and service isolation |
+| 🦙 **Kevin** | Portability Llama | `*runtime*`, `*kevin*`, `container_runtime.py` | Provides container runtime abstraction across Docker/Podman |
+| 🐩 **Bella** | Modularity Poodle | `*separation*`, `*modular*`, `*plugin*` | Maintains clean service boundaries and separation readiness |
+| 🦅 **Oliver** | Anti-Pattern Eagle | `*pattern*`, `*review*`, code reviews | Prevents architectural anti-patterns and technical debt |
+
+*When you see mascot names in our code, they represent architectural principles in action!*
+
+---
+
+## �🏗️ Architecture Role
 
 The Crank Platform serves as the **PaaS layer** in a clean three-tier architecture:
 
