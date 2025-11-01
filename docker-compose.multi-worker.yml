@@ -142,6 +142,7 @@ services:
     container_name: crank-streaming
     ports:
       - "${STREAMING_PORT:-8500}:${STREAMING_PORT:-8500}"  # HTTP streaming endpoints and WebSocket
+      - "${STREAMING_HTTPS_PORT:-8501}:${STREAMING_HTTPS_PORT:-8501}"  # HTTPS streaming endpoints and WebSocket
     volumes:
       - certs-volume:/etc/certs  # Share certificates with platform
       - /home/johnr/projects/parse-email-archive/tests/data:/test-data:ro  # Mount test data

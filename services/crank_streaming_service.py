@@ -19,15 +19,28 @@ import email
 import mailbox
 from pathlib import Path
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
+import httpx
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket
 from fastapi.responses import StreamingResponse
 from sse_starlette import EventSourceResponse
-import httpx
+from pydantic import BaseModel
 
 # Import security configuration
 from security_config import initialize_security
 
 logger = logging.getLogger(__name__)
+
+# ============================================================================
+# WORKER REGISTRATION MODELS
+# ============================================================================
+
+class WorkerRegistration(BaseModel):
+    """Model for worker registration with platform."""
+    worker_id: str
+    service_type: str  
+    endpoint: str
+    health_url: str
+    capabilities: List[str]
 
 # ============================================================================
 # STREAMING PATTERNS
@@ -334,6 +347,14 @@ class CrankStreamingService:
     def __init__(self):
         self.app = FastAPI(title="Crank Streaming Service", version="1.0.0")
         self.processor = StreamingEmailProcessor()
+        
+        # Worker registration configuration
+        self.worker_id = f"streaming-{uuid4().hex[:8]}"
+        self.platform_url = os.getenv("PLATFORM_URL", "https://platform:8443")
+        self.worker_url = f"https://crank-streaming:{os.getenv('STREAMING_HTTPS_PORT', '8501')}"
+        self.platform_auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "dev-mesh-key")
+        self.heartbeat_task = None
+        
         self.setup_routes()
         self.setup_startup()
     
@@ -342,14 +363,95 @@ class CrankStreamingService:
         
         @self.app.on_event("startup")
         async def startup_event():
-            """Initialize security on startup."""
+            """Initialize security and register with platform."""
             logger.info("🌊 Starting Crank Streaming Service...")
             
             # Initialize security and certificates
             logger.info("🔐 Initializing security configuration and certificates...")
             initialize_security()
             
+            # Register with platform
+            await self._register_with_platform()
+            
             logger.info("✅ Crank Streaming Service startup complete!")
+        
+        @self.app.on_event("shutdown")
+        async def shutdown_event():
+            """Cleanup on shutdown."""
+            if self.heartbeat_task:
+                self.heartbeat_task.cancel()
+                try:
+                    await self.heartbeat_task
+                except asyncio.CancelledError:
+                    logger.info("Heartbeat task cancelled")
+    
+    async def _register_with_platform(self):
+        """Register this worker with the platform using mTLS."""
+        worker_info = WorkerRegistration(
+            worker_id=self.worker_id,
+            service_type="streaming",
+            endpoint=self.worker_url,
+            health_url=f"{self.worker_url}/health",
+            capabilities=["sse_streaming", "websocket_streaming", "json_streaming", "realtime_email_processing"]
+        )
+        
+        # Try to register with retries
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                async with httpx.AsyncClient(verify=False) as client:
+                    response = await client.post(
+                        f"{self.platform_url}/v1/workers/register",
+                        json=worker_info.dict(),
+                        headers={"Authorization": f"Bearer {self.platform_auth_token}"},
+                        timeout=10.0
+                    )
+                    response.raise_for_status()
+                    logger.info(f"🔒 Successfully registered streaming service via mTLS. Worker ID: {self.worker_id}")
+                    
+                    # Start heartbeat task
+                    self._start_heartbeat_task()
+                    return
+            except Exception as e:
+                logger.warning(f"Registration attempt {attempt + 1} failed: {e}")
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(2 ** attempt)
+        
+        logger.error("Failed to register with platform after all retries")
+    
+    def _start_heartbeat_task(self):
+        """Start the background heartbeat task."""
+        async def heartbeat_loop():
+            while True:
+                try:
+                    await asyncio.sleep(int(os.getenv("WORKER_HEARTBEAT_INTERVAL", "20")))
+                    await self._send_heartbeat()
+                except asyncio.CancelledError:
+                    logger.info("Heartbeat task cancelled")
+                    break
+                except Exception as e:
+                    logger.error(f"Heartbeat error: {e}")
+        
+        self.heartbeat_task = asyncio.create_task(heartbeat_loop())
+        heartbeat_interval = os.getenv("WORKER_HEARTBEAT_INTERVAL", "20")
+        logger.info(f"🫀 Started heartbeat task with {heartbeat_interval}s interval")
+    
+    async def _send_heartbeat(self):
+        """Send heartbeat to platform."""
+        try:
+            async with httpx.AsyncClient(verify=False) as client:
+                response = await client.post(
+                    f"{self.platform_url}/v1/workers/{self.worker_id}/heartbeat",
+                    data={
+                        "service_type": "streaming",
+                        "load_score": 0.1  # Low load for streaming service
+                    },
+                    headers={"Authorization": f"Bearer {self.platform_auth_token}"},
+                    timeout=5.0
+                )
+                response.raise_for_status()
+        except Exception as e:
+            logger.warning(f"Heartbeat failed: {e}")
     
     def setup_routes(self):
         """Setup streaming endpoints."""
@@ -417,9 +519,29 @@ app = streaming_service.app
 
 if __name__ == "__main__":
     import uvicorn
+    
+    # Configure for mTLS
+    ssl_keyfile = os.getenv("SSL_KEYFILE", "/etc/certs/platform.key")
+    ssl_certfile = os.getenv("SSL_CERTFILE", "/etc/certs/platform.crt")
+    ssl_ca_certs = os.getenv("SSL_CA_CERTS", "/etc/certs/ca.crt")
+    
+    # Run with or without SSL based on certificate availability
     # 🚢 PORT CONFIGURATION: Use environment variables for flexible deployment
     service_port = int(os.getenv("STREAMING_PORT", "8500"))  # New default: 8500
     service_host = os.getenv("STREAMING_HOST", "0.0.0.0")
+    https_port = int(os.getenv("STREAMING_HTTPS_PORT", "8501"))
     
-    print(f"🌊 Starting Crank Streaming Service on {service_host}:{service_port}")
-    uvicorn.run(app, host=service_host, port=service_port)
+    if os.path.exists(ssl_certfile) and os.path.exists(ssl_keyfile):
+        print(f"🌊 Starting Crank Streaming Service with mTLS enabled on port {https_port}")
+        uvicorn.run(
+            app,
+            host=service_host,
+            port=https_port,
+            ssl_keyfile=ssl_keyfile,
+            ssl_certfile=ssl_certfile,
+            ssl_ca_certs=ssl_ca_certs if os.path.exists(ssl_ca_certs) else None,
+            ssl_cert_reqs=2  # CERT_REQUIRED for mTLS
+        )
+    else:
+        print(f"🌊 Starting Crank Streaming Service without SSL on port {service_port} (development mode)")
+        uvicorn.run(app, host=service_host, port=service_port)

@@ -24,12 +24,21 @@ import httpx
 from fastapi import FastAPI, HTTPException, Form, UploadFile, File
 from pydantic import BaseModel
 
-# Import security configuration
+# Import security configuration and models
 from security_config import initialize_security
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Worker registration model
+class WorkerRegistration(BaseModel):
+    """Model for worker registration with platform."""
+    worker_id: str
+    service_type: str
+    endpoint: str
+    health_url: str
+    capabilities: List[str]
 
 # Import the existing parse_mbox functionality
 DEFAULT_KEYWORDS = [
@@ -67,10 +76,19 @@ class CrankEmailParserService:
     
     def __init__(self):
         self.app = FastAPI(title="Crank Email Parser", version="1.0.0")
-        self.service_id = f"email-parser-{uuid4().hex[:8]}"
-        # Configure platform integration
-        self.platform_url = os.getenv("PLATFORM_URL", "https://localhost:8000")
+        
+        # Worker registration configuration
+        self.worker_id = f"email-parser-{uuid4().hex[:8]}"
+        self.platform_url = os.getenv("PLATFORM_URL", "https://platform:8443")
+        self.worker_url = f"https://crank-email-parser:{os.getenv('EMAIL_PARSER_HTTPS_PORT', '8503')}"
+        self.platform_auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "dev-mesh-key")
+        self.heartbeat_task = None
+        
+        # Legacy service_id for compatibility
+        self.service_id = self.worker_id
+        
         self.setup_routes()
+        self.setup_startup()
         
     def setup_routes(self):
         """Setup FastAPI routes for the service."""
@@ -403,56 +421,100 @@ class CrankEmailParserService:
             "message_count_by_period": "not_implemented"
         }
 
-    async def register_with_platform(self):
-        """Register this service with the crank platform."""
-        registration_data = {
-            "service_id": self.service_id,
-            "service_type": "email-parser",
-            "service_name": "Crank Email Parser",
-            "version": "1.0.0",
-            "capabilities": [
-                "mbox_parsing",
-                "eml_parsing", 
-                "bulk_processing",
-                "archive_analysis"
-            ],
-            "endpoints": {
-                "health": "/health",
-                "parse_mbox": "/parse/mbox",
-                "parse_eml": "/parse/eml",
-                "analyze": "/analyze/archive"
-            },
-            "status": "active"
-        }
+    def setup_startup(self):
+        """Setup startup and shutdown events."""
+        
+        @self.app.on_event("startup")
+        async def startup_event():
+            """Initialize security and register with platform."""
+            logger.info("📧 Starting Crank Email Parser Service...")
+            
+            # Initialize security and certificates
+            logger.info("🔐 Initializing security configuration and certificates...")
+            initialize_security()
+            
+            # Register with platform
+            await self._register_with_platform()
+            
+            logger.info("✅ Crank Email Parser Service startup complete!")
+        
+        @self.app.on_event("shutdown")
+        async def shutdown_event():
+            """Cleanup on shutdown."""
+            if self.heartbeat_task:
+                self.heartbeat_task.cancel()
+                try:
+                    await self.heartbeat_task
+                except asyncio.CancelledError:
+                    logger.info("Heartbeat task cancelled")
 
-        try:
-            # Get SSL context for mTLS
-            ssl_context = self._get_ssl_context()
-            
-            # Get auth token for platform
-            auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "dev-mesh-key")
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {auth_token}"
-            }
-            
-            async with httpx.AsyncClient(verify=ssl_context) as client:
-                response = await client.post(
-                    f"{self.platform_url}/v1/workers/register",
-                    json=registration_data,
-                    headers=headers
-                )
-                
-                if response.status_code == 200:
-                    logger.info(f"Successfully registered email parser service: {self.service_id}")
-                    return response.json()
-                else:
-                    logger.error(f"Failed to register service: {response.status_code} - {response.text}")
-                    return None
+    async def _register_with_platform(self):
+        """Register this worker with the platform using mTLS."""
+        worker_info = WorkerRegistration(
+            worker_id=self.worker_id,
+            service_type="email_parsing",
+            endpoint=self.worker_url,
+            health_url=f"{self.worker_url}/health",
+            capabilities=["mbox_parsing", "eml_parsing", "bulk_processing", "archive_analysis"]
+        )
+        
+        # Try to register with retries
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                async with httpx.AsyncClient(verify=False) as client:
+                    response = await client.post(
+                        f"{self.platform_url}/v1/workers/register",
+                        json=worker_info.dict(),
+                        headers={"Authorization": f"Bearer {self.platform_auth_token}"},
+                        timeout=10.0
+                    )
+                    response.raise_for_status()
+                    logger.info(f"🔒 Successfully registered email parser service via mTLS. Worker ID: {self.worker_id}")
                     
+                    # Start heartbeat task
+                    self._start_heartbeat_task()
+                    return
+            except Exception as e:
+                logger.warning(f"Registration attempt {attempt + 1} failed: {e}")
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(2 ** attempt)
+        
+        logger.error("Failed to register with platform after all retries")
+
+    def _start_heartbeat_task(self):
+        """Start the background heartbeat task."""
+        async def heartbeat_loop():
+            while True:
+                try:
+                    await asyncio.sleep(int(os.getenv("WORKER_HEARTBEAT_INTERVAL", "20")))
+                    await self._send_heartbeat()
+                except asyncio.CancelledError:
+                    logger.info("Heartbeat task cancelled")
+                    break
+                except Exception as e:
+                    logger.error(f"Heartbeat error: {e}")
+        
+        self.heartbeat_task = asyncio.create_task(heartbeat_loop())
+        heartbeat_interval = os.getenv("WORKER_HEARTBEAT_INTERVAL", "20")
+        logger.info(f"🫀 Started heartbeat task with {heartbeat_interval}s interval")
+
+    async def _send_heartbeat(self):
+        """Send heartbeat to platform."""
+        try:
+            async with httpx.AsyncClient(verify=False) as client:
+                response = await client.post(
+                    f"{self.platform_url}/v1/workers/{self.worker_id}/heartbeat",
+                    data={
+                        "service_type": "email_parsing",
+                        "load_score": 0.3  # Medium load for parsing service
+                    },
+                    headers={"Authorization": f"Bearer {self.platform_auth_token}"},
+                    timeout=5.0
+                )
+                response.raise_for_status()
         except Exception as e:
-            logger.error(f"Error registering with platform: {str(e)}")
-            return None
+            logger.warning(f"Heartbeat failed: {e}")
 
     def _get_ssl_context(self):
         """Get SSL context for mTLS communication."""
@@ -483,33 +545,13 @@ class CrankEmailParserService:
 email_parser_service = CrankEmailParserService()
 app = email_parser_service.app
 
-# Startup event
-@app.on_event("startup")
-async def startup_event():
-    """Register with platform on startup."""
-    logger.info("Starting Crank Email Parser Service...")
-    
-    # Initialize security and certificates
-    logger.info("🔐 Initializing security configuration and certificates...")
-    initialize_security()
-    
-    # Wait a bit for the platform to be ready
-    await asyncio.sleep(5)
-    
-    # Register with platform
-    registration_result = await email_parser_service.register_with_platform()
-    if registration_result:
-        logger.info("Email parser service registered successfully")
-    else:
-        logger.warning("Failed to register with platform - running in standalone mode")
-
 if __name__ == "__main__":
     import uvicorn
     
     # Configure for mTLS
-    ssl_keyfile = os.getenv("SSL_KEYFILE", "/certs/server.key")
-    ssl_certfile = os.getenv("SSL_CERTFILE", "/certs/server.crt")
-    ssl_ca_certs = os.getenv("SSL_CA_CERTS", "/certs/ca.crt")
+    ssl_keyfile = os.getenv("SSL_KEYFILE", "/etc/certs/platform.key")
+    ssl_certfile = os.getenv("SSL_CERTFILE", "/etc/certs/platform.crt")
+    ssl_ca_certs = os.getenv("SSL_CA_CERTS", "/etc/certs/ca.crt")
     
     # Run with or without SSL based on certificate availability
     # 🚢 PORT CONFIGURATION: Use environment variables for flexible deployment
