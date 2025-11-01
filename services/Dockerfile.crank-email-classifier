@@ -23,15 +23,28 @@ COPY crank_email_classifier.py .
 COPY security_config.py .
 COPY crank-email-classifier.plugin.yaml ./plugin.yaml
 
+# Copy certificate initialization script (needed for in-process initialization)
+COPY initialize_certificates.py ./scripts/
+
+# Create certificates directory with proper ownership
+RUN mkdir -p /etc/certs && chown worker:worker /etc/certs
+
+# Create simplified startup script - NO subprocess initialization
+RUN echo '#!/usr/bin/env python3' > run_worker.py && \
+    echo '# Simple direct startup - certificate initialization in main()' >> run_worker.py && \
+    echo 'import crank_email_classifier' >> run_worker.py && \
+    echo 'crank_email_classifier.main()' >> run_worker.py && \
+    chmod +x run_worker.py
+
 # Security hardening
 USER worker
 
-# Expose worker ports (HTTP fallback + HTTPS)
-EXPOSE 8003 8443
+# Expose worker HTTPS port
+EXPOSE 8201
 
-# Health check (try HTTPS first, fallback to HTTP)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-    CMD curl -k -f https://localhost:8443/health || curl -f http://localhost:8003/health || exit 1
+# Health check for HTTPS-only mode
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+    CMD curl -k -f https://localhost:${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}/health || exit 1
 
-# Run Crank Email Classifier with HTTPS auto-detection
-CMD ["python", "crank_email_classifier.py"]
+# Run simplified startup script
+CMD ["python", "run_worker.py"]
