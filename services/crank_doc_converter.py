@@ -24,6 +24,9 @@ from pydantic import BaseModel
 from crankdoc_mesh_minimal import CrankDocMeshService
 from crankdoc_mesh_minimal import MeshRequest, MeshResponse
 
+# Import security configuration
+from security_config import initialize_security
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -389,6 +392,10 @@ class CrankDocumentConverter:
     async def _startup(self):
         """Startup handler - register with platform."""
         logger.info("Starting CrankDoc Worker...")
+        
+        # Initialize security and certificates
+        logger.info("Initializing security configuration and certificates...")
+        initialize_security()
         
         # Get capabilities for registration
         capabilities = self.fallback_service.get_capabilities()

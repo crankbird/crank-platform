@@ -31,6 +31,9 @@ from sklearn.model_selection import train_test_split
 import nltk
 from bs4 import BeautifulSoup
 
+# Import security configuration
+from security_config import initialize_security
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -525,6 +528,10 @@ class CrankEmailClassifier:
     async def _startup(self):
         """Startup handler - register with platform."""
         logger.info("🤖 Starting Crank Email Classifier...")
+        
+        # Initialize security and certificates
+        logger.info("🔐 Initializing security configuration and certificates...")
+        initialize_security()
         
         # Prepare registration info
         worker_info = WorkerRegistration(
