@@ -280,6 +280,43 @@ class CrankDocumentConverter:
                 logger.error(f"Document conversion failed: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
         
+        @self.app.post("/convert-text")
+        async def convert_text(request: Dict[str, Any]):
+            """Convert text content directly (for platform routing)."""
+            try:
+                content = request.get("content", "")
+                source_format = request.get("source_format", "auto")
+                target_format = request.get("target_format", "html")
+                filename = request.get("filename", "document.txt")
+                
+                logger.info(f"Converting text content: {source_format} → {target_format}")
+                
+                # Convert string content to bytes
+                content_bytes = content.encode('utf-8')
+                
+                # Use the real converter
+                result = await self.converter.convert_document(
+                    content=content_bytes,
+                    filename=filename,
+                    source_format=source_format,
+                    target_format=target_format
+                )
+                
+                # Add metadata
+                result["metadata"] = {
+                    "conversion_id": str(uuid4()),
+                    "worker_id": self.worker_id,
+                    "timestamp": datetime.now().isoformat(),
+                    "source_format": source_format,
+                    "target_format": target_format
+                }
+                
+                return result
+                
+            except Exception as e:
+                logger.error(f"Text conversion failed: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+        
         @self.app.get("/capabilities")
         async def get_capabilities():
             """Get worker capabilities."""
@@ -368,6 +405,60 @@ class CrankDocumentConverter:
         
         # Register with platform
         await self._register_with_platform(worker_info)
+        
+        # Start heartbeat background task
+        self._start_heartbeat_task()
+    
+    def _start_heartbeat_task(self):
+        """Start the background heartbeat task."""
+        import asyncio
+        
+        # Get heartbeat interval from environment (default 20 seconds)
+        heartbeat_interval = int(os.getenv("WORKER_HEARTBEAT_INTERVAL", "20"))
+        
+        async def heartbeat_loop():
+            """Background task to send periodic heartbeats."""
+            while True:
+                try:
+                    await asyncio.sleep(heartbeat_interval)
+                    if self.worker_id:
+                        await self._send_heartbeat()
+                except asyncio.CancelledError:
+                    logger.info("Heartbeat task cancelled")
+                    break
+                except Exception as e:
+                    logger.warning(f"Heartbeat failed: {e}")
+        
+        # Start the background task
+        asyncio.create_task(heartbeat_loop())
+        logger.info(f"🫀 Started heartbeat task with {heartbeat_interval}s interval")
+    
+    async def _send_heartbeat(self):
+        """Send heartbeat to platform."""
+        try:
+            auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "dev-mesh-key")
+            headers = {"Authorization": f"Bearer {auth_token}"}
+            
+            # Prepare form data as expected by platform
+            form_data = {
+                "service_type": "document",
+                "load_score": "0.0"
+            }
+            
+            async with self._create_mtls_client(timeout=10.0) as client:
+                response = await client.post(
+                    f"{self.platform_url}/v1/workers/{self.worker_id}/heartbeat",
+                    headers=headers,
+                    data=form_data  # Send as form data, not JSON
+                )
+                
+                if response.status_code == 200:
+                    logger.debug(f"💓 Heartbeat sent successfully for worker {self.worker_id}")
+                else:
+                    logger.warning(f"Heartbeat failed: {response.status_code} - {response.text}")
+                    
+        except Exception as e:
+            logger.warning(f"Failed to send heartbeat: {e}")
     
     async def _register_with_platform(self, worker_info: WorkerRegistration):
         """Register this worker with the platform using mTLS."""

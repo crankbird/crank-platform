@@ -114,14 +114,22 @@ class AuthServiceStub(AuthServiceInterface):
     """Stub auth service - basic token validation."""
     
     def __init__(self):
+        import os
+        
         # In-memory user store for development
         self.users = {
             "dev-user": User("dev-user", "developer", ["admin"], "premium"),
-            "test-user": User("test-user", "tester", ["user"], "free")
+            "test-user": User("test-user", "tester", ["user"], "free"),
+            "azure-user": User("azure-user", "azure-worker", ["admin"], "premium")
         }
+        
+        # Get auth token from environment or use default dev tokens
+        platform_auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "dev-mesh-key")
+        
         self.dev_tokens = {
             "dev-mesh-key": "dev-user",
-            "test-key": "test-user"
+            "test-key": "test-user",
+            platform_auth_token: "azure-user"  # Dynamic token from environment
         }
     
     async def authenticate(self, token: str) -> Optional[User]:
@@ -282,7 +290,7 @@ class PlatformService:
                     
                     response = await client.post(url, files=files, data=form_data)
                 else:
-                    # Standard JSON request
+                    # Standard JSON request - this is for non-file operations
                     response = await client.post(url, json=request_data)
                 
                 response.raise_for_status()
@@ -343,10 +351,8 @@ class PlatformService:
         start_time = datetime.now()
         
         try:
-            # Initialize secure platform service
-            import os
-            environment = os.getenv("CRANK_ENVIRONMENT", "development")
-            secure_service = SecurePlatformService(environment)
+            # Use regular HTTP client for Azure Container Apps workers (no mTLS)
+            import httpx
             
             # Create file-like object for upload
             from io import BytesIO
@@ -356,15 +362,15 @@ class PlatformService:
                 "target_format": target_format
             }
             
-            # Make secure call to worker
-            response = await secure_service.secure_worker_call(
-                worker.endpoint, 
-                "/convert",
-                files=files,
-                data=data
-            )
-            
-            worker_result = response.json()
+            # Make regular HTTPS call to worker (Azure Container Apps have TLS termination)
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    f"{worker.endpoint}/convert",
+                    files=files,
+                    data=data
+                )
+                response.raise_for_status()
+                worker_result = response.json()
                 
         except Exception as e:
             # If worker call fails, return error

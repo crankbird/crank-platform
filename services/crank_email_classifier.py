@@ -537,6 +537,60 @@ class CrankEmailClassifier:
         
         # Register with platform
         await self._register_with_platform(worker_info)
+        
+        # Start heartbeat background task
+        self._start_heartbeat_task()
+    
+    def _start_heartbeat_task(self):
+        """Start the background heartbeat task."""
+        import asyncio
+        
+        # Get heartbeat interval from environment (default 20 seconds)
+        heartbeat_interval = int(os.getenv("WORKER_HEARTBEAT_INTERVAL", "20"))
+        
+        async def heartbeat_loop():
+            """Background task to send periodic heartbeats."""
+            while True:
+                try:
+                    await asyncio.sleep(heartbeat_interval)
+                    if self.worker_id:
+                        await self._send_heartbeat()
+                except asyncio.CancelledError:
+                    logger.info("Heartbeat task cancelled")
+                    break
+                except Exception as e:
+                    logger.warning(f"Heartbeat failed: {e}")
+        
+        # Start the background task
+        asyncio.create_task(heartbeat_loop())
+        logger.info(f"🫀 Started heartbeat task with {heartbeat_interval}s interval")
+    
+    async def _send_heartbeat(self):
+        """Send heartbeat to platform."""
+        try:
+            auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "dev-mesh-key")
+            headers = {"Authorization": f"Bearer {auth_token}"}
+            
+            # Prepare form data as expected by platform
+            form_data = {
+                "service_type": "email_classification",
+                "load_score": "0.0"
+            }
+            
+            async with self._create_mtls_client(timeout=10.0) as client:
+                response = await client.post(
+                    f"{self.platform_url}/v1/workers/{self.worker_id}/heartbeat",
+                    headers=headers,
+                    data=form_data  # Send as form data, not JSON
+                )
+                
+                if response.status_code == 200:
+                    logger.debug(f"💓 Heartbeat sent successfully for worker {self.worker_id}")
+                else:
+                    logger.warning(f"Heartbeat failed: {response.status_code} - {response.text}")
+                    
+        except Exception as e:
+            logger.warning(f"Failed to send heartbeat: {e}")
     
     async def _register_with_platform(self, worker_info: WorkerRegistration):
         """Register this worker with the platform using mTLS."""

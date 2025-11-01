@@ -1,5 +1,5 @@
 # Gateway service
-FROM python:3.12-slim as crank-gateway
+FROM python:3.12-slim AS crank-gateway
 
 # Create non-root user
 RUN addgroup --gid 1002 mesh && \

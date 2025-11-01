@@ -11,6 +11,10 @@ httpx>=0.25.0
 # File processing
 python-multipart>=0.0.6
 
+# Persistence backends (optional)
+redis>=4.5.0
+aiosqlite>=0.19.0
+
 # Email processing (for CrankEmail)
 # Note: These would be imported from the email parser module
 

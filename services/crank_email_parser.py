@@ -65,7 +65,8 @@ class CrankEmailParserService:
     def __init__(self):
         self.app = FastAPI(title="Crank Email Parser", version="1.0.0")
         self.service_id = f"email-parser-{uuid4().hex[:8]}"
-        self.platform_url = os.getenv("CRANK_PLATFORM_URL", "https://localhost:8000")
+        # Configure platform integration
+        self.platform_url = os.getenv("PLATFORM_URL", "https://localhost:8000")
         self.setup_routes()
         
     def setup_routes(self):
@@ -425,11 +426,18 @@ class CrankEmailParserService:
             # Get SSL context for mTLS
             ssl_context = self._get_ssl_context()
             
+            # Get auth token for platform
+            auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "dev-mesh-key")
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {auth_token}"
+            }
+            
             async with httpx.AsyncClient(verify=ssl_context) as client:
                 response = await client.post(
                     f"{self.platform_url}/v1/workers/register",
                     json=registration_data,
-                    headers={"Content-Type": "application/json"}
+                    headers=headers
                 )
                 
                 if response.status_code == 200:

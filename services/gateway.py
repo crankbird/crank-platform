@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import httpx
 
-from .mesh_interface import MeshRequest, MeshResponse, MeshCapability
+from mesh_interface import MeshRequest, MeshResponse, MeshCapability
 
 
 class CrankPlatformGateway:

@@ -1,0 +1,271 @@
+name: 🚀 Build and Deploy Crank Platform
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'services/**'
+      - 'docker-compose*.yml'
+      - '.env*'
+      - 'requirements*.txt'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      deploy_environment:
+        description: 'Deployment Environment'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+        - development
+        - staging
+        - production
+
+env:
+  REGISTRY: crankplatformregistry.azurecr.io
+  RESOURCE_GROUP: crank-platform
+  
+jobs:
+  # 🔍 Detect Changes and Set Build Matrix
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.changes.outputs.services }}
+      platform: ${{ steps.changes.outputs.platform }}
+      docs: ${{ steps.changes.outputs.docs }}
+      email: ${{ steps.changes.outputs.email }}
+      image: ${{ steps.changes.outputs.image }}
+      streaming: ${{ steps.changes.outputs.streaming }}
+      deploy: ${{ steps.deploy.outputs.should_deploy }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+        
+    - uses: dorny/paths-filter@v2
+      id: changes
+      with:
+        filters: |
+          services:
+            - 'services/**'
+            - 'docker-compose*.yml'
+            - 'requirements*.txt'
+          platform:
+            - 'services/platform_app.py'
+            - 'services/Dockerfile.platform'
+          docs:
+            - 'services/crank_doc_converter.py'
+            - 'services/crankdoc_mesh*.py'
+            - 'services/Dockerfile.crank-doc-converter'
+          email:
+            - 'services/crank_email_*.py'
+            - 'services/crankemail_mesh*.py'
+            - 'services/Dockerfile.crank-email-*'
+          image:
+            - 'services/crank_image_*.py'
+            - 'services/Dockerfile.crank-image-*'
+          streaming:
+            - 'services/crank_streaming_*.py'
+            - 'services/Dockerfile.crank-streaming'
+            
+    - name: Determine deployment
+      id: deploy
+      run: |
+        if [[ "${{ github.ref }}" == "refs/heads/main" ]] || [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
+        else
+          echo "should_deploy=false" >> $GITHUB_OUTPUT
+        fi
+
+  # 🏗️ Build Container Images
+  build:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.services == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - service: platform
+            dockerfile: services/Dockerfile.platform
+            context: services
+            condition: ${{ needs.detect-changes.outputs.platform == 'true' }}
+          - service: crank-doc-converter
+            dockerfile: services/Dockerfile.crank-doc-converter
+            context: services
+            condition: ${{ needs.detect-changes.outputs.docs == 'true' }}
+          - service: crank-email-classifier
+            dockerfile: services/Dockerfile.crank-email-classifier
+            context: services
+            condition: ${{ needs.detect-changes.outputs.email == 'true' }}
+          - service: crank-email-parser
+            dockerfile: services/Dockerfile.crank-email-parser
+            context: services
+            condition: ${{ needs.detect-changes.outputs.email == 'true' }}
+          - service: crank-image-classifier
+            dockerfile: services/Dockerfile.crank-image-classifier
+            context: services
+            condition: ${{ needs.detect-changes.outputs.image == 'true' }}
+          - service: crank-streaming
+            dockerfile: services/Dockerfile.crank-streaming
+            context: services
+            condition: ${{ needs.detect-changes.outputs.streaming == 'true' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        platforms: linux/amd64,linux/arm64
+        
+    - name: Log in to Azure Container Registry
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ env.REGISTRY }}
+        username: ${{ secrets.AZURE_CLIENT_ID }}
+        password: ${{ secrets.AZURE_CLIENT_SECRET }}
+        
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ matrix.service }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          
+    - name: Build and push Docker image
+      if: matrix.condition == 'true'
+      uses: docker/build-push-action@v5
+      with:
+        context: ${{ matrix.context }}
+        file: ${{ matrix.dockerfile }}
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  # 🧪 Security and Quality Checks
+  security-scan:
+    needs: build
+    runs-on: ubuntu-latest
+    if: always() && needs.build.result == 'success'
+    steps:
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.REGISTRY }}/crank-platform:latest
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # 🚀 Deploy to Azure
+  deploy-azure:
+    needs: [detect-changes, build, security-scan]
+    if: needs.detect-changes.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    environment: 
+      name: ${{ github.event.inputs.deploy_environment || 'production' }}
+      url: https://crank-platform-prod.australiaeast.azurecontainer.io:8443
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
+    - name: Deploy to Azure Container Instances
+      run: |
+        # Set environment based on branch/input
+        if [[ "${{ github.event.inputs.deploy_environment }}" == "production" ]] || [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          ENV_SUFFIX="prod"
+          RESOURCE_GROUP="crank-platform"
+        else
+          ENV_SUFFIX="dev"
+          RESOURCE_GROUP="crank-platform-dev"
+        fi
+        
+        # Create resource group if needed
+        az group create --name $RESOURCE_GROUP --location australiaeast || true
+        
+        # Deploy using Azure Container Instances
+        az container create \
+          --resource-group $RESOURCE_GROUP \
+          --name crank-platform-$ENV_SUFFIX \
+          --dns-name-label crank-platform-$ENV_SUFFIX \
+          --cpu 4 \
+          --memory 8 \
+          --restart-policy OnFailure \
+          --registry-login-server ${{ env.REGISTRY }} \
+          --registry-username ${{ secrets.AZURE_CLIENT_ID }} \
+          --registry-password ${{ secrets.AZURE_CLIENT_SECRET }} \
+          --image ${{ env.REGISTRY }}/crank-platform:latest \
+          --ports 8000 8443 8100 8101 8200 8201 8300 8301 8400 8401 8500 8501 \
+          --environment-variables \
+            PLATFORM_ENV=azure \
+            CRANK_ENVIRONMENT=${{ github.event.inputs.deploy_environment || 'production' }} \
+            LOG_LEVEL=INFO \
+            PLATFORM_PORT=8000 \
+            PLATFORM_HTTPS_PORT=8443 \
+            PLATFORM_AUTH_TOKEN="${{ secrets.PLATFORM_AUTH_TOKEN }}"
+            
+  # 🧪 Integration Tests
+  integration-tests:
+    needs: deploy-azure
+    runs-on: ubuntu-latest
+    if: always() && needs.deploy-azure.result == 'success'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Wait for deployment
+      run: sleep 60
+      
+    - name: Test platform health
+      run: |
+        ENV_SUFFIX=$([[ "${{ github.event.inputs.deploy_environment }}" == "production" ]] && echo "prod" || echo "dev")
+        FQDN="crank-platform-$ENV_SUFFIX.australiaeast.azurecontainer.io"
+        
+        # Test platform health endpoint
+        curl -k -f "https://$FQDN:8443/health/live" || exit 1
+        
+        # Test worker registration
+        curl -k -H "Authorization: Bearer ${{ secrets.PLATFORM_AUTH_TOKEN }}" \
+             "https://$FQDN:8443/v1/workers" || exit 1
+             
+    - name: Run integration test suite
+      run: |
+        python3 integration_test_suite.py --remote-host crank-platform-prod.australiaeast.azurecontainer.io
+
+  # 📊 Update Deployment Status
+  notify:
+    needs: [deploy-azure, integration-tests]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Deployment Success
+      if: needs.deploy-azure.result == 'success' && needs.integration-tests.result == 'success'
+      run: |
+        echo "🎉 Deployment successful!"
+        echo "Platform URL: https://crank-platform-prod.australiaeast.azurecontainer.io:8443"
+        
+    - name: Deployment Failed
+      if: needs.deploy-azure.result == 'failure' || needs.integration-tests.result == 'failure'
+      run: |
+        echo "❌ Deployment failed!"
+        exit 1

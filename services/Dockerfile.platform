@@ -34,7 +34,8 @@ EXPOSE 8000 8443
 
 # Set environment variables
 ENV PYTHONPATH=/app
-ENV MESH_AUTH_KEY=dev-mesh-key
+# SECURITY: Auth tokens must be provided at runtime via environment variables
+# Do NOT hardcode sensitive values in Docker images
 
 # Run platform with HTTPS auto-detection
 CMD ["python", "platform_app.py"]

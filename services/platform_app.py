@@ -30,6 +30,12 @@ from platform_service import (
     AuthServiceStub, BillingServiceStub, DiscoveryServiceStub
 )
 
+# Import security configuration
+from security_config import initialize_security
+
+# Import resilient discovery service
+from resilient_discovery_service import create_discovery_service
+
 # Import universal protocol support - CRITICAL INNOVATION
 from universal_protocol_service import UniversalProtocolService, MCPAdapter
 
@@ -70,13 +76,14 @@ class CrankPlatformApp:
     
     def __init__(self, api_key: str = "dev-mesh-key"):
         self.api_key = api_key
+        self.discovery_service = None  # Will be initialized in startup
         
-        # Initialize services
-        self.platform = PlatformService()
+        # Initialize services (discovery will be set in startup)
+        self.platform = None  # Will be initialized with persistent discovery
         self.diagnostic = DiagnosticMeshService()
         
         # Initialize universal protocol support - CRITICAL FEATURE
-        self.protocol_service = UniversalProtocolService(self.platform)
+        self.protocol_service = None  # Will be initialized in startup
         
         # Create FastAPI app
         self.app = FastAPI(
@@ -96,6 +103,46 @@ class CrankPlatformApp:
         
         # Setup routes
         self._setup_routes()
+        
+        # Setup startup/shutdown events
+        self._setup_events()
+    
+    def _setup_events(self):
+        """Setup FastAPI startup and shutdown events."""
+        
+        @self.app.on_event("startup")
+        async def startup_event():
+            """Initialize persistent services on startup."""
+            print("🚀 Initializing Crank Platform...")
+            
+            # Initialize security and certificates
+            print("🔐 Initializing security configuration and certificates...")
+            initialize_security()
+            
+            # Initialize persistent discovery service
+            print("🗄️  Initializing persistent discovery service...")
+            self.discovery_service = await create_discovery_service()
+            
+            # Initialize platform with persistent discovery
+            print("🔧 Initializing platform services...")
+            self.platform = PlatformService(discovery_service=self.discovery_service)
+            
+            # Initialize universal protocol support
+            print("🌐 Initializing universal protocol service...")
+            self.protocol_service = UniversalProtocolService(self.platform)
+            
+            print("✅ Crank Platform startup complete!")
+        
+        @self.app.on_event("shutdown")
+        async def shutdown_event():
+            """Cleanup resources on shutdown."""
+            print("🛑 Shutting down Crank Platform...")
+            
+            if self.discovery_service and hasattr(self.discovery_service, 'cleanup'):
+                await self.discovery_service.cleanup()
+                print("🧹 Cleaned up discovery service")
+            
+            print("✅ Crank Platform shutdown complete!")
     
     async def get_current_user(self, authorization: str = Header(None)) -> User:
         """Extract and authenticate user from Authorization header."""
@@ -265,6 +312,25 @@ class CrankPlatformApp:
             else:
                 raise HTTPException(status_code=500, detail="Failed to register worker")
         
+        @self.app.post("/v1/workers/{worker_id}/heartbeat")
+        async def worker_heartbeat(
+            worker_id: str,
+            service_type: str = Form(...),
+            load_score: float = Form(0.0),
+            user: User = Depends(self.get_current_user)
+        ):
+            """Record a heartbeat from a worker."""
+            # Update load score if discovery service supports it
+            if hasattr(self.platform.discovery, 'update_worker_load'):
+                await self.platform.discovery.update_worker_load(worker_id, service_type, load_score)
+            
+            # Record heartbeat
+            if hasattr(self.platform.discovery, 'heartbeat_worker'):
+                alive = await self.platform.discovery.heartbeat_worker(worker_id, service_type)
+                return {"status": "heartbeat_recorded", "worker_id": worker_id, "alive": alive}
+            else:
+                return {"status": "heartbeat_not_supported", "worker_id": worker_id}
+
         @self.app.get("/v1/workers")
         async def get_workers(user: User = Depends(self.get_current_user)):
             """Get all registered workers."""

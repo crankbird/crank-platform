@@ -1,0 +1,223 @@
+# 🍎 MacBook Local Development Configuration
+# Docker Compose for local development on macOS (Intel/Apple Silicon)
+# 
+# This configuration:
+# - Uses multi-platform images from Azure Container Registry
+# - Optimized for Docker Desktop on macOS
+# - Supports both Intel and Apple Silicon Macs
+# - Uses local development environment variables
+
+version: '3.8'
+
+services:
+  # Platform Service - Local Development
+  platform:
+    image: ${REGISTRY:-crankplatformregistry.azurecr.io}/crank-platform:${TAG:-latest}
+    container_name: crank-platform-local
+    ports:
+      - "${PLATFORM_PORT:-8000}:${PLATFORM_PORT:-8000}"
+      - "${PLATFORM_HTTPS_PORT:-8443}:${PLATFORM_HTTPS_PORT:-8443}"
+    environment:
+      - PLATFORM_ENV=local
+      - CRANK_ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - PLATFORM_PORT=${PLATFORM_PORT:-8000}
+      - PLATFORM_HTTPS_PORT=${PLATFORM_HTTPS_PORT:-8443}
+      - PLATFORM_AUTH_TOKEN=${PLATFORM_AUTH_TOKEN:-local-dev-key}
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:${PLATFORM_HTTPS_PORT:-8443}/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - crank-local-net
+    # Mac-specific optimizations
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  # Document Converter - Local Development
+  crank-doc-converter:
+    image: ${REGISTRY:-crankplatformregistry.azurecr.io}/crank-doc-converter:${TAG:-latest}
+    container_name: crank-doc-converter-local
+    ports:
+      - "${DOC_CONVERTER_PORT:-8100}:${DOC_CONVERTER_PORT:-8100}"
+      - "${DOC_CONVERTER_HTTPS_PORT:-8101}:${DOC_CONVERTER_HTTPS_PORT:-8101}"
+    environment:
+      - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}
+      - CRANK_ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - PLATFORM_AUTH_TOKEN=${PLATFORM_AUTH_TOKEN:-local-dev-key}
+      - DOC_CONVERTER_PORT=${DOC_CONVERTER_PORT:-8100}
+      - DOC_CONVERTER_HOST=0.0.0.0
+      - DOC_CONVERTER_HTTPS_PORT=${DOC_CONVERTER_HTTPS_PORT:-8101}
+    depends_on:
+      platform:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:${DOC_CONVERTER_HTTPS_PORT:-8101}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - crank-local-net
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # Email Classifier - Local Development (Lightweight)
+  crank-email-classifier:
+    image: ${REGISTRY:-crankplatformregistry.azurecr.io}/crank-email-classifier:${TAG:-latest}
+    container_name: crank-email-classifier-local
+    ports:
+      - "${EMAIL_CLASSIFIER_PORT:-8200}:${EMAIL_CLASSIFIER_PORT:-8200}"
+      - "${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}:${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}"
+    environment:
+      - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}
+      - CRANK_ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - PLATFORM_AUTH_TOKEN=${PLATFORM_AUTH_TOKEN:-local-dev-key}
+      - EMAIL_CLASSIFIER_PORT=${EMAIL_CLASSIFIER_PORT:-8200}
+      - EMAIL_CLASSIFIER_HOST=0.0.0.0
+      - EMAIL_CLASSIFIER_HTTPS_PORT=${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}
+      # Local ML optimizations
+      - ML_MODEL_SIZE=small  # Use smaller models for local dev
+      - ML_CACHE_ENABLED=true
+    depends_on:
+      platform:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - crank-local-net
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+
+  # Email Parser - Local Development
+  crank-email-parser:
+    image: ${REGISTRY:-crankplatformregistry.azurecr.io}/crank-email-parser:${TAG:-latest}
+    container_name: crank-email-parser-local
+    ports:
+      - "${EMAIL_PARSER_PORT:-8300}:${EMAIL_PARSER_PORT:-8300}"
+      - "${EMAIL_PARSER_HTTPS_PORT:-8301}:${EMAIL_PARSER_HTTPS_PORT:-8301}"
+    environment:
+      - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}
+      - CRANK_ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - PLATFORM_AUTH_TOKEN=${PLATFORM_AUTH_TOKEN:-local-dev-key}
+      - EMAIL_PARSER_PORT=${EMAIL_PARSER_PORT:-8300}
+      - EMAIL_PARSER_HOST=0.0.0.0
+      - EMAIL_PARSER_HTTPS_PORT=${EMAIL_PARSER_HTTPS_PORT:-8301}
+    depends_on:
+      platform:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:${EMAIL_PARSER_HTTPS_PORT:-8301}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - crank-local-net
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # Image Classifier - Optional for Local (Resource Intensive)
+  crank-image-classifier:
+    image: ${REGISTRY:-crankplatformregistry.azurecr.io}/crank-image-classifier:${TAG:-latest}
+    container_name: crank-image-classifier-local
+    ports:
+      - "${IMAGE_CLASSIFIER_PORT:-8400}:${IMAGE_CLASSIFIER_PORT:-8400}"
+      - "${IMAGE_CLASSIFIER_HTTPS_PORT:-8401}:${IMAGE_CLASSIFIER_HTTPS_PORT:-8401}"
+    environment:
+      - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}
+      - CRANK_ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - PLATFORM_AUTH_TOKEN=${PLATFORM_AUTH_TOKEN:-local-dev-key}
+      - IMAGE_CLASSIFIER_PORT=${IMAGE_CLASSIFIER_PORT:-8400}
+      - IMAGE_CLASSIFIER_HOST=0.0.0.0
+      - IMAGE_CLASSIFIER_HTTPS_PORT=${IMAGE_CLASSIFIER_HTTPS_PORT:-8401}
+      # Local CV optimizations
+      - CV_MODEL_SIZE=small
+      - CV_BATCH_SIZE=1
+    depends_on:
+      platform:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:${IMAGE_CLASSIFIER_HTTPS_PORT:-8401}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - crank-local-net
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    # Optional: Uncomment to disable for lightweight local development
+    # profiles: ["full"]
+
+  # Streaming Service - Local Development
+  crank-streaming:
+    image: ${REGISTRY:-crankplatformregistry.azurecr.io}/crank-streaming:${TAG:-latest}
+    container_name: crank-streaming-local
+    ports:
+      - "${STREAMING_PORT:-8500}:${STREAMING_PORT:-8500}"
+      - "${STREAMING_HTTPS_PORT:-8501}:${STREAMING_HTTPS_PORT:-8501}"
+    environment:
+      - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}
+      - CRANK_ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - STREAMING_PORT=${STREAMING_PORT:-8500}
+      - STREAMING_HOST=0.0.0.0
+      - STREAMING_HTTPS_PORT=${STREAMING_HTTPS_PORT:-8501}
+    depends_on:
+      platform:
+        condition: service_healthy
+      crank-email-classifier:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:${STREAMING_HTTPS_PORT:-8501}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - crank-local-net
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+networks:
+  crank-local-net:
+    driver: bridge
+    name: crank-local-network
+
+# Local development volumes
+volumes:
+  local-data:
+    name: crank-local-data
+  local-logs:
+    name: crank-local-logs
