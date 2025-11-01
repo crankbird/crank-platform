@@ -92,6 +92,7 @@ FROM dependencies as final
 
 # Copy the application code
 COPY ./services/crank_image_classifier_gpu.py .
+COPY ./services/security_config.py .
 
 # Create plugin metadata
 RUN cat > plugin.yaml << 'EOF'

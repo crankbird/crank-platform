@@ -367,12 +367,21 @@ class CrankEmailClassifier:
         
         @self.app.get("/health")
         async def health_check():
-            """Health check endpoint."""
+            """Health check endpoint with security status."""
+            security_status = {}
+            if hasattr(self, 'security_config'):
+                security_status = {
+                    "security_level": self.security_config.get_security_level(),
+                    "ssl_enabled": os.path.exists("/etc/certs/platform.crt"),
+                    "client_cert_available": os.path.exists("/etc/certs/client.crt")
+                }
+            
             return {
                 "status": "healthy",
                 "service": "crank-email-classifier",
                 "capabilities": ["spam_detection", "bill_detection", "receipt_detection", "sentiment_analysis", "category", "priority", "language_detection"],
                 "ml_models": "initialized",
+                "security": security_status,
                 "timestamp": datetime.now().isoformat()
             }
         
@@ -497,41 +506,27 @@ class CrankEmailClassifier:
                 "separation_ready": True  # Indicates this worker is ready for repo separation
             }
     
-    def _create_mtls_client(self, timeout: float = 10.0) -> httpx.AsyncClient:
-        """Create HTTP client with mTLS configuration for platform communication."""
-        if self.cert_file and self.key_file and self.ca_file:
-            # 🔒 ZERO-TRUST: Use mTLS for secure worker-to-platform communication
-            # For development with self-signed certificates, we need to handle verification differently
-            environment = os.getenv("CRANK_ENVIRONMENT", "development")
-            
-            if environment == "development":
-                # Development: Use encryption but skip strict cert verification for self-signed certs
-                logger.info("🔒 Using mTLS with relaxed verification for development")
-                return httpx.AsyncClient(
-                    cert=(str(self.cert_file), str(self.key_file)),  # Client certificate
-                    verify=False,  # Skip verification for self-signed certs
-                    timeout=timeout
-                )
-            else:
-                # Production: Full certificate verification
-                logger.info("🔒 Using mTLS with full certificate verification for production")
-                return httpx.AsyncClient(
-                    cert=(str(self.cert_file), str(self.key_file)),  # Client certificate
-                    verify=str(self.ca_file),  # CA certificate to verify platform
-                    timeout=timeout
-                )
+    def _create_adaptive_client(self, timeout: float = 10.0) -> httpx.AsyncClient:
+        """Create HTTP client with adaptive security based on available certificates."""
+        if hasattr(self, 'security_config'):
+            # Use the enhanced adaptive client from security config
+            return self.security_config.create_adaptive_http_client(timeout)
         else:
-            # Fallback to plain HTTP (development only)
-            logger.warning("⚠️  Using plain HTTP client - certificates not available")
-            return httpx.AsyncClient(timeout=timeout)
+            # Fallback for backward compatibility
+            logger.warning("⚠️ Security config not initialized, using fallback client")
+            return httpx.AsyncClient(verify=False, timeout=timeout)
     
     async def _startup(self):
         """Startup handler - register with platform."""
         logger.info("🤖 Starting Crank Email Classifier...")
         
-        # Initialize security and certificates
-        logger.info("🔐 Initializing security configuration and certificates...")
-        initialize_security()
+        # Initialize enhanced security configuration
+        logger.info("🔐 Initializing enhanced security configuration and certificates...")
+        self.security_config = initialize_security()
+        
+        # Log security level for visibility
+        security_level = self.security_config.get_security_level()
+        logger.info(f"🔍 Security level: {security_level}")
         
         # Prepare registration info
         worker_info = WorkerRegistration(
@@ -584,7 +579,7 @@ class CrankEmailClassifier:
                 "load_score": "0.0"
             }
             
-            async with self._create_mtls_client(timeout=10.0) as client:
+            async with self._create_adaptive_client(timeout=10.0) as client:
                 response = await client.post(
                     f"{self.platform_url}/v1/workers/{self.worker_id}/heartbeat",
                     headers=headers,
@@ -611,7 +606,7 @@ class CrankEmailClassifier:
         for attempt in range(max_retries):
             try:
                 # 🔒 ZERO-TRUST: Use mTLS client for secure communication
-                async with self._create_mtls_client() as client:
+                async with self._create_adaptive_client() as client:
                     response = await client.post(
                         f"{self.platform_url}/v1/workers/register",
                         json=worker_info.model_dump(),
@@ -641,7 +636,7 @@ class CrankEmailClassifier:
         if self.worker_id:
             try:
                 # 🔒 ZERO-TRUST: Use mTLS client for secure deregistration
-                async with self._create_mtls_client(timeout=5.0) as client:
+                async with self._create_adaptive_client(timeout=5.0) as client:
                     await client.delete(f"{self.platform_url}/v1/workers/{self.worker_id}")
                 logger.info("🔒 Successfully deregistered email classifier via mTLS")
             except Exception as e:

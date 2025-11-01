@@ -33,9 +33,10 @@ class SecurityConfig:
         self.platform_cert_path = self.cert_dir / "platform.crt" 
         self.platform_key_path = self.cert_dir / "platform.key"
         
-        # Security settings
+        # Security settings based on environment
         self.verify_certificates = environment == "production"
         self.require_mtls = environment == "production"
+        self.https_only = environment in ["production", "development-https"]
         
     def get_ssl_context(self) -> ssl.SSLContext:
         """Create SSL context for secure connections."""
@@ -85,8 +86,15 @@ class SecurityConfig:
                 "cert": self.get_client_cert()
             })
             logger.info("🔒 Secure HTTPS client created with mTLS")
+        elif self.environment == "development-https":
+            # Development HTTPS: Encrypted but relaxed verification
+            client_config.update({
+                "verify": False,  # Skip cert verification for self-signed
+                "cert": self.get_client_cert() if self.cert_dir.exists() else None
+            })
+            logger.info("🔒 HTTPS client created with relaxed verification (development-https)")
         else:
-            # Development: Relaxed security with warnings
+            # Legacy development: Relaxed security with warnings
             client_config["verify"] = False
             logger.warning("🚨 INSECURE HTTP client - development only!")
             
@@ -104,11 +112,11 @@ class SecurePlatformService:
                                 **request_kwargs) -> httpx.Response:
         """Make secure HTTPS call to worker with mTLS."""
         
-        # Ensure HTTPS for production
-        if self.environment == "production" and not worker_endpoint.startswith("https://"):
+        # Ensure HTTPS for production and development-https
+        if self.environment in ["production", "development-https"] and not worker_endpoint.startswith("https://"):
             raise HTTPException(
                 status_code=500, 
-                detail="Zero-trust violation: Worker endpoints must use HTTPS in production"
+                detail="Zero-trust violation: Worker endpoints must use HTTPS in production/development-https"
             )
         
         # For development, convert HTTP to HTTPS if needed
@@ -196,12 +204,18 @@ class ResilientCertificateManager:
             "-days", "365"
         ], check=True, capture_output=True)
         
-        # Set proper permissions
-        os.chmod(str(cert_dir / "ca.key"), 0o600)
-        os.chmod(str(cert_dir / "platform.key"), 0o600)
-        os.chmod(str(cert_dir / "client.key"), 0o600)
+        # Set proper permissions - readable by all for Docker development containers
+        os.chmod(str(cert_dir / "ca.key"), 0o644)      # Private keys readable by all (dev only)
+        os.chmod(str(cert_dir / "platform.key"), 0o644)
+        os.chmod(str(cert_dir / "client.key"), 0o644)
+        
+        # Public certificates readable by all
+        os.chmod(str(cert_dir / "ca.crt"), 0o644)
+        os.chmod(str(cert_dir / "platform.crt"), 0o644)
+        os.chmod(str(cert_dir / "client.crt"), 0o644)
         
         logger.info("✅ Complete certificate infrastructure generated successfully")
+        logger.warning("🚨 Private keys are world-readable - DEVELOPMENT ONLY!")
         
     @staticmethod
     def verify_certificate_health(cert_dir: Path) -> Dict[str, Any]:

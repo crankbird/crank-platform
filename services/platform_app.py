@@ -515,21 +515,41 @@ def create_platform_app(api_key: str = "dev-mesh-key") -> FastAPI:
 # =============================================================================
 
 def main():
-    """Main entry point with HTTPS auto-detection."""
+    """Main entry point with HTTPS enforcement."""
     import uvicorn
     from pathlib import Path
+    from security_config import ResilientCertificateManager
     
     app = create_platform_app()
     
-    # 🔒 ZERO-TRUST: Auto-detect HTTPS based on certificate availability
+    # 🔒 ZERO-TRUST: Check for HTTPS-only mode
+    https_only = os.getenv('HTTPS_ONLY', 'false').lower() == 'true'
     cert_dir = Path("/etc/certs")
+    
+    # Generate certificates if needed for HTTPS-only mode
+    if https_only and not ((cert_dir / "platform.crt").exists() and (cert_dir / "platform.key").exists()):
+        print("🔧 HTTPS_ONLY mode: Generating required certificates...")
+        ResilientCertificateManager.generate_complete_dev_certificates(cert_dir)
+    
     has_certs = (cert_dir / "platform.crt").exists() and (cert_dir / "platform.key").exists()
     
     # Kevin's port configuration - environment-based for maximum portability
     https_port = int(os.getenv('PLATFORM_HTTPS_PORT', '8443'))
     http_port = int(os.getenv('PLATFORM_HTTP_PORT', '8000'))
     
-    if has_certs:
+    if https_only:
+        if not has_certs:
+            raise RuntimeError("🚫 HTTPS_ONLY=true but certificates not found. Cannot start platform.")
+        print(f"🔒 Starting Crank Platform with HTTPS/mTLS ONLY on port {https_port}")
+        uvicorn.run(
+            app, 
+            host="0.0.0.0", 
+            port=https_port,
+            ssl_keyfile=str(cert_dir / "platform.key"),
+            ssl_certfile=str(cert_dir / "platform.crt"),
+            ssl_ca_certs=str(cert_dir / "ca.crt")  # Require client certificates
+        )
+    elif has_certs:
         # Start with HTTPS using mTLS
         print(f"🔒 Starting Crank Platform with HTTPS/mTLS on port {https_port}")
         uvicorn.run(

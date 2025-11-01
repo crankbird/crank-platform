@@ -17,7 +17,7 @@ COPY crank_email_parser.py .
 COPY security_config.py .
 
 # Create certificates directory
-RUN mkdir -p /certs
+RUN mkdir -p /etc/certs
 
 # Expose port
 EXPOSE 8003

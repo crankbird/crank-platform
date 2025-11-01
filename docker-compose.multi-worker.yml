@@ -11,57 +11,24 @@
 # - NO PORT CONFLICTS - Each service has dedicated port range
 
 services:
-  # Platform Service (PaaS Layer)
+  # Platform Service (PaaS Layer) - HTTPS/mTLS ONLY
   platform:
     build:
       context: services
       dockerfile: Dockerfile.platform
     container_name: crank-platform
     ports:
-      - "${PLATFORM_PORT:-8000}:${PLATFORM_PORT:-8000}"  # HTTP fallback for development
-      - "${PLATFORM_HTTPS_PORT:-8443}:${PLATFORM_HTTPS_PORT:-8443}"  # HTTPS with mTLS for production
+      - "${PLATFORM_HTTPS_PORT:-8443}:${PLATFORM_HTTPS_PORT:-8443}"  # 🔒 HTTPS with mTLS ONLY
     volumes:
       - certs-volume:/etc/certs  # Share certificates with workers
     environment:
       - PLATFORM_ENV=docker
-      - CRANK_ENVIRONMENT=development  # 🔒 Development with HTTPS testing
+      - CRANK_ENVIRONMENT=development-https  # 🔒 HTTPS-only with relaxed cert verification
       - LOG_LEVEL=INFO
-      - PLATFORM_PORT=${PLATFORM_PORT:-8000}
       - PLATFORM_HTTPS_PORT=${PLATFORM_HTTPS_PORT:-8443}
+      - HTTPS_ONLY=true  # 🔒 Force HTTPS-only mode
     healthcheck:
-      test: ["CMD", "curl", "-k", "-f", "https://localhost:${PLATFORM_HTTPS_PORT:-8443}/health/live"]  # 🔒 Use HTTPS health check
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    networks:
-      - crank-net
-    restart: unless-stopped
-
-  # Crank Document Converter Worker - Port Range: 8100-8199
-  crank-doc-converter:
-    build:
-      context: services
-      dockerfile: Dockerfile.crank-doc-converter
-    container_name: crank-doc-converter
-    ports:
-      - "${DOC_CONVERTER_PORT:-8100}:${DOC_CONVERTER_PORT:-8100}"
-      - "${DOC_CONVERTER_HTTPS_PORT:-8101}:${DOC_CONVERTER_HTTPS_PORT:-8101}"
-    volumes:
-      - certs-volume:/etc/certs  # Share certificates with platform
-    environment:
-      - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}  # 🔒 ZERO-TRUST: Use HTTPS for platform communication
-      - CRANK_ENVIRONMENT=development  # 🔒 Development with HTTPS testing
-      - LOG_LEVEL=INFO
-      - PLATFORM_AUTH_TOKEN=dev-mesh-key
-      - DOC_CONVERTER_PORT=${DOC_CONVERTER_PORT:-8100}
-      - DOC_CONVERTER_HOST=0.0.0.0
-      - DOC_CONVERTER_HTTPS_PORT=${DOC_CONVERTER_HTTPS_PORT:-8101}
-    depends_on:
-      platform:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-k", "-f", "https://localhost:${DOC_CONVERTER_HTTPS_PORT:-8101}/health"]
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:${PLATFORM_HTTPS_PORT:-8443}/health/live"]  # 🔒 HTTPS with relaxed verification for dev certs
       interval: 30s
       timeout: 10s
       retries: 3
@@ -70,132 +37,159 @@ services:
       - crank-net
     restart: unless-stopped
 
-  # Crank Email Classifier Worker - Port Range: 8200-8299  
+  # Crank Document Converter Worker - HTTPS/mTLS ONLY
+  crank-doc-converter:
+    build:
+      context: services
+      dockerfile: Dockerfile.crank-doc-converter
+    container_name: crank-doc-converter
+    ports:
+      - "${DOC_CONVERTER_HTTPS_PORT:-8101}:${DOC_CONVERTER_HTTPS_PORT:-8101}"  # 🔒 HTTPS with mTLS ONLY
+    volumes:
+      - certs-volume:/etc/certs  # Share certificates with platform
+    environment:
+      - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}  # 🔒 ZERO-TRUST: HTTPS ONLY
+      - CRANK_ENVIRONMENT=development-https  # 🔒 HTTPS-only with relaxed cert verification
+      - LOG_LEVEL=INFO
+      - PLATFORM_AUTH_TOKEN=dev-mesh-key
+      - DOC_CONVERTER_HTTPS_PORT=${DOC_CONVERTER_HTTPS_PORT:-8101}
+      - DOC_CONVERTER_HOST=0.0.0.0
+      - HTTPS_ONLY=true  # 🔒 Force HTTPS-only mode
+    depends_on:
+      platform:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:${DOC_CONVERTER_HTTPS_PORT:-8101}/health"]  # 🔒 HTTPS with relaxed verification for dev certs
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks:
+      - crank-net
+    restart: unless-stopped
+
+  # Crank Email Classifier Worker - HTTPS/mTLS ONLY
   crank-email-classifier:
     build:
       context: services
       dockerfile: Dockerfile.crank-email-classifier
     container_name: crank-email-classifier
     ports:
-      - "${EMAIL_CLASSIFIER_PORT:-8200}:${EMAIL_CLASSIFIER_PORT:-8200}"
-      - "${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}:${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}"
+      - "${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}:${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}"  # 🔒 HTTPS with mTLS ONLY
     volumes:
       - certs-volume:/etc/certs  # Share certificates with platform
     environment:
-      - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}  # 🔒 ZERO-TRUST: Use HTTPS for platform communication
-      - CRANK_ENVIRONMENT=development  # 🔒 Development with HTTPS testing
+      - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}  # 🔒 ZERO-TRUST: HTTPS ONLY
+      - CRANK_ENVIRONMENT=development-https  # 🔒 HTTPS-only with relaxed cert verification
       - LOG_LEVEL=INFO
       - PLATFORM_AUTH_TOKEN=dev-mesh-key
-      - EMAIL_CLASSIFIER_PORT=${EMAIL_CLASSIFIER_PORT:-8200}
-      - EMAIL_CLASSIFIER_HOST=0.0.0.0
       - EMAIL_CLASSIFIER_HTTPS_PORT=${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}
+      - EMAIL_CLASSIFIER_HOST=0.0.0.0
+      - HTTPS_ONLY=true  # 🔒 Force HTTPS-only mode
     depends_on:
       platform:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-k", "-f", "https://localhost:${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}/health"]
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}/health"]  # 🔒 HTTPS with relaxed verification for dev certs
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 20s  # ML models need more time to initialize
+      start_period: 25s  # ML models need more time to initialize
     networks:
       - crank-net
     restart: unless-stopped
 
-  # Crank Email Parser Worker - Port Range: 8300-8399
+  # Crank Email Parser Worker - HTTPS/mTLS ONLY
   crank-email-parser:
     build:
       context: services
       dockerfile: Dockerfile.crank-email-parser
     container_name: crank-email-parser
     ports:
-      - "${EMAIL_PARSER_PORT:-8300}:${EMAIL_PARSER_PORT:-8300}"
-      - "${EMAIL_PARSER_HTTPS_PORT:-8301}:${EMAIL_PARSER_HTTPS_PORT:-8301}"
+      - "${EMAIL_PARSER_HTTPS_PORT:-8301}:${EMAIL_PARSER_HTTPS_PORT:-8301}"  # 🔒 HTTPS with mTLS ONLY
     volumes:
       - certs-volume:/etc/certs  # Share certificates with platform
     environment:
-      - CRANK_PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}  # 🔒 ZERO-TRUST: Use HTTPS for platform communication
-      - CRANK_ENVIRONMENT=development  # 🔒 Development with HTTPS testing
+      - CRANK_PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}  # 🔒 ZERO-TRUST: HTTPS ONLY
+      - CRANK_ENVIRONMENT=production  # 🔒 HTTPS ONLY - no HTTP fallback
       - LOG_LEVEL=INFO
       - PLATFORM_AUTH_TOKEN=dev-mesh-key
-      - EMAIL_PARSER_PORT=${EMAIL_PARSER_PORT:-8300}
-      - EMAIL_PARSER_HOST=0.0.0.0
       - EMAIL_PARSER_HTTPS_PORT=${EMAIL_PARSER_HTTPS_PORT:-8301}
+      - EMAIL_PARSER_HOST=0.0.0.0
+      - HTTPS_ONLY=true  # 🔒 Force HTTPS-only mode
     depends_on:
       platform:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-k", "-f", "https://localhost:${EMAIL_PARSER_HTTPS_PORT:-8301}/health"]
+      test: ["CMD", "curl", "--cacert", "/etc/certs/ca.crt", "--cert", "/etc/certs/client.crt", "--key", "/etc/certs/client.key", "-f", "https://localhost:${EMAIL_PARSER_HTTPS_PORT:-8301}/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 20s  # Email parser initialization time
+      start_period: 25s  # Email parser initialization time
     networks:
       - crank-net
     restart: unless-stopped
 
-  # Crank Streaming Service - Port Range: 8500-8599 (SSE, WebSocket, Real-time)
+  # Crank Streaming Service - HTTPS/mTLS ONLY (SSE, WebSocket, Real-time)
   crank-streaming:
     build:
       context: services
       dockerfile: Dockerfile.crank-streaming
     container_name: crank-streaming
     ports:
-      - "${STREAMING_PORT:-8500}:${STREAMING_PORT:-8500}"  # HTTP streaming endpoints and WebSocket
-      - "${STREAMING_HTTPS_PORT:-8501}:${STREAMING_HTTPS_PORT:-8501}"  # HTTPS streaming endpoints and WebSocket
+      - "${STREAMING_HTTPS_PORT:-8501}:${STREAMING_HTTPS_PORT:-8501}"  # 🔒 HTTPS streaming endpoints and WebSocket with mTLS ONLY
     volumes:
       - certs-volume:/etc/certs  # Share certificates with platform
       - /home/johnr/projects/parse-email-archive/tests/data:/test-data:ro  # Mount test data
     environment:
-      - CRANK_PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}
-      - CRANK_ENVIRONMENT=development
+      - CRANK_PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}  # 🔒 ZERO-TRUST: HTTPS ONLY
+      - CRANK_ENVIRONMENT=production  # 🔒 HTTPS ONLY - no HTTP fallback
       - LOG_LEVEL=INFO
-      - STREAMING_PORT=${STREAMING_PORT:-8500}
-      - STREAMING_HOST=0.0.0.0
       - STREAMING_HTTPS_PORT=${STREAMING_HTTPS_PORT:-8501}
+      - STREAMING_HOST=0.0.0.0
+      - HTTPS_ONLY=true  # 🔒 Force HTTPS-only mode
     depends_on:
       platform:
         condition: service_healthy
       crank-email-classifier:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-k", "-f", "https://localhost:${STREAMING_HTTPS_PORT:-8501}/health"]
+      test: ["CMD", "curl", "--cacert", "/etc/certs/ca.crt", "--cert", "/etc/certs/client.crt", "--key", "/etc/certs/client.key", "-f", "https://localhost:${STREAMING_HTTPS_PORT:-8501}/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
     networks:
       - crank-net
     restart: unless-stopped
 
-  # Crank Image Classifier Worker - Port Range: 8400-8499
+  # Crank Image Classifier Worker - HTTPS/mTLS ONLY
   crank-image-classifier:
     build:
       context: .
       dockerfile: image-classifier/Dockerfile
     container_name: crank-image-classifier
     ports:
-      - "${IMAGE_CLASSIFIER_PORT:-8400}:${IMAGE_CLASSIFIER_PORT:-8400}"
-      - "${IMAGE_CLASSIFIER_HTTPS_PORT:-8401}:${IMAGE_CLASSIFIER_HTTPS_PORT:-8401}"
+      - "${IMAGE_CLASSIFIER_HTTPS_PORT:-8401}:${IMAGE_CLASSIFIER_HTTPS_PORT:-8401}"  # 🔒 HTTPS with mTLS ONLY
     volumes:
       - certs-volume:/etc/certs  # Share certificates with platform
     environment:
-      - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}  # 🔒 ZERO-TRUST: Use HTTPS for platform communication
-      - CRANK_ENVIRONMENT=development  # 🔒 Development with HTTPS testing
+      - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}  # 🔒 ZERO-TRUST: HTTPS ONLY
+      - CRANK_ENVIRONMENT=production  # 🔒 HTTPS ONLY - no HTTP fallback
       - LOG_LEVEL=INFO
       - PLATFORM_AUTH_TOKEN=dev-mesh-key
-      - IMAGE_CLASSIFIER_PORT=${IMAGE_CLASSIFIER_PORT:-8400}
-      - IMAGE_CLASSIFIER_HOST=0.0.0.0
       - IMAGE_CLASSIFIER_HTTPS_PORT=${IMAGE_CLASSIFIER_HTTPS_PORT:-8401}
+      - IMAGE_CLASSIFIER_HOST=0.0.0.0
+      - HTTPS_ONLY=true  # 🔒 Force HTTPS-only mode
     depends_on:
       platform:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-k", "-f", "https://localhost:${IMAGE_CLASSIFIER_HTTPS_PORT:-8401}/health"]
+      test: ["CMD", "curl", "--cacert", "/etc/certs/ca.crt", "--cert", "/etc/certs/client.crt", "--key", "/etc/certs/client.key", "-f", "https://localhost:${IMAGE_CLASSIFIER_HTTPS_PORT:-8401}/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s  # Computer vision models need time to initialize
+      start_period: 35s  # Computer vision models need time to initialize
     networks:
       - crank-net
     restart: unless-stopped

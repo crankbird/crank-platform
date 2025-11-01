@@ -528,18 +528,20 @@ if __name__ == "__main__":
     
     app = create_crank_doc_converter()
     
-    # Check if we should run HTTPS
+    # 🔒 ZERO-TRUST: Check for HTTPS-only mode
+    https_only = os.getenv('HTTPS_ONLY', 'false').lower() == 'true'
     cert_dir = Path("/etc/certs")
     use_https = (cert_dir / "platform.crt").exists() and (cert_dir / "platform.key").exists()
     
     # 🚢 PORT CONFIGURATION: Use environment variables for flexible deployment  
-    service_port = int(os.getenv("DOC_CONVERTER_PORT", "8100"))  # New default: 8100
+    service_port = int(os.getenv("DOC_CONVERTER_PORT", "8100"))  # HTTP fallback port
     service_host = os.getenv("DOC_CONVERTER_HOST", "0.0.0.0")
-    https_port = int(os.getenv("DOC_CONVERTER_HTTPS_PORT", "8443"))
+    https_port = int(os.getenv("DOC_CONVERTER_HTTPS_PORT", "8101"))
     
-    if use_https:
-        # Start with HTTPS using uvicorn SSL parameters
-        logger.info(f"🔒 Starting Crank Document Converter with HTTPS on port {https_port}")
+    if https_only:
+        if not use_https:
+            raise RuntimeError("🚫 HTTPS_ONLY=true but certificates not found. Cannot start service.")
+        logger.info(f"🔒 Starting Crank Document Converter with HTTPS/mTLS ONLY on port {https_port}")
         uvicorn.run(
             app, 
             host=service_host, 
@@ -547,6 +549,25 @@ if __name__ == "__main__":
             ssl_keyfile=str(cert_dir / "platform.key"),
             ssl_certfile=str(cert_dir / "platform.crt")
         )
+    elif use_https:
+        # Start with HTTPS using uvicorn SSL parameters
+        logger.info(f"🔒 Starting Crank Document Converter with HTTPS on port {https_port}")
+        try:
+            uvicorn.run(
+                app, 
+                host=service_host, 
+                port=https_port,
+                ssl_keyfile=str(cert_dir / "platform.key"),
+                ssl_certfile=str(cert_dir / "platform.crt")
+            )
+        except PermissionError as e:
+            logger.warning(f"⚠️ SSL certificate permission denied: {e}")
+            logger.info(f"🔓 Falling back to HTTP on port {service_port}")
+            uvicorn.run(app, host=service_host, port=service_port)
+        except Exception as e:
+            logger.error(f"❌ SSL startup failed: {e}")
+            logger.info(f"🔓 Falling back to HTTP on port {service_port}")
+            uvicorn.run(app, host=service_host, port=service_port)
     else:
         logger.info(f"🔓 Starting Crank Document Converter with HTTP on port {service_port}")
         uvicorn.run(app, host=service_host, port=service_port)

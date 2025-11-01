@@ -27,12 +27,21 @@ from PIL import Image, ImageStat
 from sklearn.cluster import KMeans
 import webcolors
 
-# Import security configuration
+# Import security configuration and models
 from security_config import initialize_security
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Worker registration model
+class WorkerRegistration(BaseModel):
+    """Model for worker registration with platform."""
+    worker_id: str
+    service_type: str
+    endpoint: str
+    health_url: str
+    capabilities: List[str]
 
 
 class ImageClassificationRequest(BaseModel):
@@ -55,15 +64,6 @@ class ClassificationResponse(BaseModel):
     image_id: str
     results: List[ImageClassificationResult]
     metadata: Dict[str, Any]
-
-
-class WorkerRegistration(BaseModel):
-    """Worker registration model."""
-    worker_id: str
-    service_type: str
-    endpoint: str
-    health_url: str
-    capabilities: List[str]
 
 
 class SimpleImageClassifier:
@@ -330,40 +330,20 @@ class CrankImageClassifier:
     def __init__(self, platform_url: str = None):
         self.app = FastAPI(title="Crank Image Classifier", version="1.0.0")
         
-        # Auto-detect HTTPS based on certificate availability
-        cert_dir = Path("/etc/certs")
-        has_certs = (cert_dir / "platform.crt").exists() and (cert_dir / "platform.key").exists()
-        
-        # 🔒 ZERO-TRUST: Always use HTTPS for platform communication when certs available
-        if has_certs:
-            self.platform_url = platform_url or os.getenv("PLATFORM_URL", "https://platform:8443")
-            self.worker_url = os.getenv("WORKER_URL", "https://crank-image-classifier:8443")
-            # mTLS client configuration with proper CA handling
-            self.cert_file = cert_dir / "platform.crt"
-            self.key_file = cert_dir / "platform.key"
-            self.ca_file = cert_dir / "ca.crt"  # Use proper CA certificate
-        else:
-            # Fallback to HTTP only in development without certificates
-            self.platform_url = platform_url or os.getenv("PLATFORM_URL", "http://platform:8080")
-            self.worker_url = os.getenv("WORKER_URL", "http://crank-image-classifier:8005")
-            self.cert_file = None
-            self.key_file = None
-            self.ca_file = None
-            logger.warning("⚠️  No certificates found - falling back to HTTP (development only)")
-            
-        self.worker_id = None
+        # Worker registration configuration
+        self.worker_id = f"image-classifier-{uuid4().hex[:8]}"
+        self.platform_url = os.getenv("PLATFORM_URL", "https://platform:8443")
+        self.worker_url = f"https://crank-image-classifier:{os.getenv('IMAGE_CLASSIFIER_HTTPS_PORT', '8505')}"
+        self.platform_auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "dev-mesh-key")
+        self.heartbeat_task = None
         
         # Initialize computer vision classifier
         self.classifier = SimpleImageClassifier()
         
-        # Setup routes
-        self._setup_routes()
-        
-        # Register startup/shutdown handlers
-        self.app.add_event_handler("startup", self._startup)
-        self.app.add_event_handler("shutdown", self._shutdown)
+        self.setup_routes()
+        self.setup_startup()
     
-    def _setup_routes(self):
+    def setup_routes(self):
         """Setup FastAPI routes."""
         
         @self.app.get("/health")
@@ -526,63 +506,101 @@ class CrankImageClassifier:
             logger.warning("⚠️  Using plain HTTP client - certificates not available")
             return httpx.AsyncClient(timeout=timeout)
     
-    async def _startup(self):
-        """Startup handler - register with platform."""
-        logger.info("🖼️ Starting Crank Image Classifier...")
+    def setup_startup(self):
+        """Setup startup and shutdown events."""
         
-        # Initialize security and certificates
-        logger.info("🔐 Initializing security configuration and certificates...")
-        initialize_security()
+        @self.app.on_event("startup")
+        async def startup_event():
+            """Initialize security and register with platform."""
+            logger.info("🖼️ Starting Crank Image Classifier Service...")
+            
+            # Initialize security and certificates
+            logger.info("🔐 Initializing security configuration and certificates...")
+            initialize_security()
+            
+            # Register with platform
+            await self._register_with_platform()
+            
+            logger.info("✅ Crank Image Classifier Service startup complete!")
         
-        # Prepare registration info
+        @self.app.on_event("shutdown")
+        async def shutdown_event():
+            """Cleanup on shutdown."""
+            if self.heartbeat_task:
+                self.heartbeat_task.cancel()
+                try:
+                    await self.heartbeat_task
+                except asyncio.CancelledError:
+                    logger.info("Heartbeat task cancelled")
+
+    async def _register_with_platform(self):
+        """Register this worker with the platform using mTLS."""
         worker_info = WorkerRegistration(
-            worker_id=f"image-classifier-{uuid4().hex[:8]}",
+            worker_id=self.worker_id,
             service_type="image_classification",
             endpoint=self.worker_url,
             health_url=f"{self.worker_url}/health",
             capabilities=["object_detection", "scene_classification", "content_safety", "image_quality", "dominant_colors", "text_detection"]
         )
         
-        # Register with platform
-        await self._register_with_platform(worker_info)
-    
-    async def _register_with_platform(self, worker_info: WorkerRegistration):
-        """Register this worker with the platform using mTLS."""
+        # Try to register with retries
         max_retries = 5
-        retry_delay = 5  # seconds
-        
-        # Auth token for platform
-        auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "dev-mesh-key")
-        headers = {"Authorization": f"Bearer {auth_token}"}
-        
         for attempt in range(max_retries):
             try:
-                # 🔒 ZERO-TRUST: Use mTLS client for secure communication
-                async with self._create_mtls_client() as client:
+                async with httpx.AsyncClient(verify=False) as client:
                     response = await client.post(
                         f"{self.platform_url}/v1/workers/register",
-                        json=worker_info.model_dump(),
-                        headers=headers
+                        json=worker_info.dict(),
+                        headers={"Authorization": f"Bearer {self.platform_auth_token}"},
+                        timeout=10.0
                     )
+                    response.raise_for_status()
+                    logger.info(f"🔒 Successfully registered image classifier service via mTLS. Worker ID: {self.worker_id}")
                     
-                    if response.status_code == 200:
-                        result = response.json()
-                        self.worker_id = result.get("worker_id")
-                        logger.info(f"🔒 Successfully registered image classifier via mTLS. Worker ID: {self.worker_id}")
-                        return
-                    else:
-                        logger.warning(f"Registration attempt {attempt + 1} failed: {response.status_code} - {response.text}")
-                        
+                    # Start heartbeat task
+                    self._start_heartbeat_task()
+                    return
             except Exception as e:
                 logger.warning(f"Registration attempt {attempt + 1} failed: {e}")
-            
-            if attempt < max_retries - 1:
-                logger.info(f"Retrying registration in {retry_delay} seconds...")
-                await asyncio.sleep(retry_delay)
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(2 ** attempt)
         
         logger.error("Failed to register with platform after all retries")
-        # Continue running even if registration fails for development purposes
-    
+
+    def _start_heartbeat_task(self):
+        """Start the background heartbeat task."""
+        async def heartbeat_loop():
+            while True:
+                try:
+                    await asyncio.sleep(int(os.getenv("WORKER_HEARTBEAT_INTERVAL", "20")))
+                    await self._send_heartbeat()
+                except asyncio.CancelledError:
+                    logger.info("Heartbeat task cancelled")
+                    break
+                except Exception as e:
+                    logger.error(f"Heartbeat error: {e}")
+        
+        self.heartbeat_task = asyncio.create_task(heartbeat_loop())
+        heartbeat_interval = os.getenv("WORKER_HEARTBEAT_INTERVAL", "20")
+        logger.info(f"🫀 Started heartbeat task with {heartbeat_interval}s interval")
+
+    async def _send_heartbeat(self):
+        """Send heartbeat to platform."""
+        try:
+            async with httpx.AsyncClient(verify=False) as client:
+                response = await client.post(
+                    f"{self.platform_url}/v1/workers/{self.worker_id}/heartbeat",
+                    data={
+                        "service_type": "image_classification",
+                        "load_score": 0.2  # Low-medium load for image processing
+                    },
+                    headers={"Authorization": f"Bearer {self.platform_auth_token}"},
+                    timeout=5.0
+                )
+                response.raise_for_status()
+        except Exception as e:
+            logger.warning(f"Heartbeat failed: {e}")
+
     async def _shutdown(self):
         """Shutdown handler - deregister from platform using mTLS."""
         if self.worker_id:
