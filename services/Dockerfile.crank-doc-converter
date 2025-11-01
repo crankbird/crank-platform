@@ -23,6 +23,7 @@ RUN pip install --no-cache-dir -r requirements-crank-doc-converter.txt
 # Copy worker code and metadata
 COPY crank_doc_converter.py .
 COPY crankdoc_mesh_minimal.py .
+COPY security_config.py .
 COPY crank-doc-converter.plugin.yaml ./plugin.yaml
 
 # Security hardening
