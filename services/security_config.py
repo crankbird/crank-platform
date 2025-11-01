@@ -12,7 +12,7 @@ Features:
 
 import ssl
 import os
-from typing import Optional
+from typing import Optional, Dict, Any
 from pathlib import Path
 import httpx
 from fastapi import HTTPException
@@ -136,59 +136,183 @@ class SecurePlatformService:
 
 
 # Certificate generation utilities for development
-class CertificateManager:
-    """Manage certificates for development and testing."""
+class ResilientCertificateManager:
+    """Anti-fragile certificate management for zero-trust architecture."""
     
     @staticmethod
-    def generate_dev_certificates(cert_dir: Path):
-        """Generate self-signed certificates for development."""
+    def generate_complete_dev_certificates(cert_dir: Path):
+        """Generate complete certificate chain: CA + server + client certificates."""
         import subprocess
         
         cert_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"🔐 Generating complete certificate infrastructure in {cert_dir}")
         
-        # Generate CA
+        # 1. Generate Certificate Authority (CA)
+        logger.info("📜 Generating Certificate Authority...")
         subprocess.run([
-            "openssl", "req", "-x509", "-newkey", "rsa:4096", "-keyout", 
-            str(cert_dir / "ca.key"), "-out", str(cert_dir / "ca.crt"),
-            "-days", "365", "-nodes", "-subj", "/CN=Crank Platform CA"
-        ], check=True)
+            "openssl", "req", "-x509", "-newkey", "rsa:4096", 
+            "-keyout", str(cert_dir / "ca.key"), 
+            "-out", str(cert_dir / "ca.crt"),
+            "-days", "365", "-nodes", 
+            "-subj", "/CN=Crank Platform CA/O=Crank Platform/OU=Security"
+        ], check=True, capture_output=True)
         
-        # Generate platform certificate
+        # 2. Generate Platform Server Certificate
+        logger.info("🖥️ Generating platform server certificate...")
         subprocess.run([
-            "openssl", "req", "-newkey", "rsa:4096", "-keyout",
-            str(cert_dir / "platform.key"), "-out", str(cert_dir / "platform.csr"),
-            "-nodes", "-subj", "/CN=crank-platform"
-        ], check=True)
+            "openssl", "req", "-newkey", "rsa:4096", 
+            "-keyout", str(cert_dir / "platform.key"), 
+            "-out", str(cert_dir / "platform.csr"),
+            "-nodes", "-subj", "/CN=platform/O=Crank Platform/OU=Platform"
+        ], check=True, capture_output=True)
         
         subprocess.run([
-            "openssl", "x509", "-req", "-in", str(cert_dir / "platform.csr"),
-            "-CA", str(cert_dir / "ca.crt"), "-CAkey", str(cert_dir / "ca.key"),
-            "-CAcreateserial", "-out", str(cert_dir / "platform.crt"), "-days", "365"
-        ], check=True)
+            "openssl", "x509", "-req", 
+            "-in", str(cert_dir / "platform.csr"),
+            "-CA", str(cert_dir / "ca.crt"), 
+            "-CAkey", str(cert_dir / "ca.key"),
+            "-CAcreateserial", 
+            "-out", str(cert_dir / "platform.crt"), 
+            "-days", "365",
+            "-extensions", "v3_req"
+        ], check=True, capture_output=True)
         
-        logger.info(f"🔐 Development certificates generated in {cert_dir}")
+        # 3. Generate Client Certificate for Workers
+        logger.info("👥 Generating client certificate for workers...")
+        subprocess.run([
+            "openssl", "req", "-newkey", "rsa:4096", 
+            "-keyout", str(cert_dir / "client.key"), 
+            "-out", str(cert_dir / "client.csr"),
+            "-nodes", "-subj", "/CN=worker-client/O=Crank Platform/OU=Workers"
+        ], check=True, capture_output=True)
+        
+        subprocess.run([
+            "openssl", "x509", "-req", 
+            "-in", str(cert_dir / "client.csr"),
+            "-CA", str(cert_dir / "ca.crt"), 
+            "-CAkey", str(cert_dir / "ca.key"),
+            "-CAcreateserial", 
+            "-out", str(cert_dir / "client.crt"), 
+            "-days", "365"
+        ], check=True, capture_output=True)
+        
+        # Set proper permissions
+        os.chmod(str(cert_dir / "ca.key"), 0o600)
+        os.chmod(str(cert_dir / "platform.key"), 0o600)
+        os.chmod(str(cert_dir / "client.key"), 0o600)
+        
+        logger.info("✅ Complete certificate infrastructure generated successfully")
+        
+    @staticmethod
+    def verify_certificate_health(cert_dir: Path) -> Dict[str, Any]:
+        """Check certificate validity and health."""
+        ca_cert = cert_dir / "ca.crt"
+        platform_cert = cert_dir / "platform.crt"
+        client_cert = cert_dir / "client.crt"
+        
+        health_status = {
+            "ca_cert_exists": ca_cert.exists(),
+            "platform_cert_exists": platform_cert.exists(),
+            "client_cert_exists": client_cert.exists(),
+            "certificate_chain_complete": False,
+            "security_level": "none"
+        }
+        
+        if all(cert.exists() for cert in [ca_cert, platform_cert, client_cert]):
+            health_status["certificate_chain_complete"] = True
+            health_status["security_level"] = "full_mtls"
+        elif platform_cert.exists():
+            health_status["security_level"] = "server_tls"
+        elif ca_cert.exists():
+            health_status["security_level"] = "ca_only"
+        
+        return health_status
+
+
+class AdaptiveSecurityConfig(SecurityConfig):
+    """Enhanced security configuration with adaptive certificate management."""
+    
+    def __init__(self, environment: str = "development"):
+        super().__init__(environment)
+        self.client_cert_path = self.cert_dir / "client.crt"
+        self.client_key_path = self.cert_dir / "client.key"
+        
+    def get_security_level(self) -> str:
+        """Determine current security level based on available certificates."""
+        health = ResilientCertificateManager.verify_certificate_health(self.cert_dir)
+        return health["security_level"]
+    
+    def get_client_cert_for_mtls(self) -> Optional[tuple]:
+        """Get client certificate tuple for mTLS connections."""
+        if self.client_cert_path.exists() and self.client_key_path.exists():
+            return (str(self.client_cert_path), str(self.client_key_path))
+        return None
+    
+    def create_adaptive_http_client(self, timeout: int = 30) -> httpx.AsyncClient:
+        """Create HTTP client that adapts to available security infrastructure."""
+        
+        security_level = self.get_security_level()
+        logger.info(f"🔒 Creating HTTP client with security level: {security_level}")
+        
+        # Build base client configuration
+        client_config = {
+            "timeout": httpx.Timeout(timeout),
+            "follow_redirects": False,
+            "limits": httpx.Limits(
+                max_keepalive_connections=10,
+                max_connections=20,
+                keepalive_expiry=30
+            )
+        }
+        
+        if security_level == "full_mtls":
+            # Full mTLS with client certificates
+            client_config.update({
+                "verify": str(self.ca_cert_path),
+                "cert": self.get_client_cert_for_mtls()
+            })
+            logger.info("🔐 Full mTLS client created with client certificates")
+            
+        elif security_level == "server_tls":
+            # Server-only TLS (verify server, no client cert)
+            client_config["verify"] = str(self.ca_cert_path) if self.ca_cert_path.exists() else True
+            logger.info("🔒 Server-only TLS client created")
+            
+        else:
+            # Development fallback - insecure but functional
+            client_config["verify"] = False
+            logger.warning("⚠️ Insecure HTTP client - no certificates available")
+            
+        return httpx.AsyncClient(**client_config)
 
 
 # Environment-aware security initialization
-def initialize_security(environment: str = None) -> SecurityConfig:
-    """Initialize security based on environment."""
+def initialize_security(environment: str = None) -> AdaptiveSecurityConfig:
+    """Initialize anti-fragile security based on environment."""
     
     if environment is None:
         environment = os.getenv("CRANK_ENVIRONMENT", "development")
     
-    security_config = SecurityConfig(environment)
+    security_config = AdaptiveSecurityConfig(environment)
     
     if environment == "development":
-        # Generate self-signed certificates if they don't exist
+        # Generate complete certificate chain if missing
         if not security_config.ca_cert_path.exists():
-            logger.info("🔧 Generating development certificates...")
-            CertificateManager.generate_dev_certificates(security_config.cert_dir)
+            logger.info("🔧 Generating complete development certificate infrastructure...")
+            ResilientCertificateManager.generate_complete_dev_certificates(security_config.cert_dir)
+        
+        # Verify certificate health
+        health = ResilientCertificateManager.verify_certificate_health(security_config.cert_dir)
+        logger.info(f"🔍 Certificate health: {health['security_level']} (complete: {health['certificate_chain_complete']})")
+        
     elif environment == "production":
         # Verify all certificates exist
         required_certs = [
             security_config.ca_cert_path,
             security_config.platform_cert_path, 
-            security_config.platform_key_path
+            security_config.platform_key_path,
+            security_config.client_cert_path,
+            security_config.client_key_path
         ]
         
         missing_certs = [cert for cert in required_certs if not cert.exists()]
