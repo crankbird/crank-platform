@@ -14,6 +14,7 @@ RUN pip install --no-cache-dir -r requirements-crank-streaming.txt
 
 # Copy service code
 COPY crank_streaming_service.py .
+COPY security_config.py .
 
 # Create certificates directory for mTLS
 RUN mkdir -p /certs

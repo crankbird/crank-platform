@@ -27,6 +27,9 @@ from PIL import Image, ImageStat
 from sklearn.cluster import KMeans
 import webcolors
 
+# Import security configuration
+from security_config import initialize_security
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -526,6 +529,10 @@ class CrankImageClassifier:
     async def _startup(self):
         """Startup handler - register with platform."""
         logger.info("🖼️ Starting Crank Image Classifier...")
+        
+        # Initialize security and certificates
+        logger.info("🔐 Initializing security configuration and certificates...")
+        initialize_security()
         
         # Prepare registration info
         worker_info = WorkerRegistration(

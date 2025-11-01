@@ -24,6 +24,9 @@ import httpx
 from fastapi import FastAPI, HTTPException, Form, UploadFile, File
 from pydantic import BaseModel
 
+# Import security configuration
+from security_config import initialize_security
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -485,6 +488,10 @@ app = email_parser_service.app
 async def startup_event():
     """Register with platform on startup."""
     logger.info("Starting Crank Email Parser Service...")
+    
+    # Initialize security and certificates
+    logger.info("🔐 Initializing security configuration and certificates...")
+    initialize_security()
     
     # Wait a bit for the platform to be ready
     await asyncio.sleep(5)

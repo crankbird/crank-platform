@@ -47,6 +47,7 @@ RUN echo "name: crank-image-classifier" > plugin.yaml && \
 
 # Copy the application code
 COPY ./services/crank_image_classifier.py .
+COPY ./services/security_config.py .
 
 # Create certificate directory
 RUN mkdir -p /etc/certs

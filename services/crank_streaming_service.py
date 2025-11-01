@@ -24,6 +24,9 @@ from fastapi.responses import StreamingResponse
 from sse_starlette import EventSourceResponse
 import httpx
 
+# Import security configuration
+from security_config import initialize_security
+
 logger = logging.getLogger(__name__)
 
 # ============================================================================
@@ -332,6 +335,21 @@ class CrankStreamingService:
         self.app = FastAPI(title="Crank Streaming Service", version="1.0.0")
         self.processor = StreamingEmailProcessor()
         self.setup_routes()
+        self.setup_startup()
+    
+    def setup_startup(self):
+        """Setup startup event."""
+        
+        @self.app.on_event("startup")
+        async def startup_event():
+            """Initialize security on startup."""
+            logger.info("🌊 Starting Crank Streaming Service...")
+            
+            # Initialize security and certificates
+            logger.info("🔐 Initializing security configuration and certificates...")
+            initialize_security()
+            
+            logger.info("✅ Crank Streaming Service startup complete!")
     
     def setup_routes(self):
         """Setup streaming endpoints."""
