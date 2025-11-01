@@ -519,8 +519,8 @@ def create_crank_doc_converter(platform_url: str = None) -> FastAPI:
     return converter.app
 
 
-# For direct running
-if __name__ == "__main__":
+def main():
+    """Main entry point for the crank document converter service."""
     import uvicorn
     import ssl
     import os
@@ -530,8 +530,40 @@ if __name__ == "__main__":
     
     # 🔒 ZERO-TRUST: Check for HTTPS-only mode
     https_only = os.getenv('HTTPS_ONLY', 'false').lower() == 'true'
-    cert_dir = Path("/etc/certs")
-    use_https = (cert_dir / "platform.crt").exists() and (cert_dir / "platform.key").exists()
+    
+    # 🔐 Use in-memory certificate store instead of disk files
+    # 🔒 SECURE CERTIFICATE AUTHORITY SERVICE - CSR PATTERN ONLY
+    # Certificate initialization using secure CSR pattern (no private key transmission)
+    ca_service_url = os.getenv("CA_SERVICE_URL")
+    if https_only and ca_service_url:
+        print("🔐 Initializing certificates using SECURE CSR pattern...")
+        try:
+            # Run secure certificate initialization in the same process
+            import sys
+            sys.path.append('/app/scripts')
+            import asyncio
+            from initialize_certificates import main as init_certificates, cert_store
+            
+            # Run secure certificate initialization
+            asyncio.run(init_certificates())
+            
+            # Check if certificates were loaded
+            if cert_store.platform_cert is None:
+                raise RuntimeError("🚫 Certificate initialization completed but no certificates in memory")
+            
+            print("✅ Certificates loaded successfully using SECURE CSR pattern")
+            print("🔒 SECURITY: Private keys generated locally and never transmitted")
+            
+            use_https = True
+            logger.info("🔐 Using in-memory certificates from secure initialization")
+        except Exception as e:
+            raise RuntimeError(f"🚫 Failed to initialize certificates with CA service: {e}")
+    else:
+        # Fallback to disk-based certificates
+        cert_dir = Path("/etc/certs")
+        use_https = (cert_dir / "platform.crt").exists() and (cert_dir / "platform.key").exists()
+        if use_https:
+            logger.warning("⚠️ Falling back to disk-based certificates")
     
     # 🚢 PORT CONFIGURATION: Use environment variables for flexible deployment  
     service_port = int(os.getenv("DOC_CONVERTER_PORT", "8100"))  # HTTP fallback port
@@ -542,32 +574,35 @@ if __name__ == "__main__":
         if not use_https:
             raise RuntimeError("🚫 HTTPS_ONLY=true but certificates not found. Cannot start service.")
         logger.info(f"🔒 Starting Crank Document Converter with HTTPS/mTLS ONLY on port {https_port}")
-        uvicorn.run(
-            app, 
-            host=service_host, 
-            port=https_port,
-            ssl_keyfile=str(cert_dir / "platform.key"),
-            ssl_certfile=str(cert_dir / "platform.crt")
-        )
-    elif use_https:
-        # Start with HTTPS using uvicorn SSL parameters
-        logger.info(f"🔒 Starting Crank Document Converter with HTTPS on port {https_port}")
+        logger.info("🔐 Using in-memory certificates from Certificate Authority Service")
+        
+        # Create SSL context from in-memory certificates (SECURE CSR pattern)
         try:
+            import sys
+            sys.path.append('/app/scripts')
+            from initialize_certificates import cert_store
+            ssl_context = cert_store.get_ssl_context()
+            
+            print("🔒 Using certificates obtained via SECURE CSR pattern")
+            
+            # Get the temporary certificate file paths for uvicorn
+            cert_file = cert_store._temp_cert_file
+            key_file = cert_store._temp_key_file
+            
             uvicorn.run(
                 app, 
                 host=service_host, 
                 port=https_port,
-                ssl_keyfile=str(cert_dir / "platform.key"),
-                ssl_certfile=str(cert_dir / "platform.crt")
+                ssl_keyfile=key_file,
+                ssl_certfile=cert_file
             )
-        except PermissionError as e:
-            logger.warning(f"⚠️ SSL certificate permission denied: {e}")
-            logger.info(f"🔓 Falling back to HTTP on port {service_port}")
-            uvicorn.run(app, host=service_host, port=service_port)
         except Exception as e:
-            logger.error(f"❌ SSL startup failed: {e}")
-            logger.info(f"🔓 Falling back to HTTP on port {service_port}")
-            uvicorn.run(app, host=service_host, port=service_port)
+            raise RuntimeError(f"🚫 Failed to create SSL context from Certificate Authority Service: {e}")
     else:
-        logger.info(f"🔓 Starting Crank Document Converter with HTTP on port {service_port}")
-        uvicorn.run(app, host=service_host, port=service_port)
+        raise RuntimeError("🚫 HTTP mode disabled permanently - Certificate Authority Service provides HTTPS-only security")
+
+
+# For direct running
+if __name__ == "__main__":
+    main()
+    import uvicorn

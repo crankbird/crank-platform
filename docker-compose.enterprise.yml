@@ -1,18 +1,15 @@
 # Platform + Multi-Worker Architecture with Certificate Authority Service
 # 
-# SECURITY FIRST: No silent fallbacks to vulnerable implementations
-# This architecture completely eliminates legacy certificate generation backdoors
-# 
-# Zero-trust mTLS security across all services:
+# This docker-compose sets up:
 # - Certificate Authority Service (centralized certificate management)
-# - Platform service (PaaS layer) - HTTPS ONLY
-# - CrankDoc worker (document conversion) - HTTPS ONLY  
-# - CrankEmail Classifier worker (ML classification) - HTTPS ONLY
-# - CrankEmail Parser worker (bulk parsing) - HTTPS ONLY
-# - CrankStreaming worker (real-time) - HTTPS ONLY
-# 
-# ALL SERVICES: Non-root users, no HTTP fallbacks, enterprise-ready
-# Being good ancestors: No vulnerable legacy implementations
+# - Platform service (PaaS layer) with auth, billing, discovery, routing  
+# - CrankDoc worker (document conversion) - Port 8100
+# - CrankEmail Classifier worker (ML email classification) - Port 8200
+# - CrankEmail Parser worker (bulk email parsing) - Port 8300
+# - CrankStreaming worker (real-time streaming) - Port 8500
+# - Proper networking for service discovery
+# - Zero-trust mTLS security for all services
+# - NO PORT CONFLICTS - Each service has dedicated port range
 
 services:
   # Certificate Authority Service - Centralized certificate management
@@ -21,18 +18,15 @@ services:
       context: services
       dockerfile: Dockerfile.cert-authority
     container_name: cert-authority
-    ports:
-      - "9090:9090"  # HTTPS secure endpoint only
     environment:
       - CRANK_ENVIRONMENT=development-https
       - CERT_PROVIDER=development
       - CERT_SERVICE_PORT=9090
       - CERT_SERVICE_HOST=0.0.0.0
-      - CERT_DIR=/app/certificates
     volumes:
       - certs-volume:/app/certificates
     healthcheck:
-      test: ["CMD", "curl", "-k", "-f", "https://localhost:9090/health"]  # HTTPS-only health check
+      test: ["CMD", "curl", "-f", "http://localhost:9090/health"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -50,13 +44,16 @@ services:
     user: worker:worker  # 🔒 Non-root user for security
     ports:
       - "${PLATFORM_HTTPS_PORT:-8443}:${PLATFORM_HTTPS_PORT:-8443}"  # 🔒 HTTPS with mTLS ONLY
+    volumes:
+      - certs-volume:/etc/certs:ro  # Read-only access to certificates
     environment:
       - PLATFORM_ENV=docker
       - CRANK_ENVIRONMENT=development-https  # 🔒 HTTPS-only with relaxed cert verification
       - LOG_LEVEL=INFO
       - PLATFORM_HTTPS_PORT=${PLATFORM_HTTPS_PORT:-8443}
-      - HTTPS_ONLY=true  # 🔒 Force HTTPS-only mode (NO HTTP FALLBACK!)
-      - CA_SERVICE_URL=https://cert-authority:9090  # 🔐 Certificate Authority Service endpoint (HTTPS ONLY)
+      - HTTPS_ONLY=true  # 🔒 Force HTTPS-only mode
+      - CA_SERVICE_URL=https://cert-authority:9090  # 🔐 Certificate Authority Service endpoint
+      - CERT_DIR=/etc/certs
     depends_on:
       cert-authority:
         condition: service_healthy
@@ -79,6 +76,8 @@ services:
     user: worker:worker  # 🔒 Non-root user for security
     ports:
       - "${DOC_CONVERTER_HTTPS_PORT:-8101}:${DOC_CONVERTER_HTTPS_PORT:-8101}"  # 🔒 HTTPS with mTLS ONLY
+    volumes:
+      - certs-volume:/etc/certs:ro  # Read-only access to certificates
     environment:
       - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}  # 🔒 ZERO-TRUST: HTTPS ONLY
       - CRANK_ENVIRONMENT=development-https  # 🔒 HTTPS-only with relaxed cert verification
@@ -87,7 +86,8 @@ services:
       - DOC_CONVERTER_HTTPS_PORT=${DOC_CONVERTER_HTTPS_PORT:-8101}
       - DOC_CONVERTER_HOST=0.0.0.0
       - HTTPS_ONLY=true  # 🔒 Force HTTPS-only mode
-      - CA_SERVICE_URL=https://cert-authority:9090  # 🔐 Certificate Authority Service endpoint (HTTPS ONLY)
+      - CA_SERVICE_URL=https://cert-authority:9090  # 🔐 Certificate Authority Service endpoint
+      - CERT_DIR=/etc/certs
     depends_on:
       cert-authority:
         condition: service_healthy
@@ -112,6 +112,8 @@ services:
     user: worker:worker  # 🔒 Non-root user for security
     ports:
       - "${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}:${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}"  # 🔒 HTTPS with mTLS ONLY
+    volumes:
+      - certs-volume:/etc/certs:ro  # Read-only access to certificates
     environment:
       - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}  # 🔒 ZERO-TRUST: HTTPS ONLY
       - CRANK_ENVIRONMENT=development-https  # 🔒 HTTPS-only with relaxed cert verification
@@ -119,8 +121,9 @@ services:
       - PLATFORM_AUTH_TOKEN=dev-mesh-key
       - EMAIL_CLASSIFIER_HTTPS_PORT=${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}
       - EMAIL_CLASSIFIER_HOST=0.0.0.0
-      - HTTPS_ONLY=true  # 🔒 Force HTTPS-only mode (NO HTTP FALLBACK!)
-      - CA_SERVICE_URL=https://cert-authority:9090  # 🔐 Certificate Authority Service endpoint (HTTPS ONLY)
+      - HTTPS_ONLY=true  # 🔒 Force HTTPS-only mode
+      - CA_SERVICE_URL=https://cert-authority:9090  # 🔐 Certificate Authority Service endpoint
+      - CERT_DIR=/etc/certs
     depends_on:
       cert-authority:
         condition: service_healthy
@@ -145,6 +148,8 @@ services:
     user: worker:worker  # 🔒 Non-root user for security
     ports:
       - "${EMAIL_PARSER_HTTPS_PORT:-8301}:${EMAIL_PARSER_HTTPS_PORT:-8301}"  # 🔒 HTTPS with mTLS ONLY
+    volumes:
+      - certs-volume:/etc/certs:ro  # Read-only access to certificates
     environment:
       - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}  # 🔒 ZERO-TRUST: HTTPS ONLY
       - CRANK_ENVIRONMENT=development-https  # 🔒 HTTPS-only with relaxed cert verification
@@ -152,8 +157,9 @@ services:
       - PLATFORM_AUTH_TOKEN=dev-mesh-key
       - EMAIL_PARSER_HTTPS_PORT=${EMAIL_PARSER_HTTPS_PORT:-8301}
       - EMAIL_PARSER_HOST=0.0.0.0
-      - HTTPS_ONLY=true  # 🔒 Force HTTPS-only mode (NO HTTP FALLBACK!)
-      - CA_SERVICE_URL=https://cert-authority:9090  # 🔐 Certificate Authority Service endpoint (HTTPS ONLY)
+      - HTTPS_ONLY=true  # 🔒 Force HTTPS-only mode
+      - CA_SERVICE_URL=https://cert-authority:9090  # 🔐 Certificate Authority Service endpoint
+      - CERT_DIR=/etc/certs
     depends_on:
       cert-authority:
         condition: service_healthy
@@ -178,6 +184,8 @@ services:
     user: worker:worker  # 🔒 Non-root user for security
     ports:
       - "${STREAMING_HTTPS_PORT:-8501}:${STREAMING_HTTPS_PORT:-8501}"  # 🔒 HTTPS with mTLS ONLY
+    volumes:
+      - certs-volume:/etc/certs:ro  # Read-only access to certificates
     environment:
       - PLATFORM_URL=https://platform:${PLATFORM_HTTPS_PORT:-8443}  # 🔒 ZERO-TRUST: HTTPS ONLY
       - CRANK_ENVIRONMENT=development-https  # 🔒 HTTPS-only with relaxed cert verification
@@ -185,8 +193,9 @@ services:
       - PLATFORM_AUTH_TOKEN=dev-mesh-key
       - STREAMING_HTTPS_PORT=${STREAMING_HTTPS_PORT:-8501}
       - STREAMING_HOST=0.0.0.0
-      - HTTPS_ONLY=true  # 🔒 Force HTTPS-only mode (NO HTTP FALLBACK!)
-      - CA_SERVICE_URL=https://cert-authority:9090  # 🔐 Certificate Authority Service endpoint (HTTPS ONLY)
+      - HTTPS_ONLY=true  # 🔒 Force HTTPS-only mode
+      - CA_SERVICE_URL=https://cert-authority:9090  # 🔐 Certificate Authority Service endpoint
+      - CERT_DIR=/etc/certs
     depends_on:
       cert-authority:
         condition: service_healthy

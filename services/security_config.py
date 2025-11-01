@@ -35,8 +35,9 @@ class SecurityConfig:
         
         # Security settings based on environment
         self.verify_certificates = environment == "production"
-        self.require_mtls = environment == "production"
+        self.require_mtls = environment == "production" 
         self.https_only = environment in ["production", "development-https"]
+        self.strict_validation = os.getenv('CERT_VALIDATION', 'relaxed') == 'strict'
         
     def get_ssl_context(self) -> ssl.SSLContext:
         """Create SSL context for secure connections."""

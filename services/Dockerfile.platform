@@ -3,6 +3,10 @@
 
 FROM python:3.11-slim
 
+# Create non-root user for security
+RUN addgroup --gid 1000 worker && \
+    adduser --uid 1000 --gid 1000 --disabled-password worker
+
 WORKDIR /app
 
 # Install system dependencies
@@ -17,17 +21,48 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy all service files
 COPY *.py ./
 
-# Create platform startup script with HTTPS support
+# Copy certificate initialization script
+COPY initialize_certificates.py ./scripts/
+
+# Create certificates directory with proper ownership
+RUN mkdir -p /etc/certs && chown worker:worker /etc/certs
+
+# Create platform startup script with certificate initialization
 RUN echo '#!/usr/bin/env python3' > run_platform.py && \
-    echo 'import platform_app' >> run_platform.py && \
+    echo 'import asyncio' >> run_platform.py && \
+    echo 'import subprocess' >> run_platform.py && \
+    echo 'import sys' >> run_platform.py && \
+    echo 'import os' >> run_platform.py && \
+    echo '' >> run_platform.py && \
+    echo 'def initialize_certificates():' >> run_platform.py && \
+    echo '    """Initialize certificates from CA service."""' >> run_platform.py && \
+    echo '    ca_service_url = os.getenv("CA_SERVICE_URL")' >> run_platform.py && \
+    echo '    if ca_service_url:' >> run_platform.py && \
+    echo '        print("🔐 Initializing certificates from Certificate Authority Service...")' >> run_platform.py && \
+    echo '        try:' >> run_platform.py && \
+    echo '            result = subprocess.run([sys.executable, "scripts/initialize_certificates.py"], check=True)' >> run_platform.py && \
+    echo '            print("✅ Certificates initialized successfully")' >> run_platform.py && \
+    echo '        except subprocess.CalledProcessError as e:' >> run_platform.py && \
+    echo '            print(f"❌ Certificate initialization failed: {e}")' >> run_platform.py && \
+    echo '            sys.exit(1)' >> run_platform.py && \
+    echo '    else:' >> run_platform.py && \
+    echo '        print("🔧 No CA service configured, using legacy certificate generation")' >> run_platform.py && \
+    echo '' >> run_platform.py && \
     echo 'if __name__ == "__main__":' >> run_platform.py && \
-    echo '    # Use the main block from platform_app.py with HTTPS auto-detection' >> run_platform.py && \
+    echo '    # Initialize certificates first' >> run_platform.py && \
+    echo '    initialize_certificates()' >> run_platform.py && \
+    echo '    ' >> run_platform.py && \
+    echo '    # Start platform application' >> run_platform.py && \
+    echo '    import platform_app' >> run_platform.py && \
     echo '    platform_app.main()' >> run_platform.py && \
     chmod +x run_platform.py
 
-# Health check (try HTTPS first, fallback to HTTP)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -k -f https://localhost:8443/health/live || curl -f http://localhost:8000/health/live || exit 1
+# Switch to non-root user
+USER worker
+
+# Health check for HTTPS-only mode
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD curl -k -f https://localhost:${PLATFORM_HTTPS_PORT:-8443}/health/live || exit 1
 
 # Expose platform ports (HTTP fallback + HTTPS)
 EXPOSE 8000 8443
@@ -37,5 +72,8 @@ ENV PYTHONPATH=/app
 # SECURITY: Auth tokens must be provided at runtime via environment variables
 # Do NOT hardcode sensitive values in Docker images
 
-# Run platform with HTTPS auto-detection
-CMD ["python", "platform_app.py"]
+# Switch to non-root user for security
+USER worker
+
+# Run platform with Certificate Authority Service integration
+CMD ["python", "run_platform.py"]

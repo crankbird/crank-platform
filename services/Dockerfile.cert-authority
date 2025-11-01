@@ -1,0 +1,46 @@
+# Certificate Authority Service Container
+# Dedicated service for certificate provisioning and management
+
+FROM python:3.11-slim
+
+# Create non-root user for security (cert service doesn't need root for most operations)
+RUN addgroup --gid 2000 certuser && \
+    adduser --uid 2000 --gid 2000 --disabled-password certuser
+
+# Install system dependencies for certificate operations
+RUN apt-get update && apt-get install -y \
+    openssl \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install Python dependencies
+COPY requirements-cert-service.txt .
+RUN pip install --no-cache-dir -r requirements-cert-service.txt
+
+# Copy certificate service code
+COPY certificate_authority_service.py .
+COPY cert_service_app.py .
+COPY initialize_certificates.py ./scripts/
+
+# Create certificate storage directory (CA service expects /app/certificates)
+RUN mkdir -p /app/certificates && chown certuser:certuser /app/certificates
+
+# Switch to non-root user
+USER certuser
+
+# Expose certificate service API port
+EXPOSE 9090
+
+# Health check (use HTTPS and accept self-signed certs)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f -k https://localhost:9090/health || exit 1
+
+# Environment variables
+ENV PYTHONPATH=/app
+ENV CERT_PROVIDER=development
+ENV CERT_SERVICE_PORT=9090
+
+# Run certificate authority service
+CMD ["python", "cert_service_app.py"]

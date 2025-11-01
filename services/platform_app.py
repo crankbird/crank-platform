@@ -525,44 +525,73 @@ def main():
     # 🔒 ZERO-TRUST: Check for HTTPS-only mode
     https_only = os.getenv('HTTPS_ONLY', 'false').lower() == 'true'
     cert_dir = Path("/etc/certs")
+    ca_service_url = os.getenv('CA_SERVICE_URL')
     
-    # Generate certificates if needed for HTTPS-only mode
-    if https_only and not ((cert_dir / "platform.crt").exists() and (cert_dir / "platform.key").exists()):
-        print("🔧 HTTPS_ONLY mode: Generating required certificates...")
-        ResilientCertificateManager.generate_complete_dev_certificates(cert_dir)
-    
-    has_certs = (cert_dir / "platform.crt").exists() and (cert_dir / "platform.key").exists()
-    
-    # Kevin's port configuration - environment-based for maximum portability
-    https_port = int(os.getenv('PLATFORM_HTTPS_PORT', '8443'))
-    http_port = int(os.getenv('PLATFORM_HTTP_PORT', '8000'))
-    
-    if https_only:
-        if not has_certs:
-            raise RuntimeError("🚫 HTTPS_ONLY=true but certificates not found. Cannot start platform.")
-        print(f"🔒 Starting Crank Platform with HTTPS/mTLS ONLY on port {https_port}")
-        uvicorn.run(
-            app, 
-            host="0.0.0.0", 
-            port=https_port,
-            ssl_keyfile=str(cert_dir / "platform.key"),
-            ssl_certfile=str(cert_dir / "platform.crt"),
-            ssl_ca_certs=str(cert_dir / "ca.crt")  # Require client certificates
-        )
-    elif has_certs:
-        # Start with HTTPS using mTLS
-        print(f"🔒 Starting Crank Platform with HTTPS/mTLS on port {https_port}")
-        uvicorn.run(
-            app, 
-            host="0.0.0.0", 
-            port=https_port,
-            ssl_keyfile=str(cert_dir / "platform.key"),
-            ssl_certfile=str(cert_dir / "platform.crt"),
-            ssl_ca_certs=str(cert_dir / "ca.crt")  # Require client certificates
-        )
+    # � SECURE CERTIFICATE AUTHORITY SERVICE - CSR PATTERN ONLY
+    # Certificate initialization using secure CSR pattern (no private key transmission)
+    ca_service_url = os.getenv("CA_SERVICE_URL")
+    if https_only and ca_service_url:
+        print("� Initializing certificates using SECURE CSR pattern...")
+        try:
+            # Run secure certificate initialization in the same process
+            import sys
+            sys.path.append('/app/scripts')
+            import asyncio
+            from initialize_certificates import main as init_certificates, cert_store
+            
+            # Run secure certificate initialization
+            asyncio.run(init_certificates())
+            
+            # Check if certificates were loaded
+            if cert_store.platform_cert is None:
+                raise RuntimeError("🚫 Certificate initialization completed but no certificates in memory")
+            
+            print("✅ Certificates loaded successfully using SECURE CSR pattern")
+            print("🔒 SECURITY: Private keys generated locally and never transmitted")
+            has_cert_store = True
+            
+        except Exception as e:
+            raise RuntimeError(f"🚫 Secure Certificate Authority Service initialization failed: {e}")
+    elif https_only:
+        raise RuntimeError("🚫 HTTPS_ONLY=true but no CA_SERVICE_URL provided. NO LEGACY CERTIFICATE GENERATION ALLOWED!")
     else:
-        print(f"⚠️  Starting Crank Platform with HTTP on port {http_port} (development only)")
-        uvicorn.run(app, host="0.0.0.0", port=http_port)
+        has_cert_store = False
+    
+    # Port configuration - HTTPS only
+    https_port = int(os.getenv('PLATFORM_HTTPS_PORT', '8443'))
+    
+    # 🔐 CERTIFICATE AUTHORITY SERVICE ONLY - NO DISK CERTIFICATE FALLBACKS!
+    if https_only:
+        if not has_cert_store:
+            raise RuntimeError("🚫 HTTPS_ONLY=true but no in-memory certificates from Certificate Authority Service. NO LEGACY FALLBACKS!")
+        
+        print(f"🔒 Starting Crank Platform with HTTPS/mTLS ONLY on port {https_port}")
+        print("🔐 Using in-memory certificates from Certificate Authority Service")
+        
+        # Create SSL context from in-memory certificates (SECURE CSR pattern)
+        try:
+            import sys
+            sys.path.append('/app/scripts')
+            from initialize_certificates import cert_store
+            ssl_context = cert_store.get_ssl_context()
+            
+            print("🔒 Using certificates obtained via SECURE CSR pattern")
+            
+            # Get the temporary certificate file paths for uvicorn
+            cert_file = cert_store._temp_cert_file
+            key_file = cert_store._temp_key_file
+            
+            uvicorn.run(
+                app, 
+                host="0.0.0.0", 
+                port=https_port,
+                ssl_keyfile=key_file,
+                ssl_certfile=cert_file
+            )
+        except Exception as e:
+            raise RuntimeError(f"🚫 Failed to create SSL context from Certificate Authority Service: {e}")
+    else:
+        raise RuntimeError("🚫 HTTP mode disabled permanently - Certificate Authority Service provides HTTPS-only security")
 
 
 if __name__ == "__main__":
