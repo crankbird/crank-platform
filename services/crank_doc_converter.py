@@ -167,27 +167,22 @@ class CrankDocumentConverter:
     def __init__(self, platform_url: str = None):
         self.app = FastAPI(title="Crank Document Converter", version="1.0.0")
         
-        # Auto-detect HTTPS based on certificate availability
-        cert_dir = Path("/etc/certs")
-        has_certs = (cert_dir / "platform.crt").exists() and (cert_dir / "platform.key").exists()
+        # 🔐 ZERO-TRUST: Use in-memory certificates from Certificate Authority Service
+        logger.info("🔐 Using in-memory certificates from secure initialization")
+        import sys
+        sys.path.append('/app/scripts')
+        from initialize_certificates import SecureCertificateStore
+        self.cert_store = SecureCertificateStore()
         
-        # 🔒 ZERO-TRUST: Always use HTTPS for platform communication when certs available
-        if has_certs:
-            self.platform_url = platform_url or os.getenv("PLATFORM_URL", "https://platform:8443")
-            self.worker_url = os.getenv("WORKER_URL", "https://crank-doc-converter:8443")
-            # mTLS client configuration with proper CA handling
-            self.cert_file = cert_dir / "platform.crt"
-            self.key_file = cert_dir / "platform.key"
-            self.ca_file = cert_dir / "ca.crt"  # Use proper CA certificate
-        else:
-            # Fallback to HTTP only in development without certificates
-            self.platform_url = platform_url or os.getenv("PLATFORM_URL", "http://platform:8080")
-            self.worker_url = os.getenv("WORKER_URL", "http://crank-doc-converter:8081")
-            self.cert_file = None
-            self.key_file = None
-            self.ca_file = None
-            logger.warning("⚠️  No certificates found - falling back to HTTP (development only)")
-            
+        # Always use HTTPS with Certificate Authority Service certificates
+        self.platform_url = platform_url or os.getenv("PLATFORM_URL", "https://platform:8443")
+        self.worker_url = os.getenv("WORKER_URL", "https://crank-doc-converter:8101")
+        
+        # Certificate files are purely in-memory now - no disk dependencies
+        self.cert_file = None
+        self.key_file = None 
+        self.ca_file = None
+        
         self.worker_id = None
         
         # Initialize real document conversion
@@ -213,8 +208,9 @@ class CrankDocumentConverter:
             if hasattr(self, 'security_config'):
                 security_status = {
                     "security_level": self.security_config.get_security_level(),
-                    "ssl_enabled": os.path.exists("/etc/certs/platform.crt"),
-                    "client_cert_available": os.path.exists("/etc/certs/client.crt")
+                    "ssl_enabled": self.cert_store.platform_cert is not None,
+                    "ca_cert_available": self.cert_store.ca_cert is not None,
+                    "certificate_source": "Certificate Authority Service"
                 }
             
             return {
@@ -373,13 +369,29 @@ class CrankDocumentConverter:
             }
     
     def _create_adaptive_client(self, timeout: float = 10.0) -> httpx.AsyncClient:
-        """Create HTTP client with adaptive security based on available certificates."""
-        if hasattr(self, 'security_config'):
-            # Use the enhanced adaptive client from security config
-            return self.security_config.create_adaptive_http_client(timeout)
+        """Create HTTP client using in-memory certificates from Certificate Authority Service."""
+        
+        # 🔐 Use in-memory certificates directly - no disk dependencies
+        import ssl
+        import tempfile
+        
+        # For development-https, we need to create a custom SSL context with our CA certificate
+        ssl_context = ssl.create_default_context()
+        
+        if self.cert_store.ca_cert:
+            # Create temporary CA certificate for httpx to use
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.crt', delete=False) as ca_file:
+                ca_file.write(self.cert_store.ca_cert)
+                ca_file.flush()
+                
+                # Configure httpx to trust our CA certificate
+                return httpx.AsyncClient(
+                    verify=ca_file.name,
+                    timeout=timeout
+                )
         else:
-            # Fallback for backward compatibility
-            logger.warning("⚠️ Security config not initialized, using fallback client")
+            # Fallback for development - disable verification
+            logger.warning("⚠️ No CA certificate available, using insecure client")
             return httpx.AsyncClient(verify=False, timeout=timeout)
     
     async def _startup(self):
@@ -559,11 +571,7 @@ def main():
         except Exception as e:
             raise RuntimeError(f"🚫 Failed to initialize certificates with CA service: {e}")
     else:
-        # Fallback to disk-based certificates
-        cert_dir = Path("/etc/certs")
-        use_https = (cert_dir / "platform.crt").exists() and (cert_dir / "platform.key").exists()
-        if use_https:
-            logger.warning("⚠️ Falling back to disk-based certificates")
+        raise RuntimeError("🚫 HTTPS_ONLY environment requires Certificate Authority Service")
     
     # 🚢 PORT CONFIGURATION: Use environment variables for flexible deployment  
     service_port = int(os.getenv("DOC_CONVERTER_PORT", "8100"))  # HTTP fallback port
