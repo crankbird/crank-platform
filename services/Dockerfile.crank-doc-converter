@@ -26,39 +26,17 @@ COPY crankdoc_mesh_minimal.py .
 COPY security_config.py .
 COPY crank-doc-converter.plugin.yaml ./plugin.yaml
 
-# Copy certificate initialization script
+# Copy certificate initialization script (needed for in-process initialization)
 COPY initialize_certificates.py ./scripts/
 
 # Create certificates directory with proper ownership
 RUN mkdir -p /etc/certs && chown worker:worker /etc/certs
 
-# Create worker startup script following platform pattern
+# Create simplified startup script - NO subprocess initialization
 RUN echo '#!/usr/bin/env python3' > run_worker.py && \
-    echo 'import subprocess' >> run_worker.py && \
-    echo 'import sys' >> run_worker.py && \
-    echo 'import os' >> run_worker.py && \
-    echo '' >> run_worker.py && \
-    echo 'def initialize_certificates():' >> run_worker.py && \
-    echo '    """Initialize certificates from CA service."""' >> run_worker.py && \
-    echo '    ca_service_url = os.getenv("CA_SERVICE_URL")' >> run_worker.py && \
-    echo '    if ca_service_url:' >> run_worker.py && \
-    echo '        print("🔐 Initializing certificates from Certificate Authority Service...")' >> run_worker.py && \
-    echo '        try:' >> run_worker.py && \
-    echo '            result = subprocess.run([sys.executable, "scripts/initialize_certificates.py"], check=True)' >> run_worker.py && \
-    echo '            print("✅ Certificates initialized successfully")' >> run_worker.py && \
-    echo '        except subprocess.CalledProcessError as e:' >> run_worker.py && \
-    echo '            print(f"❌ Certificate initialization failed: {e}")' >> run_worker.py && \
-    echo '            sys.exit(1)' >> run_worker.py && \
-    echo '    else:' >> run_worker.py && \
-    echo '        print("🔧 No CA service configured")' >> run_worker.py && \
-    echo '' >> run_worker.py && \
-    echo 'if __name__ == "__main__":' >> run_worker.py && \
-    echo '    # Initialize certificates first (same pattern as platform)' >> run_worker.py && \
-    echo '    initialize_certificates()' >> run_worker.py && \
-    echo '    ' >> run_worker.py && \
-    echo '    # Start worker application' >> run_worker.py && \
-    echo '    import crank_doc_converter' >> run_worker.py && \
-    echo '    crank_doc_converter.main()' >> run_worker.py && \
+    echo '# Simple direct startup - certificate initialization in main()' >> run_worker.py && \
+    echo 'import crank_doc_converter' >> run_worker.py && \
+    echo 'crank_doc_converter.main()' >> run_worker.py && \
     chmod +x run_worker.py
 
 # Security hardening
