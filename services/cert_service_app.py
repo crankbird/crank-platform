@@ -14,6 +14,7 @@ and enable easy replacement with external certificate authorities.
 import asyncio
 import logging
 import os
+import subprocess
 from typing import Dict, Any
 from pathlib import Path
 
@@ -47,6 +48,28 @@ async def startup_event():
     global cert_service
     
     logger.info("🔐 Starting Certificate Authority Service")
+    
+    # 🔒 PREVENTION: Ensure shared CA directory structure and clean startup
+    shared_ca_dir = Path("/shared/ca-certs")
+    
+    if shared_ca_dir.exists():
+        logger.info(f"📁 Shared CA directory exists: {shared_ca_dir}")
+        # Optional: Clean up any old/stale certificates for fresh start
+        # Uncomment if you want clean startup:
+        # for old_file in shared_ca_dir.glob("*.crt"):
+        #     old_file.unlink()
+        #     logger.info(f"🧹 Cleaned old certificate: {old_file}")
+    else:
+        shared_ca_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"📁 Created shared CA directory: {shared_ca_dir}")
+    
+    # Set proper permissions for cross-container access
+    import os
+    try:
+        os.chmod(shared_ca_dir, 0o755)  # drwxr-xr-x (readable by all users)
+        logger.info(f"� Set directory permissions: {shared_ca_dir} (755 - readable by all containers)")
+    except Exception as e:
+        logger.warning(f"⚠️ Could not set directory permissions: {e}")
     
     try:
         # Create certificate provider based on environment
@@ -226,29 +249,83 @@ if __name__ == "__main__":
     cert_dir = Path(os.getenv("CERT_DIR", "/app/certificates"))
     cert_dir.mkdir(parents=True, exist_ok=True)
     
-    # Generate self-signed certificates for CA service if they don't exist
-    ca_cert_path = cert_dir / "ca-service.crt"
-    ca_key_path = cert_dir / "ca-service.key"
+    # Generate proper certificate chain for CA service
+    ca_cert_path = cert_dir / "ca.crt"           # Root CA certificate (trust anchor)
+    ca_key_path = cert_dir / "ca.key"            # Root CA private key
+    server_cert_path = cert_dir / "ca-service.crt"  # Server cert (signed by CA)
+    server_key_path = cert_dir / "ca-service.key"   # Server private key
     
     if not ca_cert_path.exists() or not ca_key_path.exists():
         logger.info("🔧 Bootstrapping Certificate Authority Service certificates...")
+        
+        # Step 1: Generate Root CA certificate (trust anchor)
+        logger.info("📜 Generating Root CA certificate (trust anchor)...")
         subprocess.run([
-            "openssl", "req", "-x509", "-newkey", "rsa:4096",
-            "-keyout", str(ca_key_path),
-            "-out", str(ca_cert_path),
-            "-days", "365", "-nodes",
-            "-subj", "/CN=cert-authority/O=Crank Platform CA/OU=Certificate Authority"
+            "openssl", "genrsa", "-out", str(ca_key_path), "4096"
         ], check=True)
+        
+        subprocess.run([
+            "openssl", "req", "-new", "-x509", "-key", str(ca_key_path),
+            "-out", str(ca_cert_path), "-days", "365", "-nodes",
+            "-subj", "/CN=Development CA/O=Crank Platform/OU=Development"
+        ], check=True)
+        
+        # Step 2: Generate server certificate signed by the CA
+        logger.info("🔒 Generating server certificate signed by CA...")
+        subprocess.run([
+            "openssl", "genrsa", "-out", str(server_key_path), "2048"
+        ], check=True)
+        
+        # Create server CSR
+        server_csr_path = cert_dir / "ca-service.csr"
+        subprocess.run([
+            "openssl", "req", "-new", "-key", str(server_key_path),
+            "-out", str(server_csr_path), "-nodes",
+            "-subj", "/CN=crank-cert-authority/O=Crank Platform/OU=Certificate Authority"
+        ], check=True)
+        
+        # Sign server certificate with CA
+        subprocess.run([
+            "openssl", "x509", "-req", "-in", str(server_csr_path),
+            "-CA", str(ca_cert_path), "-CAkey", str(ca_key_path),
+            "-CAcreateserial", "-out", str(server_cert_path),
+            "-days", "365"
+        ], check=True)
+        
+        # Clean up CSR
+        server_csr_path.unlink()
+        
         logger.info("✅ Certificate Authority Service certificates generated")
+        logger.info("🔗 Certificate chain: Root CA → Server Certificate")
+        logger.info("🔒 Trust anchor: Development CA")
+        logger.info("🌐 Server identity: crank-cert-authority")
+        
+        # Step 3: Copy Root CA certificate to shared volume for distribution
+        # 🔒 SIMPLE SOLUTION: Single standardized location for all services
+        shared_ca_dir = Path("/shared/ca-certs")
+        
+        if shared_ca_dir.exists():
+            shared_ca_cert_path = shared_ca_dir / "ca.crt"
+            import shutil
+            import os
+            shutil.copy2(ca_cert_path, shared_ca_cert_path)
+            
+            # 🔒 SECURITY: Set minimal required permissions for cross-container access
+            # CA certificates are public by design, but limit to necessary access
+            os.chmod(shared_ca_cert_path, 0o644)  # -rw-r--r-- (owner: rw, group: r, others: r)
+            logger.info(f"🔗 Root CA certificate copied with secure permissions: {shared_ca_cert_path} (644)")
+            logger.info(f"🔒 SECURITY NOTE: CA certificate is readable (public key material - safe to read)")
+        else:
+            logger.warning("⚠️ CRITICAL: Shared CA directory not found - CA distribution will fail")
     
-    # � SECURE CERTIFICATE AUTHORITY SERVICE - HTTPS ONLY
+    # 🔒 SECURE CERTIFICATE AUTHORITY SERVICE - HTTPS ONLY
     # Private keys never transmitted - clients use CSR pattern
     logger.info("🔒 Starting Certificate Authority Service HTTPS-only on 0.0.0.0:9090")
     uvicorn.run(
         app,
         host="0.0.0.0", 
         port=9090,
-        ssl_keyfile=str(ca_key_path),
-        ssl_certfile=str(ca_cert_path),
+        ssl_keyfile=str(server_key_path),
+        ssl_certfile=str(server_cert_path),
         log_level="info"
     )

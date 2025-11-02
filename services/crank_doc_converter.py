@@ -369,30 +369,38 @@ class CrankDocumentConverter:
             }
     
     def _create_adaptive_client(self, timeout: float = 10.0) -> httpx.AsyncClient:
-        """Create HTTP client using in-memory certificates from Certificate Authority Service."""
+        """Create HTTP client with enterprise-grade certificate verification."""
         
         # 🔐 Use in-memory certificates directly - no disk dependencies
         import ssl
         import tempfile
+        from pathlib import Path
         
-        # For development-https, we need to create a custom SSL context with our CA certificate
-        ssl_context = ssl.create_default_context()
-        
+        # First try to use in-memory CA certificate
         if self.cert_store.ca_cert:
             # Create temporary CA certificate for httpx to use
             with tempfile.NamedTemporaryFile(mode='w', suffix='.crt', delete=False) as ca_file:
                 ca_file.write(self.cert_store.ca_cert)
                 ca_file.flush()
                 
-                # Configure httpx to trust our CA certificate
+                # Configure httpx to trust our CA certificate with full verification
                 return httpx.AsyncClient(
                     verify=ca_file.name,
                     timeout=timeout
                 )
+        # If no in-memory CA cert, try to use distributed Root CA certificate
+        elif Path("/etc/ssl/crank-ca/ca.crt").exists():
+            logger.info("🔒 Using distributed Root CA certificate for full certificate verification")
+            
+            # Enterprise-grade certificate verification: CA trust + hostname verification
+            return httpx.AsyncClient(
+                verify="/etc/ssl/crank-ca/ca.crt",
+                timeout=timeout
+            )
         else:
-            # Fallback for development - disable verification
-            logger.warning("⚠️ No CA certificate available, using insecure client")
-            return httpx.AsyncClient(verify=False, timeout=timeout)
+            # No fallback in production - certificate verification is mandatory
+            logger.error("❌ No CA certificate available - cannot establish secure connection")
+            raise RuntimeError("Certificate verification required: No CA certificate found")
     
     async def _startup(self):
         """Startup handler - register with platform."""

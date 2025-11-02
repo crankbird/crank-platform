@@ -6,7 +6,7 @@ author: "Crank Platform"
 
 # Service configuration
 service:
-  port: 8003
+  port: 8301
   protocol: "https"
   health_endpoint: "/health"
   

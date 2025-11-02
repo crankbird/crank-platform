@@ -16,6 +16,7 @@ from pathlib import Path
 import os
 import json
 import logging
+import subprocess
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +87,42 @@ class DevelopmentCertificateProvider(CertificateProvider):
     def __init__(self, cert_dir: Path):
         self.cert_dir = cert_dir
         self.cert_dir.mkdir(parents=True, exist_ok=True)
+        self.ca_key_file = self.cert_dir / "ca.key"
+        self.ca_cert_file = self.cert_dir / "ca.crt"
+        self._ca_initialized = False
+    
+    async def _ensure_ca_certificate(self):
+        """Ensure CA certificate exists, generate if needed."""
+        if not self._ca_initialized:
+            if not self.ca_cert_file.exists() or not self.ca_key_file.exists():
+                await self._generate_ca_certificate()
+            self._ca_initialized = True
+    
+    async def _generate_ca_certificate(self):
+        """Generate a real CA certificate for development."""
+        import subprocess
+        import os
+        
+        logger.info("🔐 Generating development CA certificate...")
+        
+        try:
+            # Generate CA key
+            subprocess.run([
+                "openssl", "genrsa", "-out", str(self.ca_key_file), "2048"
+            ], check=True, capture_output=True)
+            
+            # Generate CA certificate
+            subprocess.run([
+                "openssl", "req", "-new", "-x509", "-key", str(self.ca_key_file),
+                "-out", str(self.ca_cert_file), "-days", "365", "-nodes",
+                "-subj", "/CN=Development CA/O=Crank Platform/OU=Development"
+            ], check=True, capture_output=True)
+            
+            logger.info("✅ Development CA certificate generated successfully")
+            
+        except subprocess.CalledProcessError as e:
+            logger.error(f"❌ Failed to generate CA certificate: {e}")
+            raise Exception(f"CA certificate generation failed: {e}")
         
     async def provision_server_certificate(self, request: CertificateRequest) -> CertificateBundle:
         """Generate self-signed server certificate for development."""
@@ -150,29 +187,33 @@ MIIDevelopmentClientKey{request.common_name}
     
     async def get_ca_certificate(self) -> str:
         """Get the development CA certificate."""
-        return """-----BEGIN CERTIFICATE-----
-MIICJjCCAY8CAg38MA0GCSqGSIb3DQEBBQUAMIGbMQswCQYDVQQGEwJKUDEOMAwG
-A1UECBMFVG9reW8xEDAOBgNVBAcTB0NodW8ta3UxETAPBgNVBAoTCEZyYW5rNERE
-MRgwFgYDVQQLEw9XZWJDZXJ0aWZpY2F0ZTEYMBYGA1UEAxMPRnJhbms0REQgV2Vi
-Q0ExIzAhBgkqhkiG9w0BCQEWFGZyYW5rNGRkQGZyYW5rNGRkLmNvbTAeFw0xMjA4
-MjIwNTI2NTRaFw0xNzA4MjEwNTI2NTRaMBkxFzAVBgNVBAMTDnd3dy5mcmFuazRk
-ZC5jb20wgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAMYBBrx5PlP0WNI/ZdzD
-+6Pktmurn+F2kQYbtc7XQh8/LTBvCo+P6iZoLEmUA9e7EXLRxgU1CVqeAi79dCI6
-bpNK9o4dhV9y7cqAzYVJ8ba27PIU/4377+ZZ/N4wYE9vPu8dJT7gYGH3ibbSSQpO
-hnOHTe6ZQNkNHEQsxLr6OVR/AgMBAAEwDQYJKoZIhvcNAQEFBQADgYEAGyuZGw3V
-XZB9I6y8JlRl3BbJe8O3kAC0E7OdL+wKOqUNMxYdGrqHobgBd9tF7H3+QKqz0WVv
-0BVqOqJNMeOPVKcHqVmGEBT1tI/2uJjLSczOO0j6PsHB3ZTjKPJSbRgNMy0Z4mPF
-cqjqFj1CgKM4wKFjr2JYHSbU0zqPq3U+Hjw=
------END CERTIFICATE-----"""
+        # Ensure CA certificate exists
+        await self._ensure_ca_certificate()
+        
+        # Read and return the real CA certificate
+        try:
+            with open(self.ca_cert_file, 'r') as f:
+                ca_cert = f.read()
+            return ca_cert.strip()
+        except FileNotFoundError:
+            logger.error("❌ CA certificate file not found")
+            raise Exception("CA certificate not available")
+        except Exception as e:
+            logger.error(f"❌ Failed to read CA certificate: {e}")
+            raise Exception(f"Failed to read CA certificate: {e}")
     
     async def sign_certificate_request(self, csr_pem: str, service_name: str) -> str:
         """Sign a Certificate Signing Request (CSR) - SECURE PKI PATTERN."""
         logger.info(f"🔐 Signing CSR for service: {service_name}")
         
-        # Generate a real self-signed certificate for development
+        # Ensure CA certificate exists
+        await self._ensure_ca_certificate()
+        
+        # Use the persistent CA certificate to sign CSRs
         import subprocess
         import tempfile
         import os
+        import shutil
         
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -181,30 +222,45 @@ cqjqFj1CgKM4wKFjr2JYHSbU0zqPq3U+Hjw=
                 with open(csr_file, 'w') as f:
                     f.write(csr_pem)
                 
-                # Generate CA key and certificate if not exists
-                ca_key_file = os.path.join(temp_dir, "ca.key")
-                ca_cert_file = os.path.join(temp_dir, "ca.crt")
+                # Step C Debug: Check what extensions are in the CSR
+                try:
+                    result = subprocess.run([
+                        "openssl", "req", "-in", csr_file, "-text", "-noout"
+                    ], capture_output=True, text=True, check=True)
+                    if "Subject Alternative Name" in result.stdout:
+                        logger.info(f"🔍 Step C Debug: CSR contains Subject Alternative Names")
+                    else:
+                        logger.warning(f"⚠️ Step C Debug: CSR missing Subject Alternative Names")
+                        logger.debug(f"CSR content: {result.stdout}")
+                except Exception as e:
+                    logger.warning(f"⚠️ Could not verify CSR extensions: {e}")
                 
-                # Generate CA key
-                subprocess.run([
-                    "openssl", "genrsa", "-out", ca_key_file, "2048"
-                ], check=True, capture_output=True)
+                # Copy persistent CA files to temp directory for OpenSSL
+                temp_ca_key = os.path.join(temp_dir, "ca.key")
+                temp_ca_cert = os.path.join(temp_dir, "ca.crt")
+                shutil.copy2(str(self.ca_key_file), temp_ca_key)
+                shutil.copy2(str(self.ca_cert_file), temp_ca_cert)
                 
-                # Generate CA certificate
-                subprocess.run([
-                    "openssl", "req", "-new", "-x509", "-key", ca_key_file,
-                    "-out", ca_cert_file, "-days", "365", "-nodes",
-                    "-subj", "/CN=Development CA/O=Crank Platform/OU=Development"
-                ], check=True, capture_output=True)
-                
-                # Sign the CSR with the CA
+                # Sign the CSR with the persistent CA (with extensions support)
                 signed_cert_file = os.path.join(temp_dir, "signed.crt")
                 subprocess.run([
                     "openssl", "x509", "-req", "-in", csr_file,
-                    "-CA", ca_cert_file, "-CAkey", ca_key_file,
+                    "-CA", temp_ca_cert, "-CAkey", temp_ca_key,
                     "-CAcreateserial", "-out", signed_cert_file,
-                    "-days", "365", "-extensions", "v3_req"
+                    "-days", "365", "-copy_extensions", "copyall"
                 ], check=True, capture_output=True)
+                
+                # Step C Debug: Check what extensions are in the signed certificate
+                try:
+                    result = subprocess.run([
+                        "openssl", "x509", "-in", signed_cert_file, "-text", "-noout"
+                    ], capture_output=True, text=True, check=True)
+                    if "Subject Alternative Name" in result.stdout:
+                        logger.info(f"✅ Step C Debug: Signed certificate contains Subject Alternative Names")
+                    else:
+                        logger.warning(f"⚠️ Step C Debug: Signed certificate missing Subject Alternative Names")
+                except Exception as e:
+                    logger.warning(f"⚠️ Could not verify signed certificate extensions: {e}")
                 
                 # Read the signed certificate
                 with open(signed_cert_file, 'r') as f:
@@ -440,5 +496,12 @@ ENVIRONMENT_CONFIGS = {
         "ADCS_CA_SERVER": "ca.company.com",
         "ADCS_CA_NAME": "Company Enterprise CA",
         "ADCS_TEMPLATE": "CrankPlatformWebServer"
+    },
+    
+    "production-letsencrypt": {
+        "CERT_PROVIDER": "letsencrypt",
+        "LETSENCRYPT_DOMAIN": "crankbird.com",
+        "LETSENCRYPT_EMAIL": "admin@crankbird.com"
+        # Domain ownership must be validated
     }
 }

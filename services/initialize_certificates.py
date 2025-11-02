@@ -80,6 +80,26 @@ class CertificateAuthorityClient:
     
     def __init__(self, ca_service_url: str):
         self.ca_service_url = ca_service_url
+        self.ca_cert_path = "/shared/ca-certs/ca.crt"  # STANDARDIZED: Single location for Root CA certificate
+    
+    def _create_ssl_context(self) -> ssl.SSLContext:
+        """Create SSL context that trusts the Root CA certificate."""
+        import ssl
+        from pathlib import Path
+        
+        # Check if Root CA certificate is available
+        if Path(self.ca_cert_path).exists():
+            # Create SSL context that trusts our Root CA
+            ssl_context = ssl.create_default_context(cafile=self.ca_cert_path)
+            logger.info(f"🔒 Using Root CA certificate for verification: {self.ca_cert_path}")
+            return ssl_context
+        else:
+            # Fallback to insecure for development (but warn)
+            logger.warning(f"⚠️ Root CA certificate not found at {self.ca_cert_path}, using insecure connection")
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            return ssl_context
         
     async def wait_for_ca_service(self, max_wait: int = 30) -> bool:
         """Wait for Certificate Authority Service to be available."""
@@ -105,8 +125,9 @@ class CertificateAuthorityClient:
     
     async def get_ca_certificate(self) -> str:
         """Get the CA certificate for verification (public certificate only)."""
+        ssl_context = self._create_ssl_context()
         async with aiohttp.ClientSession(
-            connector=aiohttp.TCPConnector(ssl=False)  # Accept self-signed CA cert for development
+            connector=aiohttp.TCPConnector(ssl=ssl_context)  # Use Root CA for verification
         ) as session:
             async with session.get(f"{self.ca_service_url}/ca/certificate") as response:
                 if response.status == 200:
@@ -118,8 +139,9 @@ class CertificateAuthorityClient:
     
     async def submit_csr(self, csr_pem: str, service_name: str) -> str:
         """Submit CSR to CA service for signing (SECURE - no private key transmitted)."""
+        ssl_context = self._create_ssl_context()
         async with aiohttp.ClientSession(
-            connector=aiohttp.TCPConnector(ssl=False)  # Accept self-signed CA cert for development
+            connector=aiohttp.TCPConnector(ssl=ssl_context)  # Use Root CA for verification
         ) as session:
             async with session.post(
                 f"{self.ca_service_url}/certificates/csr",
@@ -149,13 +171,53 @@ async def generate_key_pair_and_csr(service_name: str = "platform") -> tuple[str
         ], check=True)
         logger.info("✅ Private key generated locally (never transmitted)")
         
-        # Generate CSR with public key + identity information
+        # Generate CSR with Subject Alternative Names (SAN) for hostname verification
+        config_path = os.path.join(temp_dir, "csr.conf")
+        
+        # Create OpenSSL config with Subject Alternative Names
+        san_names = [service_name, "localhost"]
+        if service_name == "platform":
+            san_names.extend(["crank-platform", "platform"])
+        
+        san_list = ",".join([f"DNS:{name}" for name in san_names])
+        
+        config_content = f"""[req]
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+prompt = no
+
+[req_distinguished_name]
+CN = {service_name}
+O = Crank Platform
+OU = Platform Services
+
+[v3_req]
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+subjectAltName = {san_list}
+"""
+        
+        with open(config_path, 'w') as f:
+            f.write(config_content)
+        
         subprocess.run([
             "openssl", "req", "-new", "-key", private_key_path,
-            "-out", csr_path, "-nodes",
-            "-subj", f"/CN={service_name}/O=Crank Platform/OU=Platform Services"
+            "-out", csr_path, "-config", config_path
         ], check=True)
-        logger.info("✅ Certificate Signing Request (CSR) generated")
+        logger.info(f"✅ Certificate Signing Request (CSR) generated with SAN: {san_list}")
+        
+        # Step C Debug: Verify CSR contains SAN extensions
+        try:
+            result = subprocess.run([
+                "openssl", "req", "-in", csr_path, "-text", "-noout"
+            ], capture_output=True, text=True, check=True)
+            if "Subject Alternative Name" in result.stdout:
+                logger.info(f"🔍 Step C Debug: CSR contains Subject Alternative Names extension")
+            else:
+                logger.warning(f"⚠️ Step C Debug: CSR missing Subject Alternative Names extension")
+                logger.debug(f"CSR content: {result.stdout}")
+        except Exception as e:
+            logger.warning(f"⚠️ Could not verify CSR extensions: {e}")
         
         # Read the generated private key and CSR
         with open(private_key_path, 'r') as f:

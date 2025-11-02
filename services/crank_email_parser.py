@@ -25,7 +25,7 @@ from fastapi import FastAPI, HTTPException, Form, UploadFile, File
 from pydantic import BaseModel
 
 # Import security configuration and models
-from security_config import initialize_security
+from scripts.initialize_certificates import SecureCertificateStore
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -80,7 +80,7 @@ class CrankEmailParserService:
         # Worker registration configuration
         self.worker_id = f"email-parser-{uuid4().hex[:8]}"
         self.platform_url = os.getenv("PLATFORM_URL", "https://platform:8443")
-        self.worker_url = f"https://crank-email-parser:{os.getenv('EMAIL_PARSER_HTTPS_PORT', '8503')}"
+        self.worker_url = f"https://crank-email-parser:{os.getenv('EMAIL_PARSER_HTTPS_PORT', '8301')}"
         self.platform_auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "dev-mesh-key")
         self.heartbeat_task = None
         
@@ -420,6 +420,62 @@ class CrankEmailParserService:
             "analysis_note": "Temporal analysis requires enhanced date parsing",
             "message_count_by_period": "not_implemented"
         }
+    
+    class _SecureHTTPClientManager:
+        """Context manager for creating HTTP client with CA certificate verification."""
+        
+        def __init__(self, ca_service_url="https://cert-authority:9090"):
+            self.ca_service_url = ca_service_url
+            self.ca_cert_file = None
+            self.client = None
+            
+        async def __aenter__(self):
+            import tempfile
+            import os
+            import ssl
+            try:
+                # Import the CA client to get fresh CA certificate
+                import sys
+                sys.path.append('/app/scripts')
+                from initialize_certificates import CertificateAuthorityClient
+                
+                # Get CA certificate directly from the Certificate Authority Service
+                ca_client = CertificateAuthorityClient(self.ca_service_url)
+                ca_cert = await ca_client.get_ca_certificate()
+                
+                if ca_cert:
+                    # Create SSL context with CA certificate
+                    ssl_context = ssl.create_default_context()
+                    ssl_context.check_hostname = False  # For development environment
+                    ssl_context.verify_mode = ssl.CERT_REQUIRED
+                    
+                    # Load CA certificate directly into SSL context
+                    ssl_context.load_verify_locations(cadata=ca_cert)
+                    
+                    # Configure httpx to use the SSL context
+                    self.client = httpx.AsyncClient(
+                        verify=ssl_context,
+                        timeout=10.0
+                    )
+                    logger.info("🔒 Created secure HTTP client with CA certificate verification")
+                    return self.client
+                else:
+                    # Fallback for development - disable verification
+                    logger.warning("⚠️ No CA certificate available, using insecure client")
+                    self.client = httpx.AsyncClient(verify=False, timeout=10.0)
+                    return self.client
+            except Exception as e:
+                logger.warning(f"Failed to access CA certificate: {e}, using insecure client")
+                self.client = httpx.AsyncClient(verify=False, timeout=10.0)
+                return self.client
+                
+        async def __aexit__(self, exc_type, exc_val, exc_tb):
+            if self.client:
+                await self.client.aclose()
+
+    def _create_adaptive_client(self):
+        """Create HTTP client context manager with CA certificate verification."""
+        return self._SecureHTTPClientManager()
 
     def setup_startup(self):
         """Setup startup and shutdown events."""
@@ -429,11 +485,7 @@ class CrankEmailParserService:
             """Initialize security and register with platform."""
             logger.info("📧 Starting Crank Email Parser Service...")
             
-            # Initialize security and certificates
-            logger.info("🔐 Initializing security configuration and certificates...")
-            initialize_security()
-            
-            # Register with platform
+            # Certificate initialization handled in main() - just register
             await self._register_with_platform()
             
             logger.info("✅ Crank Email Parser Service startup complete!")
@@ -462,12 +514,11 @@ class CrankEmailParserService:
         max_retries = 5
         for attempt in range(max_retries):
             try:
-                async with httpx.AsyncClient(verify=False) as client:
+                async with self._create_adaptive_client() as client:
                     response = await client.post(
                         f"{self.platform_url}/v1/workers/register",
                         json=worker_info.dict(),
-                        headers={"Authorization": f"Bearer {self.platform_auth_token}"},
-                        timeout=10.0
+                        headers={"Authorization": f"Bearer {self.platform_auth_token}"}
                     )
                     response.raise_for_status()
                     logger.info(f"🔒 Successfully registered email parser service via mTLS. Worker ID: {self.worker_id}")
@@ -502,74 +553,84 @@ class CrankEmailParserService:
     async def _send_heartbeat(self):
         """Send heartbeat to platform."""
         try:
-            async with httpx.AsyncClient(verify=False) as client:
+            async with self._create_adaptive_client() as client:
                 response = await client.post(
                     f"{self.platform_url}/v1/workers/{self.worker_id}/heartbeat",
                     data={
                         "service_type": "email_parsing",
                         "load_score": 0.3  # Medium load for parsing service
                     },
-                    headers={"Authorization": f"Bearer {self.platform_auth_token}"},
-                    timeout=5.0
+                    headers={"Authorization": f"Bearer {self.platform_auth_token}"}
                 )
                 response.raise_for_status()
         except Exception as e:
             logger.warning(f"Heartbeat failed: {e}")
 
-    def _get_ssl_context(self):
-        """Get SSL context for mTLS communication."""
-        import ssl
-        
-        context = ssl.create_default_context()
-        
-        # Load client certificate for mTLS
-        cert_path = os.getenv("CLIENT_CERT_PATH", "/certs/client.crt")
-        key_path = os.getenv("CLIENT_KEY_PATH", "/certs/client.key")
-        ca_path = os.getenv("CA_CERT_PATH", "/certs/ca.crt")
-        
-        if os.path.exists(cert_path) and os.path.exists(key_path):
-            context.load_cert_chain(cert_path, key_path)
-            logger.info("Loaded client certificates for mTLS")
-        
-        if os.path.exists(ca_path):
-            context.load_verify_locations(ca_path)
-            logger.info("Loaded CA certificate")
-        else:
-            # For development, allow self-signed certificates
-            context.check_hostname = False
-            context.verify_mode = ssl.CERT_NONE
-            
-        return context
-
 # Create service instance
 email_parser_service = CrankEmailParserService()
 app = email_parser_service.app
 
-if __name__ == "__main__":
+def main():
+    """Main entry point with clean certificate initialization."""
     import uvicorn
     
-    # Configure for mTLS
-    ssl_keyfile = os.getenv("SSL_KEYFILE", "/etc/certs/platform.key")
-    ssl_certfile = os.getenv("SSL_CERTFILE", "/etc/certs/platform.crt")
-    ssl_ca_certs = os.getenv("SSL_CA_CERTS", "/etc/certs/ca.crt")
+    # Initialize certificates using SECURE CSR pattern
+    https_only = os.getenv("HTTPS_ONLY", "true").lower() == "true"
+    ca_service_url = os.getenv("CA_SERVICE_URL")
     
-    # Run with or without SSL based on certificate availability
-    # 🚢 PORT CONFIGURATION: Use environment variables for flexible deployment
-    service_port = int(os.getenv("EMAIL_PARSER_PORT", "8300"))  # New default: 8300
+    if https_only and ca_service_url:
+        logger.info("🔐 Initializing certificates using SECURE CSR pattern...")
+        try:
+            # Run secure certificate initialization in the same process
+            import sys
+            sys.path.append('/app/scripts')
+            import asyncio
+            from initialize_certificates import main as init_certificates, cert_store
+            
+            # Run secure certificate initialization
+            asyncio.run(init_certificates())
+            
+            # Check if certificates were loaded
+            if cert_store.platform_cert is None:
+                raise RuntimeError("🚫 Certificate initialization completed but no certificates in memory")
+            
+            logger.info("✅ Certificates loaded successfully using SECURE CSR pattern")
+            logger.info("🔒 SECURITY: Private keys generated locally and never transmitted")
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize certificates with CA service: {e}")
+            exit(1)
+    else:
+        logger.error("🚫 HTTPS_ONLY environment requires Certificate Authority Service")
+        exit(1)
+    
+    # Start server with in-memory certificates
+    service_port = int(os.getenv("EMAIL_PARSER_HTTPS_PORT", "8301"))
     service_host = os.getenv("EMAIL_PARSER_HOST", "0.0.0.0")
-    https_port = int(os.getenv("EMAIL_PARSER_HTTPS_PORT", "8443"))
     
-    if os.path.exists(ssl_certfile) and os.path.exists(ssl_keyfile):
-        logger.info(f"Starting with mTLS enabled on port {https_port}")
+    logger.info(f"� Starting Crank Email Parser with HTTPS/mTLS ONLY on port {service_port}")
+    logger.info("🔐 Using in-memory certificates from Certificate Authority Service")
+    
+    # Create SSL context from in-memory certificates (SECURE CSR pattern)
+    try:
+        ssl_context = cert_store.get_ssl_context()
+        
+        logger.info("🔒 Using certificates obtained via SECURE CSR pattern")
+        
+        # Get the temporary certificate file paths for uvicorn
+        cert_file = cert_store._temp_cert_file
+        key_file = cert_store._temp_key_file
+        
         uvicorn.run(
             app,
             host=service_host,
-            port=https_port,
-            ssl_keyfile=ssl_keyfile,
-            ssl_certfile=ssl_certfile,
-            ssl_ca_certs=ssl_ca_certs if os.path.exists(ssl_ca_certs) else None,
-            ssl_cert_reqs=2  # CERT_REQUIRED for mTLS
+            port=service_port,
+            ssl_keyfile=key_file,
+            ssl_certfile=cert_file
         )
-    else:
-        logger.info(f"Starting without SSL on port {service_port} (development mode)")
-        uvicorn.run(app, host=service_host, port=service_port)
+    except Exception as e:
+        logger.error(f"❌ Failed to start with certificates: {e}")
+        exit(1)
+
+if __name__ == "__main__":
+    main()
