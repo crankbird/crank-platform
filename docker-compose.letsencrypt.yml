@@ -1,0 +1,187 @@
+# Let's Encrypt Production Certificate Management
+#
+# This configuration sets up automatic certificate generation using Let's Encrypt
+# for production deployments with real domains like crankbird.com
+
+services:
+  # Certificate Authority Service (Let's Encrypt Provider)
+  cert-authority:
+    build:
+      context: services
+      dockerfile: Dockerfile.cert-authority
+    container_name: cert-authority-letsencrypt
+    ports:
+      - "9090:9090"   # Certificate authority API
+      - "80:80"       # HTTP-01 challenge (required for Let's Encrypt)
+    volumes:
+      - ./letsencrypt:/etc/letsencrypt  # Persistent certificate storage
+      - ./certs-production:/app/certificates  # Certificate output
+    environment:
+      - CERT_PROVIDER=letsencrypt  # 🔒 Use Let's Encrypt provider
+      - LETSENCRYPT_DOMAIN=crankbird.com  # Your domain
+      - LETSENCRYPT_EMAIL=admin@crankbird.com  # Contact email
+      - CERT_DIR=/app/certificates
+      - LOG_LEVEL=INFO
+      - CRANK_ENVIRONMENT=production-letsencrypt
+    networks:
+      - crank-net-prod
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Platform Service (Let's Encrypt Certificates)
+  platform:
+    build:
+      context: services
+      dockerfile: Dockerfile.platform
+    container_name: crank-platform-letsencrypt
+    ports:
+      - "443:8443"  # Standard HTTPS port
+    volumes:
+      - ./certs-production:/etc/certs:ro  # Read-only certificate mount
+    environment:
+      - PLATFORM_ENV=docker
+      - CRANK_ENVIRONMENT=production-letsencrypt  # Production with Let's Encrypt
+      - LOG_LEVEL=INFO
+      - PLATFORM_HTTPS_PORT=8443
+      - HTTPS_ONLY=true
+      - CERT_VALIDATION=strict  # Full certificate validation
+      - PLATFORM_AUTH_TOKEN=prod-letsencrypt-key-v1
+      - CERT_AUTHORITY_URL=https://cert-authority:9090  # Certificate service
+    depends_on:
+      cert-authority:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--cacert", "/etc/certs/ca.crt", "-f", "https://localhost:8443/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - crank-net-prod
+    restart: unless-stopped
+
+  # Document Converter (Let's Encrypt Certificates)
+  crank-doc-converter:
+    build:
+      context: services
+      dockerfile: Dockerfile.crank-doc-converter
+    container_name: crank-doc-converter-letsencrypt
+    ports:
+      - "8101:8101"
+    volumes:
+      - ./certs-production:/etc/certs:ro
+    environment:
+      - PLATFORM_URL=https://platform:8443
+      - CRANK_ENVIRONMENT=production-letsencrypt
+      - LOG_LEVEL=INFO
+      - PLATFORM_AUTH_TOKEN=prod-letsencrypt-key-v1
+      - DOC_CONVERTER_HTTPS_PORT=8101
+      - DOC_CONVERTER_HOST=0.0.0.0
+      - HTTPS_ONLY=true
+      - CERT_VALIDATION=strict
+      - CERT_AUTHORITY_URL=https://cert-authority:9090
+    depends_on:
+      platform:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--cacert", "/etc/certs/ca.crt", "-f", "https://localhost:8101/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 35s
+    networks:
+      - crank-net-prod
+    restart: unless-stopped
+
+  # Email Classifier (Let's Encrypt Certificates)
+  crank-email-classifier:
+    build:
+      context: services
+      dockerfile: Dockerfile.crank-email-classifier
+    container_name: crank-email-classifier-letsencrypt
+    ports:
+      - "8201:8201"
+    volumes:
+      - ./certs-production:/etc/certs:ro
+    environment:
+      - PLATFORM_URL=https://platform:8443
+      - CRANK_ENVIRONMENT=production-letsencrypt
+      - LOG_LEVEL=INFO
+      - PLATFORM_AUTH_TOKEN=prod-letsencrypt-key-v1
+      - EMAIL_CLASSIFIER_HTTPS_PORT=8201
+      - EMAIL_CLASSIFIER_HOST=0.0.0.0
+      - HTTPS_ONLY=true
+      - CERT_VALIDATION=strict
+      - CERT_AUTHORITY_URL=https://cert-authority:9090
+    depends_on:
+      platform:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--cacert", "/etc/certs/ca.crt", "-f", "https://localhost:8201/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - crank-net-prod
+    restart: unless-stopped
+
+  # Email Parser Worker (Let's Encrypt Certificates)
+  crank-email-parser:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: crank-email-parser-letsencrypt
+    volumes:
+      - ./mail-archive:/app/mail-archive
+      - ./certs-production:/etc/certs:ro
+    environment:
+      - PLATFORM_URL=https://platform:8443
+      - CRANK_ENVIRONMENT=production-letsencrypt
+      - LOG_LEVEL=INFO
+      - PLATFORM_AUTH_TOKEN=prod-letsencrypt-key-v1
+      - CERT_VALIDATION=strict
+      - CERT_AUTHORITY_URL=https://cert-authority:9090
+    depends_on:
+      platform:
+        condition: service_healthy
+      crank-email-classifier:
+        condition: service_healthy
+      crank-doc-converter:
+        condition: service_healthy
+    networks:
+      - crank-net-prod
+    restart: unless-stopped
+
+networks:
+  crank-net-prod:
+    driver: bridge
+    name: crank-network-letsencrypt
+
+# Production Let's Encrypt Deployment Instructions:
+#
+# 1. DNS Configuration:
+#    - Point crankbird.com to your server IP
+#    - Ensure port 80 is accessible for HTTP-01 challenge
+#    - Ensure port 443 is accessible for HTTPS traffic
+#
+# 2. Domain Validation:
+#    - Let's Encrypt will validate domain ownership via HTTP-01 challenge
+#    - Temporary HTTP server on port 80 during certificate generation
+#
+# 3. Certificate Renewal:
+#    - Let's Encrypt certificates expire every 90 days
+#    - Implement automatic renewal (cronjob or systemd timer)
+#
+# 4. Deploy:
+#    docker-compose -f docker-compose.letsencrypt.yml up -d
+#
+# 5. Initial Certificate Generation:
+#    - First startup will request certificates from Let's Encrypt
+#    - Domain validation required
+#    - Certificates stored in ./letsencrypt and ./certs-production

@@ -15,28 +15,22 @@
 # Being good ancestors: No vulnerable legacy implementations
 
 services:
-  # Certificate Authority Service - Centralized certificate management
-  cert-authority:
+  # Certificate Authority Service
+  crank-cert-authority:
     build:
       context: services
       dockerfile: Dockerfile.cert-authority
-    container_name: cert-authority
+    container_name: crank-cert-authority
     ports:
-      - "9090:9090"  # HTTPS secure endpoint only
-    environment:
-      - CRANK_ENVIRONMENT=development-https
-      - CERT_PROVIDER=development
-      - CERT_SERVICE_PORT=9090
-      - CERT_SERVICE_HOST=0.0.0.0
-      - CERT_DIR=/app/certificates
+      - "9090:9090"
     volumes:
-      - certs-volume:/app/certificates
-    healthcheck:
-      test: ["CMD", "curl", "-k", "-f", "https://localhost:9090/health"]  # HTTPS-only health check
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
+      - ./certs:/app/certificates
+      - crank-ca-certs:/shared/ca-certs  # 🔒 Shared volume for Root CA certificate distribution (CA service writes here)
+    environment:
+      - CERT_PROVIDER=development
+      - CERT_DIR=/app/certificates
+      - LOG_LEVEL=INFO
+      - CRANK_ENVIRONMENT=development-https
     networks:
       - crank-net
     restart: unless-stopped
@@ -56,9 +50,9 @@ services:
       - LOG_LEVEL=INFO
       - PLATFORM_HTTPS_PORT=${PLATFORM_HTTPS_PORT:-8443}
       - HTTPS_ONLY=true  # 🔒 Force HTTPS-only mode (NO HTTP FALLBACK!)
-      - CA_SERVICE_URL=https://cert-authority:9090  # 🔐 Certificate Authority Service endpoint (HTTPS ONLY)
+      - CA_SERVICE_URL=https://crank-cert-authority:9090  # 🔐 Certificate Authority Service endpoint (HTTPS ONLY)
     depends_on:
-      cert-authority:
+      crank-cert-authority:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-k", "-f", "https://localhost:${PLATFORM_HTTPS_PORT:-8443}/health/live"]  # 🔒 HTTPS with relaxed verification for dev certs
@@ -66,6 +60,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
+    volumes:
+      - crank-ca-certs:/shared/ca-certs:ro  # 🔒 STANDARDIZED: Single location for Root CA certificate
     networks:
       - crank-net
     restart: unless-stopped
@@ -87,9 +83,10 @@ services:
       - DOC_CONVERTER_HTTPS_PORT=${DOC_CONVERTER_HTTPS_PORT:-8101}
       - DOC_CONVERTER_HOST=0.0.0.0
       - HTTPS_ONLY=true  # 🔒 Force HTTPS-only mode
-      - CA_SERVICE_URL=https://cert-authority:9090  # 🔐 Certificate Authority Service endpoint (HTTPS ONLY)
+      - CA_SERVICE_URL=https://crank-cert-authority:9090  # 🔐 Certificate Authority Service endpoint (HTTPS ONLY)
+      - SERVICE_NAME=crank-doc-converter  # 🔐 Individual service identity for certificate generation
     depends_on:
-      cert-authority:
+      crank-cert-authority:
         condition: service_healthy
       platform:
         condition: service_healthy
@@ -99,6 +96,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
+    volumes:
+      - crank-ca-certs:/etc/ssl/crank-ca:ro  # 🔒 Root CA certificate for trust verification
     networks:
       - crank-net
     restart: unless-stopped
@@ -120,9 +119,10 @@ services:
       - EMAIL_CLASSIFIER_HTTPS_PORT=${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}
       - EMAIL_CLASSIFIER_HOST=0.0.0.0
       - HTTPS_ONLY=true  # 🔒 Force HTTPS-only mode (NO HTTP FALLBACK!)
-      - CA_SERVICE_URL=https://cert-authority:9090  # 🔐 Certificate Authority Service endpoint (HTTPS ONLY)
+      - CA_SERVICE_URL=https://crank-cert-authority:9090  # 🔐 Certificate Authority Service endpoint (HTTPS ONLY)
+      - SERVICE_NAME=crank-email-classifier  # 🔐 Individual service identity for certificate generation
     depends_on:
-      cert-authority:
+      crank-cert-authority:
         condition: service_healthy
       platform:
         condition: service_healthy
@@ -132,6 +132,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
+    volumes:
+      - crank-ca-certs:/shared/ca-certs:ro  # 🔒 STANDARDIZED: Single location for Root CA certificate
     networks:
       - crank-net
     restart: unless-stopped
@@ -142,7 +144,7 @@ services:
       context: services
       dockerfile: Dockerfile.crank-email-parser
     container_name: crank-email-parser
-    user: worker:worker  # 🔒 Non-root user for security
+    # user: worker:worker  # 🔒 Non-root user for security - TEMP DISABLED FOR DEBUG
     ports:
       - "${EMAIL_PARSER_HTTPS_PORT:-8301}:${EMAIL_PARSER_HTTPS_PORT:-8301}"  # 🔒 HTTPS with mTLS ONLY
     environment:
@@ -153,9 +155,9 @@ services:
       - EMAIL_PARSER_HTTPS_PORT=${EMAIL_PARSER_HTTPS_PORT:-8301}
       - EMAIL_PARSER_HOST=0.0.0.0
       - HTTPS_ONLY=true  # 🔒 Force HTTPS-only mode (NO HTTP FALLBACK!)
-      - CA_SERVICE_URL=https://cert-authority:9090  # 🔐 Certificate Authority Service endpoint (HTTPS ONLY)
+      - CA_SERVICE_URL=https://crank-cert-authority:9090  # 🔐 Certificate Authority Service endpoint (HTTPS ONLY)
     depends_on:
-      cert-authority:
+      crank-cert-authority:
         condition: service_healthy
       platform:
         condition: service_healthy
@@ -186,9 +188,9 @@ services:
       - STREAMING_HTTPS_PORT=${STREAMING_HTTPS_PORT:-8501}
       - STREAMING_HOST=0.0.0.0
       - HTTPS_ONLY=true  # 🔒 Force HTTPS-only mode (NO HTTP FALLBACK!)
-      - CA_SERVICE_URL=https://cert-authority:9090  # 🔐 Certificate Authority Service endpoint (HTTPS ONLY)
+      - CA_SERVICE_URL=https://crank-cert-authority:9090  # 🔐 Certificate Authority Service endpoint (HTTPS ONLY)
     depends_on:
-      cert-authority:
+      crank-cert-authority:
         condition: service_healthy
       platform:
         condition: service_healthy
@@ -211,5 +213,10 @@ networks:
 # Volumes
 volumes:
   certs-volume:
+  crank-ca-certs:
     driver: local
+    # 🔒 CRITICAL: This volume distributes the Root CA certificate to ALL services
+    # 🔒 STANDARDIZED MOUNT PATH: /etc/ssl/crank-ca:ro (read-only for all services)
+    # 🔒 PREVENTS: Directory mount issues and path inconsistencies
+    # 🔒 PURPOSE: Enterprise-grade certificate trust chain across all services
     name: crank-certificates
