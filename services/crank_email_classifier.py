@@ -326,15 +326,19 @@ class SimpleEmailClassifier:
 class CrankEmailClassifier:
     """Crank Email Classifier Service that registers with platform."""
     
-    def __init__(self, platform_url: str = None):
+    def __init__(self, platform_url: str = None, cert_store=None):
         self.app = FastAPI(title="Crank Email Classifier", version="1.0.0")
         
-        # 🔐 ZERO-TRUST: Use in-memory certificates from Certificate Authority Service
-        logger.info("🔐 Using in-memory certificates from secure initialization")
-        import sys
-        sys.path.append('/app/scripts')
-        from initialize_certificates import SecureCertificateStore
-        self.cert_store = SecureCertificateStore()
+        # 🔐 ZERO-TRUST: Use pre-loaded certificates from synchronous initialization
+        if cert_store is not None:
+            logger.info("🔐 Using pre-loaded certificates from synchronous initialization")
+            self.cert_store = cert_store
+        else:
+            logger.info("🔐 Creating empty certificate store (fallback)")
+            import sys
+            sys.path.append('/app/scripts')
+            from initialize_certificates import SecureCertificateStore
+            self.cert_store = SecureCertificateStore()
         
         # Always use HTTPS with Certificate Authority Service certificates
         self.platform_url = platform_url or os.getenv("PLATFORM_URL", "https://platform:8443")
@@ -532,13 +536,8 @@ class CrankEmailClassifier:
         """Startup handler - register with platform."""
         logger.info("🤖 Starting Crank Email Classifier...")
         
-        # Initialize enhanced security configuration
-        logger.info("🔐 Initializing enhanced security configuration and certificates...")
-        self.security_config = initialize_security()
-        
-        # Log security level for visibility
-        security_level = self.security_config.get_security_level()
-        logger.info(f"🔍 Security level: {security_level}")
+        # Log security level for visibility (certificates already loaded synchronously)
+        logger.info("� Using certificates loaded synchronously at startup")
         
         # Prepare registration info
         worker_info = WorkerRegistration(
@@ -655,9 +654,9 @@ class CrankEmailClassifier:
                 logger.warning(f"Failed to deregister from platform: {e}")
 
 
-def create_crank_email_classifier(platform_url: str = None) -> FastAPI:
+def create_crank_email_classifier(platform_url: str = None, cert_store=None) -> FastAPI:
     """Create Crank Email Classifier application."""
-    classifier = CrankEmailClassifier(platform_url)
+    classifier = CrankEmailClassifier(platform_url, cert_store)
     return classifier.app
 
 
@@ -702,7 +701,8 @@ def main():
     service_host = os.getenv("EMAIL_CLASSIFIER_HOST", "0.0.0.0")
     https_port = int(os.getenv("EMAIL_CLASSIFIER_HTTPS_PORT", "8201"))
     
-    app = create_crank_email_classifier()
+    # Create FastAPI app with pre-loaded certificates
+    app = create_crank_email_classifier(cert_store=cert_store)
     
     # 🔒 HTTPS-ONLY MODE: Always use HTTPS with Certificate Authority Service certificates
     if https_only:

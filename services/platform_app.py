@@ -115,9 +115,8 @@ class CrankPlatformApp:
             """Initialize persistent services on startup."""
             print("🚀 Initializing Crank Platform...")
             
-            # Initialize security and certificates
-            print("🔐 Initializing security configuration and certificates...")
-            initialize_security()
+            # Security and certificates already initialized synchronously in main()
+            print("🔐 Using certificates loaded synchronously at startup")
             
             # Initialize persistent discovery service
             print("🗄️  Initializing persistent discovery service...")
