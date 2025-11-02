@@ -1,0 +1,191 @@
+{
+    "folders": [
+        {
+            "name": "🎭 Crank Platform - Mascot Framework",
+            "path": "."
+        }
+    ],
+    "settings": {
+        "files.associations": {
+            "*.md": "markdown",
+            "*_agent_prompt.txt": "markdown"
+        },
+        "github.copilot.enable": {
+            "*": true,
+            "markdown": true,
+            "python": true,
+            "yaml": true,
+            "plaintext": true
+        },
+        "github.copilot.advanced": {
+            "debug.overrideEngine": "copilot-chat"
+        },
+        "workbench.startupEditor": "readme",
+        "explorer.sortOrder": "type",
+        "files.exclude": {
+            "**/__pycache__": true,
+            "**/*.pyc": true,
+            ".git": false
+        },
+        "python.defaultInterpreterPath": "python3",
+        "markdown.preview.breaks": true,
+        "editor.wordWrap": "on",
+        "editor.rulers": [
+            80,
+            120
+        ],
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true
+    },
+    "extensions": {
+        "recommendations": [
+            "ms-python.python",
+            "github.copilot",
+            "github.copilot-chat",
+            "redhat.vscode-yaml",
+            "ms-vscode.vscode-json",
+            "davidanson.vscode-markdownlint",
+            "ms-vscode.vscode-docker"
+        ]
+    },
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "🎭 Load Mascot Context",
+                "type": "shell",
+                "command": "./load_mascot_context.sh",
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "new"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "🐰 Wendy Security Test",
+                "type": "shell",
+                "command": "python3",
+                "args": [
+                    "run_mascot_tests.py",
+                    "--mascot",
+                    "wendy",
+                    "--target",
+                    "${input:targetPath}"
+                ],
+                "group": "test",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always"
+                }
+            },
+            {
+                "label": "🦙 Kevin Portability Test",
+                "type": "shell",
+                "command": "python3",
+                "args": [
+                    "run_mascot_tests.py",
+                    "--mascot",
+                    "kevin",
+                    "--target",
+                    "${input:targetPath}"
+                ],
+                "group": "test",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always"
+                }
+            },
+            {
+                "label": "🤝 Mascot Collaboration Test",
+                "type": "shell",
+                "command": "python3",
+                "args": [
+                    "run_mascot_tests.py",
+                    "--collaboration",
+                    "${input:collaborationPattern}",
+                    "--target",
+                    "${input:targetPath}"
+                ],
+                "group": "test",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always"
+                }
+            },
+            {
+                "label": "🏛️ Full Council Review",
+                "type": "shell",
+                "command": "python3",
+                "args": [
+                    "run_mascot_tests.py",
+                    "--council",
+                    "--target",
+                    "${input:targetPath}"
+                ],
+                "group": "test",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always"
+                }
+            }
+        ],
+        "inputs": [
+            {
+                "id": "targetPath",
+                "description": "Target file or directory for mascot analysis",
+                "default": ".",
+                "type": "promptString"
+            },
+            {
+                "id": "collaborationPattern",
+                "description": "Mascot collaboration pattern",
+                "default": "wendy+kevin",
+                "type": "pickString",
+                "options": [
+                    "wendy+kevin",
+                    "bella+oliver",
+                    "wendy+bella",
+                    "full_council"
+                ]
+            }
+        ]
+    },
+    "launch": {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "🎭 Demo AI Integration",
+                "type": "python",
+                "request": "launch",
+                "program": "${workspaceFolder}/demo_ai_integration.py",
+                "console": "integratedTerminal",
+                "cwd": "${workspaceFolder}"
+            },
+            {
+                "name": "🐰 Wendy Security Analysis",
+                "type": "python",
+                "request": "launch",
+                "program": "${workspaceFolder}/mascots/wendy/wendy_tests.py",
+                "args": [
+                    "${input:targetPath}"
+                ],
+                "console": "integratedTerminal",
+                "cwd": "${workspaceFolder}"
+            },
+            {
+                "name": "🦙 Kevin Portability Analysis",
+                "type": "python",
+                "request": "launch",
+                "program": "${workspaceFolder}/mascots/kevin/kevin_tests.py",
+                "args": [
+                    "${input:targetPath}"
+                ],
+                "console": "integratedTerminal",
+                "cwd": "${workspaceFolder}"
+            }
+        ]
+    }
+}
