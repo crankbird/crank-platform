@@ -4,13 +4,14 @@
 
 ### Core Configurations (Keep)
 
-#### 1. `docker-compose.dev.yml` - Local Development
-- **Purpose**: Fast iteration, debugging, hot reload
+#### 1. `docker-compose.development.yml` - Local Development with Security
+- **Purpose**: Full development environment with certificate authority
 - **Features**: 
-  - Direct volume mounts for code changes
-  - Debug ports exposed
-  - Relaxed security for development speed
-  - Local file system integration
+  - HTTPS-only with mTLS certificates
+  - Certificate Authority service included
+  - All services with proper security
+  - Development debugging and hot reload
+  - Complete service mesh with email parser
 
 #### 2. `docker-compose.local-prod.yml` - Local Production Simulation  
 - **Purpose**: Test production-like environment locally

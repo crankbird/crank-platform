@@ -27,8 +27,8 @@ crank-platform/
 crank-infrastructure/
 ├── development-environments/
 │   ├── dev-universal.sh           # Cross-platform dev script
+│   ├── docker-compose.development.yml   # Complete dev environment with CA
 │   ├── docker-compose.local.yml   # Local development
-│   ├── docker-compose.dev.yml     # Shared dev environment
 │   ├── .env.local.template        # Local env template
 │   ├── .env.dev.template          # Shared dev env template
 │   └── README.md                  # Local dev documentation
