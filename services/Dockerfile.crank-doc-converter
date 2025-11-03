@@ -19,7 +19,7 @@ COPY services/requirements-crank-doc-converter.txt .
 RUN pip install --no-cache-dir -r requirements-crank-doc-converter.txt
 
 # Copy worker code and metadata
-COPY services/crank_doc_converter_simple.py ./crank_doc_converter.py
+COPY services/crank_doc_converter.py ./crank_doc_converter.py
 
 # Copy certificate initialization script (needed for in-process initialization)
 COPY services/crank_cert_initialize.py ./scripts/

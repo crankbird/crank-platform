@@ -242,8 +242,17 @@ async def get_provider_config():
         "cert_provider": os.getenv("CERT_PROVIDER", "development")
     }
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for Certificate Authority Service with proper bootstrap pattern."""
     import uvicorn
+    import os
+    import subprocess
+    import shutil
+    from pathlib import Path
+    
+    # 🔐 CERTIFICATE AUTHORITY BOOTSTRAP: This service generates the root certificates
+    # Other services depend on, so it has a special bootstrap responsibility
+    logger.info("🔐 Starting Certificate Authority Service bootstrap process...")
     
     # Bootstrap Certificate Authority Service certificates
     cert_dir = Path(os.getenv("CERT_DIR", "/app/certificates"))
@@ -306,8 +315,6 @@ if __name__ == "__main__":
         
         if shared_ca_dir.exists():
             shared_ca_cert_path = shared_ca_dir / "ca.crt"
-            import shutil
-            import os
             shutil.copy2(ca_cert_path, shared_ca_cert_path)
             
             # 🔒 SECURITY: Set minimal required permissions for cross-container access
@@ -318,14 +325,26 @@ if __name__ == "__main__":
         else:
             logger.warning("⚠️ CRITICAL: Shared CA directory not found - CA distribution will fail")
     
-    # 🔒 SECURE CERTIFICATE AUTHORITY SERVICE - HTTPS ONLY
-    # Private keys never transmitted - clients use CSR pattern
-    logger.info("🔒 Starting Certificate Authority Service HTTPS-only on 0.0.0.0:9090")
-    uvicorn.run(
-        app,
-        host="0.0.0.0", 
-        port=9090,
-        ssl_keyfile=str(server_key_path),
-        ssl_certfile=str(server_cert_path),
-        log_level="info"
-    )
+    # 🔒 HTTPS-ONLY STARTUP: Certificate Authority Service always uses HTTPS
+    https_port = int(os.getenv("CA_HTTPS_PORT", "9090"))
+    service_host = os.getenv("CA_HOST", "0.0.0.0")
+    
+    logger.info(f"🔒 Starting Certificate Authority Service HTTPS-only on {service_host}:{https_port}")
+    logger.info("🔐 Private keys never transmitted - clients use CSR pattern")
+    
+    try:
+        uvicorn.run(
+            app,
+            host=service_host, 
+            port=https_port,
+            ssl_keyfile=str(server_key_path),
+            ssl_certfile=str(server_cert_path),
+            log_level="info"
+        )
+    except Exception as e:
+        logger.error(f"🚫 Failed to start Certificate Authority Service: {e}")
+        raise RuntimeError(f"🚫 Failed to start Certificate Authority Service: {e}")
+
+
+if __name__ == "__main__":
+    main()

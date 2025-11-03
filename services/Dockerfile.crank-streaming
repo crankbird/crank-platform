@@ -14,11 +14,11 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy requirements and install Python dependencies
-COPY services/requirements-crank-streaming-simple.txt .
-RUN pip install --no-cache-dir -r requirements-crank-streaming-simple.txt
+COPY services/requirements-crank-streaming.txt .
+RUN pip install --no-cache-dir -r requirements-crank-streaming.txt
 
 # Copy service files
-COPY services/crank_streaming_simple.py ./crank_streaming_simple.py
+COPY services/crank_streaming.py ./crank_streaming_simple.py
 
 # Copy certificate initialization script (needed for in-process initialization)
 COPY services/crank_cert_initialize.py ./scripts/

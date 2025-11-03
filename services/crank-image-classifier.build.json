@@ -6,12 +6,10 @@
     "dockerfile": "services/Dockerfile.crank-image-classifier-gpu",
     "dependencies": {
         "runtime_files": [
-            "services/crank_image_classifier_simple.py",
-            "services/security_config.py",
-            "services/crank_cert_initialize.py",
-            "services/crank-image-classifier-gpu.plugin.yaml"
+            "services/crank_image_classifier.py",
+            "services/crank_cert_initialize.py"
         ],
-        "requirements_file": "services/requirements-crank-image-classifier-gpu.txt",
+        "requirements_file": "services/requirements-crank-image-classifier.txt",
         "configuration_files": [
             "services/crank-image-classifier-gpu.plugin.yaml"
         ],

@@ -7,9 +7,7 @@
     "dependencies": {
         "runtime_files": [
             "services/crank_doc_converter.py",
-            "services/security_config.py",
-            "services/crank_cert_initialize.py",
-            "services/crank-doc-converter.plugin.yaml"
+            "services/crank_cert_initialize.py"
         ],
         "requirements_file": "services/requirements-crank-doc-converter.txt",
         "configuration_files": [

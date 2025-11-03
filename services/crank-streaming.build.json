@@ -6,10 +6,10 @@
     "dockerfile": "services/Dockerfile.crank-streaming",
     "dependencies": {
         "runtime_files": [
-            "services/crank_streaming_simple.py",
+            "services/crank_streaming.py",
             "services/crank_cert_initialize.py"
         ],
-        "requirements_file": "services/requirements-crank-streaming-simple.txt",
+        "requirements_file": "services/requirements-crank-streaming.txt",
         "configuration_files": [],
         "shared_dependencies": [
             "shared/"
