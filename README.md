@@ -13,8 +13,9 @@ Our platform is guided by architectural mascots who ensure quality and consisten
 | 🦙 **Kevin** | Portability Llama | `*runtime*`, `*kevin*`, `container_runtime.py` | Provides container runtime abstraction across Docker/Podman |
 | 🐩 **Bella** | Modularity Poodle | `*separation*`, `*modular*`, `*plugin*` | Maintains clean service boundaries and separation readiness |
 | 🦅 **Oliver** | Anti-Pattern Eagle | `*pattern*`, `*review*`, code reviews | Prevents architectural anti-patterns and technical debt |
+| 🐌 **Gary** | Methodical Snail | `*context*`, `*documentation*`, `*maintainability*` | Preserves context and ensures "back of the cabinet craftsmanship" |
 
-*When you see mascot names in our code, they represent architectural principles in action!*
+*When you see mascot names in our code, they represent architectural principles in action! Gary's gentle "meow" reminds us to slow down and think methodically.*
 
 ---
 
