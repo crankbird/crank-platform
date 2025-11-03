@@ -41,7 +41,7 @@ This codebase uses a mascot-driven architectural testing framework with 4 core m
 - Standards: NIST SP 800-53, zero-trust principles
 - Focus: Input validation, mTLS, secrets management, injection prevention
 
-🦙 KEVIN - Portability Llama  
+🦙 KEVIN - Portability Llama
 - Domain: Platform independence, runtime abstraction
 - Standards: 12-factor app, container runtime agnostic
 - Focus: Environment config, multi-runtime support, vendor lock-in prevention
@@ -146,10 +146,11 @@ After setup, test AI understanding with:
 ## 📋 **AI Assistant Prompts for Common Tasks**
 
 ### **Code Review Request**
+
 ```
 Please review this code from our mascot framework perspective:
 - Wendy: Security and Bobby Tables prevention
-- Kevin: Platform independence and portability  
+- Kevin: Platform independence and portability
 - Bella: Service separation and modularity
 - Oliver: Anti-patterns and code quality
 
@@ -157,6 +158,7 @@ Focus on [specific mascot] concerns for this review.
 ```
 
 ### **Architecture Decision**
+
 ```
 I need to make an architectural decision about [topic]. Please evaluate this from our mascot perspectives:
 - What would Wendy say about security implications?
@@ -166,6 +168,7 @@ I need to make an architectural decision about [topic]. Please evaluate this fro
 ```
 
 ### **Code Generation**
+
 ```
 Generate code that would make our mascots happy:
 - Wendy: Secure by default, input validation, parameterized queries
@@ -177,6 +180,7 @@ Generate code that would make our mascots happy:
 ## 🔧 **IDE Extensions for Enhanced Context**
 
 ### **VS Code Extensions**
+
 ```bash
 # Install these for better mascot framework support:
 code --install-extension ms-python.python
@@ -187,6 +191,7 @@ code --install-extension GitHub.copilot-chat
 ```
 
 ### **IntelliJ/PyCharm Plugins**
+
 - GitHub Copilot Plugin
 - YAML/Ansible Support
 - Docker Integration
@@ -195,6 +200,7 @@ code --install-extension GitHub.copilot-chat
 ## 🎭 **Mascot-Specific Context Loading**
 
 ### **For Security Work (Wendy Focus)**
+
 ```bash
 # Load Wendy's context
 code mascots/wendy/wendy_tests.py
@@ -205,8 +211,9 @@ grep -r "OWASP\|NIST\|CWE" docs/
 ```
 
 ### **For Portability Work (Kevin Focus)**
+
 ```bash
-# Load Kevin's context  
+# Load Kevin's context
 code mascots/kevin/kevin_tests.py
 code mascots/kevin/kevin_agent_prompt.txt
 
@@ -231,7 +238,7 @@ If your AI assistant makes these mistakes, correct them:
 ❌ **Wrong**: "Bobby Tables is a separate mascot"
 ✅ **Correct**: "Bobby Tables is a vulnerability pattern under Wendy's security domain"
 
-❌ **Wrong**: "This is just a testing framework"  
+❌ **Wrong**: "This is just a testing framework"
 ✅ **Correct**: "This is an architectural philosophy with testing tools"
 
 ❌ **Wrong**: "Mascots are just cute names"
@@ -240,6 +247,7 @@ If your AI assistant makes these mistakes, correct them:
 ## 🎉 **Success Indicators**
 
 You'll know the AI "gets it" when it:
+
 - References mascots by name in architectural discussions
 - Applies specific standards (NIST, OWASP, 12-factor) correctly
 - Suggests code that aligns with mascot principles

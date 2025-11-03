@@ -1,7 +1,7 @@
 #!/bin/bash
 # 🎭 Mascot Framework Context Loader
-# 
-# This script opens all essential mascot framework files to establish 
+#
+# This script opens all essential mascot framework files to establish
 # AI assistant context on a new machine.
 
 echo "🎭 Loading Mascot Framework Context for AI Assistants..."
@@ -18,36 +18,36 @@ echo "📂 Opening core mascot documentation..."
 # Core documentation files
 if command -v code &> /dev/null; then
     echo "  🎯 Using VS Code..."
-    
+
     # Essential mascot files
     code docs/ARCHITECTURAL_MENAGERIE_GUIDE.md
     code docs/MASCOT_HAPPINESS_REPORT.md
     code docs/architecture/ENHANCED_MASCOT_FRAMEWORK.md
     code mascots/README.md
     code docs/development/AI_ASSISTANT_ONBOARDING.md
-    
+
     # Mascot personalities
     code mascots/wendy/wendy_agent_prompt.txt
     code mascots/kevin/kevin_agent_prompt.txt
-    
+
     # Framework tools
     code run_mascot_tests.py
-    code demo_ai_integration.py
-    
+    code tests/demo_ai_integration.py
+
     # Test examples
     code mascots/wendy/wendy_tests.py
     code mascots/kevin/kevin_tests.py
-    
+
     echo "✅ Files opened in VS Code"
-    
+
 elif command -v vim &> /dev/null; then
     echo "  🎯 Using Vim..."
     vim -O docs/ARCHITECTURAL_MENAGERIE_GUIDE.md mascots/README.md
-    
+
 elif command -v nano &> /dev/null; then
     echo "  🎯 Files available for nano..."
     echo "     Run: nano docs/ARCHITECTURAL_MENAGERIE_GUIDE.md"
-    
+
 else
     echo "  📝 No editor detected. Key files to open manually:"
     echo "     docs/ARCHITECTURAL_MENAGERIE_GUIDE.md"
@@ -61,11 +61,11 @@ echo "🤖 Testing AI context establishment..."
 # Test the framework
 if python3 -c "import sys; sys.path.append('.'); from run_mascot_tests import MascotTestOrchestrator" 2>/dev/null; then
     echo "✅ Framework import successful"
-    
+
     # Generate a test prompt
     echo "🎭 Generating test prompt for Wendy..."
     python3 run_mascot_tests.py --generate-prompt wendy --context "new machine onboarding test" | head -10
-    
+
 else
     echo "⚠️  Framework import failed - check Python dependencies"
 fi
@@ -73,7 +73,7 @@ fi
 echo ""
 echo "📋 Context Establishment Checklist:"
 echo "  1. 📖 Core documentation loaded"
-echo "  2. 🎭 Mascot personalities available"  
+echo "  2. 🎭 Mascot personalities available"
 echo "  3. 🔧 Framework tools accessible"
 echo "  4. 🧪 Test examples visible"
 echo ""
@@ -88,7 +88,7 @@ This codebase uses a mascot-driven architectural testing framework with 4 core m
 - Standards: NIST SP 800-53, zero-trust principles
 - Focus: Input validation, mTLS, secrets management, injection prevention
 
-🦙 KEVIN - Portability Llama  
+🦙 KEVIN - Portability Llama
 - Domain: Platform independence, runtime abstraction
 - Standards: 12-factor app, container runtime agnostic
 - Focus: Environment config, multi-runtime support, vendor lock-in prevention

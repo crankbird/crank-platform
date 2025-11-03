@@ -10,7 +10,7 @@ When you clone this repo on a new machine, here's how to get AI assistants (Copi
 
 # Or manually open these key files:
 code docs/ARCHITECTURAL_MENAGERIE_GUIDE.md
-code mascots/README.md  
+code mascots/README.md
 code mascots/wendy/wendy_agent_prompt.txt
 code mascots/kevin/kevin_agent_prompt.txt
 ```
@@ -23,7 +23,7 @@ Copy-paste this into chat with Copilot/Codex:
 This codebase uses a mascot-driven architecture framework:
 
 🐰 WENDY - Security (OWASP, Bobby Tables prevention, NIST compliance)
-🦙 KEVIN - Portability (runtime-agnostic, 12-factor app, no vendor lock-in)  
+🦙 KEVIN - Portability (runtime-agnostic, 12-factor app, no vendor lock-in)
 🐩 BELLA - Modularity (service separation, clean interfaces, SOLID principles)
 🦅 OLIVER - Anti-Patterns (code quality, Gang of Four patterns, technical debt)
 
@@ -35,6 +35,7 @@ When reviewing code, apply the relevant mascot's standards and concerns.
 ## 🎯 **Test AI Understanding**
 
 Ask your AI assistant:
+
 - "What would Wendy think about this SQL query construction?"
 - "How would Kevin evaluate this Docker-specific code?"
 - "Which mascot handles Bobby Tables attacks?" (Answer: Wendy)
@@ -42,6 +43,7 @@ Ask your AI assistant:
 ## 📁 **VS Code Workspace**
 
 Open `crank-platform-mascots.code-workspace` for:
+
 - Pre-configured tasks for mascot testing
 - Recommended extensions
 - Integrated terminal commands
@@ -49,6 +51,7 @@ Open `crank-platform-mascots.code-workspace` for:
 ## ✅ **Success Indicators**
 
 Your AI "gets it" when it:
+
 - References mascots by name in code reviews
 - Applies OWASP/NIST standards for Wendy
 - Suggests environment variables for Kevin
