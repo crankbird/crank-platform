@@ -22,9 +22,9 @@ if command -v code &> /dev/null; then
     # Essential mascot files
     code docs/ARCHITECTURAL_MENAGERIE_GUIDE.md
     code docs/MASCOT_HAPPINESS_REPORT.md
-    code ENHANCED_MASCOT_FRAMEWORK.md
+    code docs/architecture/ENHANCED_MASCOT_FRAMEWORK.md
     code mascots/README.md
-    code AI_ASSISTANT_ONBOARDING.md
+    code docs/development/AI_ASSISTANT_ONBOARDING.md
     
     # Mascot personalities
     code mascots/wendy/wendy_agent_prompt.txt

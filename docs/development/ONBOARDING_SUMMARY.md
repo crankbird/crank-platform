@@ -6,8 +6,8 @@ You now have a comprehensive system to get any AI coding assistant (GitHub Copil
 
 ### 📁 **Key Files Created**
 
-1. **`NEW_MACHINE_SETUP.md`** - Quick 1-minute setup guide
-2. **`AI_ASSISTANT_ONBOARDING.md`** - Comprehensive onboarding documentation  
+1. **`docs/development/NEW_MACHINE_SETUP.md`** - Quick 1-minute setup guide
+2. **`docs/development/AI_ASSISTANT_ONBOARDING.md`** - Comprehensive onboarding documentation  
 3. **`load_mascot_context.sh`** - Automated context loading script
 4. **`crank-platform-mascots.code-workspace`** - VS Code workspace with pre-configured tasks
 

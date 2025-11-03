@@ -57,4 +57,4 @@ Your AI "gets it" when it:
 
 ---
 
-📖 **Full details**: See `AI_ASSISTANT_ONBOARDING.md`
+📖 **Full details**: See `docs/development/AI_ASSISTANT_ONBOARDING.md`

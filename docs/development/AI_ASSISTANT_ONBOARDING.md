@@ -12,7 +12,7 @@ Open these files in your editor to load them into AI context:
 # Essential mascot documentation
 code docs/ARCHITECTURAL_MENAGERIE_GUIDE.md
 code docs/MASCOT_HAPPINESS_REPORT.md
-code ENHANCED_MASCOT_FRAMEWORK.md
+code docs/architecture/ENHANCED_MASCOT_FRAMEWORK.md
 code mascots/README.md
 ```
 
@@ -76,9 +76,11 @@ Keep these files open in tabs for maximum AI context:
 
 ```
 📂 Essential Files (always keep open):
-├── docs/ARCHITECTURAL_MENAGERIE_GUIDE.md      # Complete mascot reference
-├── docs/MASCOT_HAPPINESS_REPORT.md            # Current satisfaction levels  
-├── ENHANCED_MASCOT_FRAMEWORK.md               # Enhanced capabilities
+├── docs/
+│   ├── ARCHITECTURAL_MENAGERIE_GUIDE.md       # Your existing comprehensive guide
+│   ├── MASCOT_HAPPINESS_REPORT.md             # Current mascot status
+│   └── architecture/
+│       └── ENHANCED_MASCOT_FRAMEWORK.md       # Enhanced capabilities
 ├── mascots/README.md                          # Framework overview
 ├── run_mascot_tests.py                        # Main orchestrator
 └── mascots/wendy/wendy_agent_prompt.txt       # Security prompt template
