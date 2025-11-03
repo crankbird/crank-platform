@@ -17,7 +17,7 @@ from typing import Dict, List, Optional, Any
 from dataclasses import asdict
 import os
 
-from platform_service import WorkerInfo, DiscoveryServiceInterface
+from crank_platform_service import WorkerInfo, DiscoveryServiceInterface
 
 logger = logging.getLogger(__name__)
 
@@ -208,7 +208,7 @@ async def create_discovery_service() -> DiscoveryServiceInterface:
     # Check if we should use the old in-memory stub for testing
     if os.getenv("DISCOVERY_RESILIENT", "true").lower() == "false":
         logger.info("🧪 Using basic in-memory discovery service (testing mode)")
-        from platform_service import DiscoveryServiceStub
+        from crank_platform_service import DiscoveryServiceStub
         return DiscoveryServiceStub()
     
     # Create resilient service

@@ -22,7 +22,7 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
 import uvicorn
 
-from certificate_authority_service import (
+from crank_cert_authority_service import (
     CertificateAuthorityService, 
     CertificateRequest,
     create_certificate_provider

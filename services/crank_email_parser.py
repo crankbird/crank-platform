@@ -25,7 +25,7 @@ from fastapi import FastAPI, HTTPException, Form, UploadFile, File
 from pydantic import BaseModel
 
 # Import security configuration and models
-from scripts.initialize_certificates import SecureCertificateStore
+from scripts.crank_cert_initialize import SecureCertificateStore
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -437,7 +437,7 @@ class CrankEmailParserService:
                 # Import the CA client to get fresh CA certificate
                 import sys
                 sys.path.append('/app/scripts')
-                from initialize_certificates import CertificateAuthorityClient
+                from crank_cert_initialize import CertificateAuthorityClient
                 
                 # Get CA certificate directly from the Certificate Authority Service
                 ca_client = CertificateAuthorityClient(self.ca_service_url)
@@ -585,7 +585,7 @@ def main():
             import sys
             sys.path.append('/app/scripts')
             import asyncio
-            from initialize_certificates import main as init_certificates, cert_store
+            from crank_cert_initialize import main as init_certificates, cert_store
             
             # Run secure certificate initialization
             asyncio.run(init_certificates())

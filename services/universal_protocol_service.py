@@ -16,7 +16,7 @@ import struct
 from datetime import datetime, timezone
 
 from mesh_interface_v2 import MeshRequest, MeshResponse, MeshCapability
-from platform_service import User
+from crank_platform_service import User
 
 
 class ProtocolAdapter(ABC):

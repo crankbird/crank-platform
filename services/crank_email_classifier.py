@@ -337,7 +337,7 @@ class CrankEmailClassifier:
             logger.info("🔐 Creating empty certificate store (fallback)")
             import sys
             sys.path.append('/app/scripts')
-            from initialize_certificates import SecureCertificateStore
+            from crank_cert_initialize import SecureCertificateStore
             self.cert_store = SecureCertificateStore()
         
         # Always use HTTPS with Certificate Authority Service certificates
@@ -677,7 +677,7 @@ def main():
             import sys
             sys.path.append('/app/scripts')
             import asyncio
-            from initialize_certificates import main as init_certificates, cert_store
+            from crank_cert_initialize import main as init_certificates, cert_store
             
             # Run secure certificate initialization
             asyncio.run(init_certificates())
@@ -715,7 +715,7 @@ def main():
         try:
             import sys
             sys.path.append('/app/scripts')
-            from initialize_certificates import cert_store
+            from crank_cert_initialize import cert_store
             ssl_context = cert_store.get_ssl_context()
             
             print("🔒 Using certificates obtained via SECURE CSR pattern")

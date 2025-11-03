@@ -21,9 +21,31 @@ import httpx
 from fastapi import FastAPI, UploadFile, HTTPException, Form
 from pydantic import BaseModel
 
-# Import existing CrankDoc mesh service for fallback
-from crankdoc_mesh_minimal import CrankDocMeshService
-from crankdoc_mesh_minimal import MeshRequest, MeshResponse
+# Import current mesh interface
+from mesh_interface_v2 import MeshInterface, MeshRequest, MeshResponse, MeshCapability
+
+
+class SimpleFallbackService:
+    """Simple fallback service for unsupported conversions."""
+    
+    def get_capabilities(self) -> List[MeshCapability]:
+        """Return basic capabilities."""
+        return [
+            MeshCapability(
+                operation="convert_document",
+                description="Convert documents between formats", 
+                input_schema={"file": "bytes", "format": "string"},
+                output_schema={"converted": "bytes", "format": "string"}
+            )
+        ]
+    
+    async def process(self, request: MeshRequest) -> MeshResponse:
+        """Simple fallback processing."""
+        return MeshResponse(
+            success=False,
+            error="Fallback service - conversion not implemented",
+            receipt_id=str(uuid4())
+        )
 
 # Import security configuration
 from security_config import initialize_security
@@ -171,12 +193,12 @@ class CrankDocumentConverter:
         logger.info("🔐 Using in-memory certificates from secure initialization")
         import sys
         sys.path.append('/app/scripts')
-        from initialize_certificates import SecureCertificateStore
+        from crank_cert_initialize import SecureCertificateStore
         self.cert_store = SecureCertificateStore()
         
         # Always use HTTPS with Certificate Authority Service certificates
         self.platform_url = platform_url or os.getenv("PLATFORM_URL", "https://platform:8443")
-        self.worker_url = os.getenv("WORKER_URL", "https://crank-doc-converter:8101")
+        self.worker_url = os.getenv("WORKER_URL", "https://crank-doc-converter:8100")
         
         # Certificate files are purely in-memory now - no disk dependencies
         self.cert_file = None
@@ -189,7 +211,7 @@ class CrankDocumentConverter:
         self.converter = RealDocumentConverter()
         
         # Keep fallback for unsupported conversions
-        self.fallback_service = CrankDocMeshService()
+        self.fallback_service = SimpleFallbackService()
         
         # Setup routes
         self._setup_routes()
@@ -562,7 +584,7 @@ def main():
             import sys
             sys.path.append('/app/scripts')
             import asyncio
-            from initialize_certificates import main as init_certificates, cert_store
+            from crank_cert_initialize import main as init_certificates, cert_store
             
             # Run secure certificate initialization
             asyncio.run(init_certificates())
@@ -596,7 +618,7 @@ def main():
         try:
             import sys
             sys.path.append('/app/scripts')
-            from initialize_certificates import cert_store
+            from crank_cert_initialize import cert_store
             ssl_context = cert_store.get_ssl_context()
             
             print("🔒 Using certificates obtained via SECURE CSR pattern")

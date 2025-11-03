@@ -16,16 +16,23 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Install Python dependencies
-COPY requirements-cert-service.txt .
-RUN pip install --no-cache-dir -r requirements-cert-service.txt
+COPY services/requirements-crank-cert-authority.txt .
+RUN pip install --no-cache-dir -r requirements-crank-cert-authority.txt
 
 # Copy certificate service code
-COPY certificate_authority_service.py .
-COPY cert_service_app.py .
-COPY initialize_certificates.py ./scripts/
+COPY services/crank_cert_authority_service.py .
+COPY services/crank_cert_authority_app.py .
+COPY services/security_config.py .
+COPY services/crank_cert_initialize.py ./scripts/initialize_certificates.py
 
 # Create certificate storage directory (CA service expects /app/certificates)
 RUN mkdir -p /app/certificates && chown certuser:certuser /app/certificates
+
+# Create shared directory for certificate distribution
+RUN mkdir -p /shared/ca && chown -R certuser:certuser /shared
+
+# Create system certs directory
+RUN mkdir -p /etc/certs && chown -R certuser:certuser /etc/certs
 
 # Switch to non-root user
 USER certuser
@@ -43,4 +50,4 @@ ENV CERT_PROVIDER=development
 ENV CERT_SERVICE_PORT=9090
 
 # Run certificate authority service
-CMD ["python", "cert_service_app.py"]
+CMD ["python", "crank_cert_authority_app.py"]

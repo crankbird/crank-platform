@@ -1,0 +1,60 @@
+{
+    "service": "crank-platform",
+    "description": "Main platform service providing auth, billing, discovery, and routing",
+    "container_name": "crank-platform",
+    "build_context": ".",
+    "dockerfile": "services/Dockerfile.crank-platform",
+    "dependencies": {
+        "runtime_files": [
+            "services/crank_platform_app.py",
+            "services/crank_platform_service.py",
+            "services/mesh_diagnostics_v2.py",
+            "services/mesh_interface_v2.py",
+            "services/security_config.py",
+            "services/crank_cert_initialize.py",
+            "services/resilient_discovery_service.py",
+            "services/universal_protocol_service.py",
+            "services/universal_protocol_support.py"
+        ],
+        "requirements_file": "services/requirements.txt",
+        "configuration_files": [],
+        "shared_dependencies": [
+            "shared/"
+        ]
+    },
+    "environment": {
+        "development": {
+            "PLATFORM_ENV": "local",
+            "CRANK_ENVIRONMENT": "development",
+            "LOG_LEVEL": "DEBUG",
+            "CA_SERVICE_URL": "https://crank-cert-authority-dev:9090",
+            "HTTPS_ONLY": "true",
+            "PLATFORM_HTTPS_PORT": "8443"
+        },
+        "production": {
+            "PLATFORM_ENV": "production",
+            "CRANK_ENVIRONMENT": "production",
+            "LOG_LEVEL": "INFO",
+            "CA_SERVICE_URL": "https://crank-cert-authority:9090"
+        }
+    },
+    "ports": {
+        "https": 8443
+    },
+    "healthcheck": {
+        "endpoint": "/health/live",
+        "port": "https",
+        "protocol": "https"
+    },
+    "volumes": {
+        "development": [
+            "./services:/app/services:ro",
+            "./shared:/app/shared:ro"
+        ],
+        "production": []
+    },
+    "gpu_required": false,
+    "depends_on": [
+        "crank-cert-authority"
+    ]
+}

@@ -1,0 +1,57 @@
+{
+    "service": "crank-email-classifier",
+    "description": "ML-based email classification worker service",
+    "container_name": "crank-email-classifier",
+    "build_context": ".",
+    "dockerfile": "services/Dockerfile.crank-email-classifier",
+    "dependencies": {
+        "runtime_files": [
+            "services/crank_email_classifier.py",
+            "services/security_config.py",
+            "services/crank_cert_initialize.py",
+            "services/crank-email-classifier.plugin.yaml"
+        ],
+        "requirements_file": "services/requirements-crank-email-classifier.txt",
+        "configuration_files": [
+            "services/crank-email-classifier.plugin.yaml"
+        ],
+        "shared_dependencies": [
+            "shared/"
+        ]
+    },
+    "environment": {
+        "development": {
+            "CRANK_ENVIRONMENT": "development",
+            "LOG_LEVEL": "DEBUG",
+            "EMAIL_CLASSIFIER_HTTPS_PORT": 8200,
+            "CA_SERVICE_URL": "https://crank-cert-authority-dev:9090",
+            "HTTPS_ONLY": "true"
+        },
+        "production": {
+            "CRANK_ENVIRONMENT": "production",
+            "LOG_LEVEL": "INFO",
+            "EMAIL_CLASSIFIER_HTTPS_PORT": 8200,
+            "CA_SERVICE_URL": "https://crank-cert-authority:9090",
+            "HTTPS_ONLY": "true"
+        }
+    },
+    "ports": {
+        "https": 8200
+    },
+    "healthcheck": {
+        "endpoint": "/health",
+        "port": "https",
+        "protocol": "https"
+    },
+    "volumes": {
+        "development": [
+            "./services:/app/services:ro",
+            "./shared:/app/shared:ro"
+        ],
+        "production": []
+    },
+    "gpu_required": false,
+    "depends_on": [
+        "crank-platform"
+    ]
+}

@@ -1,0 +1,54 @@
+{
+    "service": "crank-streaming",
+    "description": "Real-time streaming service",
+    "container_name": "crank-streaming",
+    "build_context": ".",
+    "dockerfile": "services/Dockerfile.crank-streaming",
+    "dependencies": {
+        "runtime_files": [
+            "services/crank_streaming_simple.py",
+            "services/crank_cert_initialize.py"
+        ],
+        "requirements_file": "services/requirements-crank-streaming-simple.txt",
+        "configuration_files": [],
+        "shared_dependencies": [
+            "shared/"
+        ]
+    },
+    "environment": {
+        "development": {
+            "CRANK_ENVIRONMENT": "development",
+            "LOG_LEVEL": "DEBUG",
+            "STREAMING_HTTPS_PORT": 8500,
+            "CA_SERVICE_URL": "https://crank-cert-authority-dev:9090",
+            "HTTPS_ONLY": "true"
+        },
+        "production": {
+            "CRANK_ENVIRONMENT": "production",
+            "LOG_LEVEL": "INFO",
+            "STREAMING_HTTPS_PORT": 8500,
+            "CA_SERVICE_URL": "https://crank-cert-authority:9090",
+            "HTTPS_ONLY": "true"
+        }
+    },
+    "ports": {
+        "https": 8500
+    },
+    "healthcheck": {
+        "endpoint": "/health",
+        "port": "https",
+        "protocol": "https"
+    },
+    "volumes": {
+        "development": [
+            "./services:/app/services:ro",
+            "./shared:/app/shared:ro"
+        ],
+        "production": []
+    },
+    "gpu_required": false,
+    "depends_on": [
+        "crank-platform",
+        "crank-email-classifier"
+    ]
+}

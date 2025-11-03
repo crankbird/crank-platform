@@ -1,0 +1,104 @@
+{
+  "timestamp": "2025-11-03 20:53:30",
+  "total_services": 7,
+  "total_tests": 41,
+  "summary": {
+    "passed": 30,
+    "failed": 7,
+    "skipped": 4
+  },
+  "services": {
+    "cert-authority": {
+      "name": "Certificate Authority",
+      "port": 9090,
+      "all_tests_passed": false,
+      "critical_tests_passed": true,
+      "results": {
+        "dependencies": true,
+        "container_health": true,
+        "https_endpoint": true,
+        "http_security": true,
+        "certificate_chain": false
+      }
+    },
+    "platform": {
+      "name": "Platform Service",
+      "port": 8443,
+      "all_tests_passed": false,
+      "critical_tests_passed": true,
+      "results": {
+        "dependencies": true,
+        "container_health": true,
+        "https_endpoint": true,
+        "http_security": true,
+        "certificate_chain": false
+      }
+    },
+    "email-classifier": {
+      "name": "Email Classifier",
+      "port": 8200,
+      "all_tests_passed": false,
+      "critical_tests_passed": true,
+      "results": {
+        "dependencies": true,
+        "container_health": true,
+        "https_endpoint": true,
+        "http_security": true,
+        "certificate_chain": false
+      }
+    },
+    "email-parser": {
+      "name": "Email Parser",
+      "port": 8300,
+      "all_tests_passed": false,
+      "critical_tests_passed": true,
+      "results": {
+        "dependencies": true,
+        "container_health": true,
+        "https_endpoint": true,
+        "http_security": true,
+        "certificate_chain": false
+      }
+    },
+    "doc-converter": {
+      "name": "Document Converter",
+      "port": 8100,
+      "all_tests_passed": false,
+      "critical_tests_passed": true,
+      "results": {
+        "dependencies": true,
+        "container_health": true,
+        "https_endpoint": true,
+        "http_security": true,
+        "certificate_chain": false
+      }
+    },
+    "image-classifier": {
+      "name": "Image Classifier",
+      "port": 8400,
+      "all_tests_passed": false,
+      "critical_tests_passed": false,
+      "results": {
+        "dependencies": true,
+        "container_health": false,
+        "https_endpoint": false,
+        "http_security": true,
+        "certificate_chain": false
+      }
+    },
+    "streaming": {
+      "name": "Streaming Service",
+      "port": 8500,
+      "all_tests_passed": false,
+      "critical_tests_passed": false,
+      "results": {
+        "dependencies": true,
+        "container_health": false,
+        "https_endpoint": false,
+        "http_security": true,
+        "certificate_chain": false
+      }
+    }
+  },
+  "overall_health": false
+}

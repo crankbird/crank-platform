@@ -25,7 +25,7 @@ COPY services/crank-email-parser.plugin.yaml ./plugin.yaml
 
 # Copy certificate initialization script (needed for in-process initialization)
 RUN mkdir -p ./scripts
-COPY services/initialize_certificates.py ./scripts/
+COPY services/crank_cert_initialize.py ./scripts/
 
 # Create certificates directory with proper ownership
 RUN mkdir -p /etc/certs && chown worker:worker /etc/certs
@@ -42,11 +42,11 @@ RUN echo '#!/usr/bin/env python3' > run_worker.py && \
 USER worker
 
 # Expose worker HTTPS port
-EXPOSE 8301
+EXPOSE 8300
 
 # Health check for HTTPS-only mode
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-    CMD curl -k -f https://localhost:${EMAIL_PARSER_HTTPS_PORT:-8301}/health || exit 1
+    CMD curl -k -f https://localhost:${EMAIL_PARSER_HTTPS_PORT:-8300}/health || exit 1
 
 # Run simplified startup script
 CMD ["python", "run_worker.py"]

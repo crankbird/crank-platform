@@ -15,16 +15,16 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Install Python dependencies (worker-specific)
-COPY requirements-crank-email-classifier.txt .
+COPY services/requirements-crank-email-classifier.txt .
 RUN pip install --no-cache-dir -r requirements-crank-email-classifier.txt
 
 # Copy worker code and metadata
-COPY crank_email_classifier.py .
-COPY security_config.py .
-COPY crank-email-classifier.plugin.yaml ./plugin.yaml
+COPY services/crank_email_classifier.py .
+COPY services/security_config.py .
+COPY services/crank-email-classifier.plugin.yaml ./plugin.yaml
 
 # Copy certificate initialization script (needed for in-process initialization)
-COPY initialize_certificates.py ./scripts/
+COPY services/crank_cert_initialize.py ./scripts/
 
 # Create certificates directory with proper ownership
 RUN mkdir -p /etc/certs && chown worker:worker /etc/certs
@@ -40,11 +40,11 @@ RUN echo '#!/usr/bin/env python3' > run_worker.py && \
 USER worker
 
 # Expose worker HTTPS port
-EXPOSE 8201
+EXPOSE 8200
 
 # Health check for HTTPS-only mode
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-    CMD curl -k -f https://localhost:${EMAIL_CLASSIFIER_HTTPS_PORT:-8201}/health || exit 1
+    CMD curl -k -f https://localhost:${EMAIL_CLASSIFIER_HTTPS_PORT:-8200}/health || exit 1
 
 # Run simplified startup script
 CMD ["python", "run_worker.py"]

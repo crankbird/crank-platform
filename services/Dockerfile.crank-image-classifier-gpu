@@ -1,6 +1,10 @@
 # Use standard Python base image (will fall back gracefully without GPU)
 FROM python:3.11-slim
 
+# Create non-root user
+RUN addgroup --gid 1000 worker && \
+    adduser --uid 1000 --gid 1000 --disabled-password worker
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     curl \
@@ -12,18 +16,34 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy requirements and install Python dependencies
-COPY requirements-crank-image-classifier-gpu.txt .
-RUN pip install --no-cache-dir -r requirements-crank-image-classifier-gpu.txt
+COPY services/requirements-crank-image-classifier-simple.txt .
+RUN pip install --no-cache-dir -r requirements-crank-image-classifier-simple.txt
 
 # Copy service files
-COPY crank_image_classifier_gpu.py .
-COPY security_config.py .
+COPY services/crank_image_classifier_simple.py ./crank_image_classifier_simple.py
 
-# Create certificates directory
-RUN mkdir -p /etc/certs
+# Copy certificate initialization script (needed for in-process initialization)
+COPY services/crank_cert_initialize.py ./scripts/
 
-# Expose ports
-EXPOSE 8506 8507
+# Create certificates directory with proper ownership
+RUN mkdir -p /etc/certs && chown worker:worker /etc/certs
 
-# Run the service
-CMD ["python", "crank_image_classifier_gpu.py"]
+# Create simplified startup script - NO subprocess initialization
+RUN echo '#!/usr/bin/env python3' > run_worker.py && \
+    echo '# Simple direct startup - certificate initialization in main()' >> run_worker.py && \
+    echo 'import crank_image_classifier_simple' >> run_worker.py && \
+    echo 'crank_image_classifier_simple.main()' >> run_worker.py && \
+    chmod +x run_worker.py
+
+# Security hardening
+USER worker
+
+# Expose worker HTTPS port
+EXPOSE 8400
+
+# Health check for HTTPS-only mode
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+    CMD curl -k -f https://localhost:${IMAGE_CLASSIFIER_HTTPS_PORT:-8400}/health || exit 1
+
+# Run simplified startup script
+CMD ["python", "run_worker.py"]
