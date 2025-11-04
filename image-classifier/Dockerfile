@@ -1,63 +1,49 @@
-# Dockerfile for Crank Image Classifier
+# Use standard Python base image (CPU-only lightweight version)
 FROM python:3.11-slim
 
-# Install system dependencies for OpenCV
+# Create non-root user
+RUN addgroup --gid 1000 worker && \
+    adduser --uid 1000 --gid 1000 --disabled-password worker
+
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    libgomp1 \
-    libgl1-mesa-dev \
-    libglib2.0-dev \
     curl \
+    libgl1-mesa-dev \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
 
-# Install Python dependencies directly
-RUN pip install --no-cache-dir \
-    fastapi==0.104.1 \
-    uvicorn[standard]==0.24.0 \
-    httpx==0.25.2 \
-    pydantic==2.5.0 \
-    opencv-python-headless==4.8.1.78 \
-    Pillow==10.1.0 \
-    scikit-learn==1.3.2 \
-    numpy==1.25.2 \
-    webcolors==1.13 \
-    python-multipart==0.0.6 \
-    PyYAML==6.0.1
+# Copy requirements and install Python dependencies
+COPY services/requirements-crank-image-classifier.txt .
+RUN pip install --no-cache-dir -r requirements-crank-image-classifier.txt
 
-# Create plugin metadata inline
-RUN echo "name: crank-image-classifier" > plugin.yaml && \
-    echo "version: 1.0.0" >> plugin.yaml && \
-    echo "description: Computer vision ML classification for image analysis and object detection" >> plugin.yaml && \
-    echo "author: Crank Platform Team" >> plugin.yaml && \
-    echo "capabilities:" >> plugin.yaml && \
-    echo "  - object_detection" >> plugin.yaml && \
-    echo "  - scene_classification" >> plugin.yaml && \
-    echo "  - content_safety" >> plugin.yaml && \
-    echo "  - image_quality" >> plugin.yaml && \
-    echo "  - dominant_colors" >> plugin.yaml && \
-    echo "  - text_detection" >> plugin.yaml && \
-    echo "health_endpoint: /health" >> plugin.yaml && \
-    echo "separation_ready: true" >> plugin.yaml
+# Copy service files
+COPY services/crank_image_classifier.py ./crank_image_classifier_simple.py
 
-# Copy the application code
-COPY ./services/crank_image_classifier.py .
-COPY ./services/security_config.py .
+# Copy certificate initialization script (needed for in-process initialization)
+COPY services/crank_cert_initialize.py ./scripts/
 
-# Create certificate directory
-RUN mkdir -p /etc/certs
+# Create certificates directory with proper ownership
+RUN mkdir -p /etc/certs && chown worker:worker /etc/certs
 
-# Expose ports (both HTTP and HTTPS)
-EXPOSE 8005 8443
+# Create simplified startup script - NO subprocess initialization
+RUN echo '#!/usr/bin/env python3' > run_worker.py && \
+    echo '# Simple direct startup - certificate initialization in main()' >> run_worker.py && \
+    echo 'import crank_image_classifier_simple' >> run_worker.py && \
+    echo 'crank_image_classifier_simple.main()' >> run_worker.py && \
+    chmod +x run_worker.py
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:8005/health || exit 1
+# Security hardening
+USER worker
 
-# Start the service
-CMD ["python", "crank_image_classifier.py"]
+# Expose worker HTTPS port
+EXPOSE 8401
+
+# Health check for HTTPS-only mode
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+    CMD curl -k -f https://localhost:${IMAGE_CLASSIFIER_HTTPS_PORT:-8401}/health || exit 1
+
+# Run simplified startup script
+CMD ["python", "run_worker.py"]

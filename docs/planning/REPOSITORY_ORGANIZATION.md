@@ -5,7 +5,8 @@
 Based on industry best practices and your growing infrastructure needs:
 
 ### **crank-platform/** (Core Application)
-```
+
+```text
 crank-platform/
 ├── src/                     # Application source code
 ├── tests/                   # Application tests
@@ -23,7 +24,8 @@ crank-platform/
 ```
 
 ### **crank-infrastructure/** (DevOps & Infrastructure)
-```
+
+```text
 crank-infrastructure/
 ├── development-environments/
 │   ├── dev-universal.sh           # Cross-platform dev script
@@ -92,20 +94,24 @@ crank-infrastructure/
 ## 🎯 **Why This Structure?**
 
 ### **Separation of Concerns**
+
 - **crank-platform**: Focus on application code, features, and business logic
 - **crank-infrastructure**: Focus on deployment, operations, and DevOps
 
-### **Team Scalability** 
+### **Team Scalability**
+
 - **Developers** primarily work in `crank-platform`
 - **DevOps/SRE** primarily work in `crank-infrastructure`
 - **Clear ownership** and responsibility boundaries
 
 ### **Deployment Independence**
+
 - Application releases don't require infrastructure changes
 - Infrastructure updates don't affect application CI/CD
 - Different teams can move at different speeds
 
 ### **Multi-Environment Support**
+
 - Easy to add new cloud providers
 - Environment-specific configurations isolated
 - Consistent deployment patterns across platforms
@@ -113,6 +119,7 @@ crank-infrastructure/
 ## 🚀 **Migration Plan**
 
 ### **Phase 1: Extract Infrastructure** ✅ *Ready to Execute*
+
 ```bash
 # 1. Create crank-infrastructure repository
 git clone <new-crank-infrastructure-repo>
@@ -129,14 +136,18 @@ cp .env.*.template → crank-infrastructure/development-environments/
 ```
 
 ### **Phase 2: Enhance Infrastructure**
+
 - Add monitoring stack (Prometheus/Grafana)
 - Implement Terraform for infrastructure as code
 - Add security scanning and compliance
 - Create backup/restore automation
 
 ### **Phase 3: Multi-Cloud Support**
+
 - AWS deployment scripts
 - GCP deployment scripts
+- Kubernetes manifests
+- Helm charts for container orchestration
 - Kubernetes manifests
 - Helm charts for container orchestration
 
@@ -151,6 +162,7 @@ cp .env.*.template → crank-infrastructure/development-environments/
 | Watch Command | ✅ | ⚠️ | ⚠️ | Install separately on some Linux distros |
 
 ### **Key Improvements in dev-universal.sh:**
+
 1. **Platform Detection**: Automatically detects macOS/Linux/WSL2
 2. **Adaptive Installation Instructions**: Platform-specific guidance
 3. **Flexible Docker Compose**: Supports both `docker-compose` and `docker compose`
@@ -160,16 +172,19 @@ cp .env.*.template → crank-infrastructure/development-environments/
 ## 🎉 **Benefits of This Approach**
 
 ### **For Developers**
+
 - **Simple setup**: One script works everywhere
 - **Consistent experience**: Same commands across all platforms
 - **Clear documentation**: Platform-specific guidance when needed
 
 ### **For DevOps**
+
 - **Centralized infrastructure**: All deployment logic in one place
 - **Version controlled**: Infrastructure changes tracked like code
 - **Reusable patterns**: Deploy to multiple clouds with same patterns
 
 ### **For Organization**
+
 - **Scalable**: Easy to add new environments and teams
 - **Maintainable**: Clear separation reduces complexity
 - **Secure**: Dedicated security and compliance workflows

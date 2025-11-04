@@ -1,7 +1,7 @@
 """
 Crank Document Converter Service
 
-Simple document conversion service that follows the exact same pattern as 
+Simple document conversion service that follows the exact same pattern as
 the working email classifier service.
 """
 
@@ -49,10 +49,10 @@ class ConversionResponse(BaseModel):
 
 class CrankDocumentConverter:
     """Crank Document Converter Service following the working pattern."""
-    
+
     def __init__(self, platform_url: str = None, cert_store=None):
         self.app = FastAPI(title="Crank Document Converter", version="1.0.0")
-        
+
         # 🔐 ZERO-TRUST: Use pre-loaded certificates from synchronous initialization
         if cert_store is not None:
             logger.info("🔐 Using pre-loaded certificates from synchronous initialization")
@@ -63,28 +63,28 @@ class CrankDocumentConverter:
             sys.path.append('/app/scripts')
             from crank_cert_initialize import SecureCertificateStore
             self.cert_store = SecureCertificateStore()
-        
+
         # Always use HTTPS with Certificate Authority Service certificates
         self.platform_url = platform_url or os.getenv("PLATFORM_URL", "https://platform:8443")
         self.worker_url = os.getenv("WORKER_URL", "https://crank-doc-converter:8100")
-        
+
         # Certificate files are purely in-memory now - no disk dependencies
         self.cert_file = None
-        self.key_file = None 
+        self.key_file = None
         self.ca_file = None
-        
+
         self.worker_id = None
-        
+
         # Setup routes
         self._setup_routes()
-        
+
         # Register startup/shutdown handlers
         self.app.add_event_handler("startup", self._startup)
         self.app.add_event_handler("shutdown", self._shutdown)
-    
+
     def _setup_routes(self):
         """Setup FastAPI routes."""
-        
+
         @self.app.get("/health")
         async def health_check():
             """Health check endpoint with security status."""
@@ -95,7 +95,7 @@ class CrankDocumentConverter:
                     "ca_cert_available": self.cert_store.ca_cert is not None,
                     "certificate_source": "Certificate Authority Service"
                 }
-            
+
             return {
                 "status": "healthy",
                 "service": "crank-document-converter",
@@ -113,7 +113,7 @@ class CrankDocumentConverter:
                 "worker_id": self.worker_id,
                 "capabilities": [
                     "document-conversion",
-                    "format-detection", 
+                    "format-detection",
                     "pandoc-integration"
                 ]
             }
@@ -128,29 +128,29 @@ class CrankDocumentConverter:
             try:
                 # Read file content
                 content = await file.read()
-                
+
                 # Detect input format if not specified
                 if not input_format:
                     input_format = self.detect_format(content, file.filename)
-                
+
                 logger.info(f"Converting {file.filename} from {input_format} to {output_format}")
-                
+
                 # Perform conversion
                 converted_content = self.convert_document(content, input_format, output_format)
-                
+
                 conversion_id = str(uuid4())
-                
+
                 # For now, return base64 encoded content
                 import base64
                 encoded_content = base64.b64encode(converted_content).decode('utf-8')
-                
+
                 return ConversionResponse(
                     conversion_id=conversion_id,
                     status="completed",
                     output_format=output_format,
                     message=f"Successfully converted {file.filename} to {output_format}"
                 ).dict() | {"content": encoded_content}
-                
+
             except Exception as e:
                 logger.error(f"Conversion failed: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
@@ -166,7 +166,7 @@ class CrankDocumentConverter:
                     "markdown", "html", "docx", "odt", "rtf", "plain", "pdf"
                 ]
             }
-    
+
     def detect_format(self, content: bytes, filename: str = None) -> str:
         """Detect document format from content and filename."""
         if filename:
@@ -184,10 +184,10 @@ class CrankDocumentConverter:
             }
             if ext in format_map:
                 return format_map[ext]
-        
+
         # Try to detect from content
         content_str = content[:1024].decode('utf-8', errors='ignore').lower()
-        
+
         if content_str.startswith('<!doctype html') or '<html' in content_str:
             return 'html'
         elif content_str.startswith('#') or '**' in content_str:
@@ -198,11 +198,11 @@ class CrankDocumentConverter:
     def convert_document(self, input_content: bytes, input_format: str, output_format: str, options: Dict = None) -> bytes:
         """Convert document using pandoc."""
         options = options or {}
-        
+
         with tempfile.NamedTemporaryFile(suffix=f'.{input_format}', delete=False) as input_file:
             input_file.write(input_content)
             input_file.flush()
-            
+
             with tempfile.NamedTemporaryFile(suffix=f'.{output_format}', delete=False) as output_file:
                 try:
                     # Build pandoc command
@@ -213,21 +213,21 @@ class CrankDocumentConverter:
                         '-o', output_file.name,
                         input_file.name
                     ]
-                    
+
                     # Add common options
                     if output_format == 'pdf':
                         cmd.extend(['--pdf-engine=xelatex'])
-                    
+
                     # Run conversion
                     result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-                    
+
                     if result.returncode != 0:
                         raise Exception(f"Pandoc error: {result.stderr}")
-                    
+
                     # Read converted content
                     with open(output_file.name, 'rb') as f:
                         return f.read()
-                        
+
                 finally:
                     # Cleanup temp files
                     try:
@@ -239,10 +239,10 @@ class CrankDocumentConverter:
     async def _startup(self):
         """Startup handler - register with platform."""
         logger.info("📄 Starting Crank Document Converter...")
-        
+
         # Log security level for visibility (certificates already loaded synchronously)
         logger.info("🔐 Using certificates loaded synchronously at startup")
-        
+
         # Prepare registration info
         worker_info = WorkerRegistration(
             worker_id=f"doc-converter-{uuid4().hex[:8]}",
@@ -251,30 +251,32 @@ class CrankDocumentConverter:
             health_url=f"{self.worker_url}/health",
             capabilities=["document-conversion", "format-detection", "pandoc-integration"]
         )
-        
+
         self.worker_id = worker_info.worker_id
-        
+
         # Register with platform
         await self._register_with_platform(worker_info)
-        
+
         # Start heartbeat background task
         self._start_heartbeat_task()
-    
+
     async def _register_with_platform(self, worker_info: WorkerRegistration):
         """Register this worker with the platform."""
         try:
             async with self._create_client() as client:
-                response = await client.post(
-                    f"{self.platform_url}/workers/register",
-                    json=worker_info.dict(),
-                    timeout=30.0
-                )
-                
-            if response.status_code == 200:
+            response = await client.post(
+                f"{self.platform_url}/v1/workers/register",
+                data={
+                    "worker_id": self.worker_id,
+                    "service_type": "document_conversion",
+                    "endpoint": f"https://crank-doc-converter-dev:{worker_port}"
+                },
+                headers={"Authorization": f"Bearer {self.platform_auth_token}"}
+            )            if response.status_code == 200:
                 logger.info(f"✅ Successfully registered worker {worker_info.worker_id}")
             else:
                 logger.error(f"❌ Registration failed: {response.status_code} - {response.text}")
-                
+
         except Exception as e:
             logger.error(f"❌ Registration error: {e}")
 
@@ -289,7 +291,7 @@ class CrankDocumentConverter:
     def _start_heartbeat_task(self):
         """Start the background heartbeat task."""
         heartbeat_interval = int(os.getenv("WORKER_HEARTBEAT_INTERVAL", "20"))
-        
+
         async def heartbeat_loop():
             """Background task to send periodic heartbeats."""
             while True:
@@ -302,7 +304,7 @@ class CrankDocumentConverter:
                     break
                 except Exception as e:
                     logger.warning(f"Heartbeat failed: {e}")
-        
+
         # Start the background task
         asyncio.create_task(heartbeat_loop())
         logger.info(f"🫀 Started heartbeat task with {heartbeat_interval}s interval")
@@ -312,16 +314,19 @@ class CrankDocumentConverter:
         try:
             async with self._create_client() as client:
                 response = await client.post(
-                    f"{self.platform_url}/workers/{self.worker_id}/heartbeat",
-                    json={"timestamp": datetime.utcnow().isoformat()},
-                    timeout=5.0
+                    f"{self.platform_url}/v1/workers/{self.worker_id}/heartbeat",
+                    data={
+                        "service_type": "document_conversion",
+                        "load_score": 0.4
+                    },
+                    headers={"Authorization": f"Bearer {self.platform_auth_token}"}
                 )
-                
+
             if response.status_code == 200:
                 logger.debug(f"🫀 Heartbeat sent successfully")
             else:
                 logger.warning(f"Heartbeat failed: {response.status_code}")
-                
+
         except Exception as e:
             logger.debug(f"Heartbeat error: {e}")
 
@@ -347,11 +352,11 @@ def main():
     """Main entry point with HTTPS enforcement and Certificate Authority Service integration."""
     import uvicorn
     from pathlib import Path
-    
+
     # 🔒 ENFORCE HTTPS-ONLY MODE: No HTTP fallback allowed
     https_only = os.getenv("HTTPS_ONLY", "true").lower() == "true"
     ca_service_url = os.getenv("CA_SERVICE_URL")
-    
+
     if https_only and ca_service_url:
         print("🔐 Initializing certificates using SECURE CSR pattern...")
         try:
@@ -360,55 +365,55 @@ def main():
             sys.path.append('/app/scripts')
             import asyncio
             from crank_cert_initialize import main as init_certificates, cert_store
-            
+
             # Run secure certificate initialization
             asyncio.run(init_certificates())
-            
+
             # Check if certificates were loaded
             if cert_store.platform_cert is None:
                 raise RuntimeError("🚫 Certificate initialization completed but no certificates in memory")
-            
+
             print("✅ Certificates loaded successfully using SECURE CSR pattern")
             print("🔒 SECURITY: Private keys generated locally and never transmitted")
-            
+
             use_https = True
             logger.info("🔐 Using in-memory certificates from secure initialization")
         except Exception as e:
             raise RuntimeError(f"🚫 Failed to initialize certificates with CA service: {e}")
     else:
         raise RuntimeError("🚫 HTTPS_ONLY environment requires Certificate Authority Service")
-    
-    # 🚢 PORT CONFIGURATION: Use environment variables for flexible deployment  
+
+    # 🚢 PORT CONFIGURATION: Use environment variables for flexible deployment
     service_port = int(os.getenv("DOC_CONVERTER_PORT", "8100"))  # HTTP fallback port
     service_host = os.getenv("DOC_CONVERTER_HOST", "0.0.0.0")
     https_port = int(os.getenv("DOC_CONVERTER_HTTPS_PORT", "8100"))
-    
+
     # Create FastAPI app with pre-loaded certificates
     app = create_crank_document_converter(cert_store=cert_store)
-    
+
     # 🔒 HTTPS-ONLY MODE: Always use HTTPS with Certificate Authority Service certificates
     if https_only:
         if not use_https:
             raise RuntimeError("🚫 HTTPS_ONLY=true but certificates not found. Cannot start service.")
         logger.info(f"🔒 Starting Crank Document Converter with HTTPS/mTLS ONLY on port {https_port}")
         logger.info("🔐 Using in-memory certificates from Certificate Authority Service")
-        
+
         # Create SSL context from in-memory certificates (SECURE CSR pattern)
         try:
             import sys
             sys.path.append('/app/scripts')
             from crank_cert_initialize import cert_store
             ssl_context = cert_store.get_ssl_context()
-            
+
             print("🔒 Using certificates obtained via SECURE CSR pattern")
-            
+
             # Get the temporary certificate file paths for uvicorn
             cert_file = cert_store._temp_cert_file
             key_file = cert_store._temp_key_file
-            
+
             uvicorn.run(
-                app, 
-                host=service_host, 
+                app,
+                host=service_host,
                 port=https_port,
                 ssl_keyfile=key_file,
                 ssl_certfile=cert_file
@@ -484,29 +489,29 @@ async def initialize_security():
         # Import and run certificate initialization
         import sys
         import subprocess
-        
+
         # Run the certificate initialization script
         logger.info("🔐 Initializing certificates via CSR pattern...")
         result = subprocess.run([
             sys.executable, "/app/scripts/crank_cert_initialize.py"
         ], capture_output=True, text=True, timeout=60)
-        
+
         if result.returncode != 0:
             logger.error(f"Certificate initialization failed: {result.stderr}")
             return False
-            
+
         logger.info("✅ Certificate initialization completed")
-        
+
         # Verify certificate files exist
         cert_files = ["/etc/certs/server.crt", "/etc/certs/server.key", "/etc/certs/ca.crt"]
         for cert_file in cert_files:
             if not os.path.exists(cert_file):
                 logger.error(f"Certificate file missing: {cert_file}")
                 return False
-                
+
         logger.info("✅ All certificate files verified")
         return True
-        
+
     except Exception as e:
         logger.error(f"❌ Failed to initialize security: {e}")
         return False
@@ -524,26 +529,26 @@ async def register_with_platform():
             "pandoc-integration"
         ]
     )
-    
+
     try:
         # Create SSL context that accepts our CA certificates
         import ssl
         ssl_context = ssl.create_default_context(cafile="/etc/certs/ca.crt")
-        
+
         async with httpx.AsyncClient(verify=ssl_context) as client:
             response = await client.post(
                 f"{PLATFORM_URL}/workers/register",
                 json=registration.dict(),
                 timeout=30.0
             )
-            
+
         if response.status_code == 200:
             logger.info(f"✅ Successfully registered worker {WORKER_ID}")
             return True
         else:
             logger.error(f"❌ Registration failed: {response.status_code} - {response.text}")
             return False
-            
+
     except Exception as e:
         logger.error(f"❌ Registration error: {e}")
         return False
@@ -552,14 +557,14 @@ async def register_with_platform():
 async def startup_event():
     """Initialize security and register with platform on startup."""
     logger.info("🚀 Starting Crank Document Converter...")
-    
+
     if not await initialize_security():
         logger.error("Failed to initialize security - exiting")
         exit(1)
-    
+
     # Wait a moment for platform to be ready
     await asyncio.sleep(2)
-    
+
     if not await register_with_platform():
         logger.warning("Failed to register with platform - continuing anyway")
 
@@ -582,7 +587,7 @@ async def root():
         "worker_id": WORKER_ID,
         "capabilities": [
             "document-conversion",
-            "format-detection", 
+            "format-detection",
             "pandoc-integration"
         ]
     }
@@ -604,10 +609,10 @@ def detect_format(content: bytes, filename: str = None) -> str:
         }
         if ext in format_map:
             return format_map[ext]
-    
+
     # Try to detect from content
     content_str = content[:1024].decode('utf-8', errors='ignore').lower()
-    
+
     if content_str.startswith('<!doctype html') or '<html' in content_str:
         return 'html'
     elif content_str.startswith('#') or '**' in content_str:
@@ -618,11 +623,11 @@ def detect_format(content: bytes, filename: str = None) -> str:
 def convert_document(input_content: bytes, input_format: str, output_format: str, options: Dict = None) -> bytes:
     """Convert document using pandoc."""
     options = options or {}
-    
+
     with tempfile.NamedTemporaryFile(suffix=f'.{input_format}', delete=False) as input_file:
         input_file.write(input_content)
         input_file.flush()
-        
+
         with tempfile.NamedTemporaryFile(suffix=f'.{output_format}', delete=False) as output_file:
             try:
                 # Build pandoc command
@@ -633,21 +638,21 @@ def convert_document(input_content: bytes, input_format: str, output_format: str
                     '-o', output_file.name,
                     input_file.name
                 ]
-                
+
                 # Add common options
                 if output_format == 'pdf':
                     cmd.extend(['--pdf-engine=xelatex'])
-                
+
                 # Run conversion
                 result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-                
+
                 if result.returncode != 0:
                     raise Exception(f"Pandoc error: {result.stderr}")
-                
+
                 # Read converted content
                 with open(output_file.name, 'rb') as f:
                     return f.read()
-                    
+
             finally:
                 # Cleanup temp files
                 try:
@@ -666,30 +671,30 @@ async def convert_document_endpoint(
     try:
         # Read file content
         content = await file.read()
-        
+
         # Detect input format if not specified
         if not input_format:
             input_format = detect_format(content, file.filename)
-        
+
         logger.info(f"Converting {file.filename} from {input_format} to {output_format}")
-        
+
         # Perform conversion
         converted_content = convert_document(content, input_format, output_format)
-        
+
         conversion_id = str(uuid4())
-        
+
         # For now, return base64 encoded content
         # In production, this might be stored and referenced by ID
         import base64
         encoded_content = base64.b64encode(converted_content).decode('utf-8')
-        
+
         return ConversionResponse(
             conversion_id=conversion_id,
             status="completed",
             output_format=output_format,
             message=f"Successfully converted {file.filename} to {output_format}"
         ).dict() | {"content": encoded_content}
-        
+
     except Exception as e:
         logger.error(f"Conversion failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))

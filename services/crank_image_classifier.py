@@ -1,7 +1,7 @@
 """
 Crank GPU Image Classifier Service
 
-GPU-accelerated computer vision service that follows the exact same pattern as 
+GPU-accelerated computer vision service that follows the exact same pattern as
 the working document converter service.
 """
 
@@ -65,10 +65,10 @@ class ImageClassificationResponse(BaseModel):
 
 class CrankImageClassifier:
     """Crank Image Classifier Service following the working pattern."""
-    
+
     def __init__(self, platform_url: str = None, cert_store=None):
         self.app = FastAPI(title="Crank Image Classifier", version="1.0.0")
-        
+
         # 🔐 ZERO-TRUST: Use pre-loaded certificates from synchronous initialization
         if cert_store is not None:
             logger.info("🔐 Using pre-loaded certificates from synchronous initialization")
@@ -79,35 +79,35 @@ class CrankImageClassifier:
             sys.path.append('/app/scripts')
             from crank_cert_initialize import SecureCertificateStore
             self.cert_store = SecureCertificateStore()
-        
+
         # Always use HTTPS with Certificate Authority Service certificates
         self.platform_url = platform_url or os.getenv("PLATFORM_URL", "https://platform:8443")
         self.worker_url = os.getenv("WORKER_URL", "https://crank-image-classifier:8400")
-        
+
         # Certificate files are purely in-memory now - no disk dependencies
         self.cert_file = None
-        self.key_file = None 
+        self.key_file = None
         self.ca_file = None
-        
+
         self.worker_id = None
-        
+
         # Initialize GPU status
         self.gpu_available = GPU_AVAILABLE
         if self.gpu_available:
             logger.info("🚀 GPU acceleration available")
         else:
             logger.info("💻 Running in CPU mode")
-        
+
         # Setup routes
         self._setup_routes()
-        
+
         # Register startup/shutdown handlers
         self.app.add_event_handler("startup", self._startup)
         self.app.add_event_handler("shutdown", self._shutdown)
-    
+
     def _setup_routes(self):
         """Setup FastAPI routes."""
-        
+
         @self.app.get("/health")
         async def health_check():
             """Health check endpoint with security status."""
@@ -118,7 +118,7 @@ class CrankImageClassifier:
                     "ca_cert_available": self.cert_store.ca_cert is not None,
                     "certificate_source": "Certificate Authority Service"
                 }
-            
+
             return {
                 "status": "healthy",
                 "service": "crank-image-classifier",
@@ -138,7 +138,7 @@ class CrankImageClassifier:
                 "gpu_available": self.gpu_available,
                 "capabilities": [
                     "image-classification",
-                    "object-detection", 
+                    "object-detection",
                     "scene-analysis",
                     "gpu-acceleration" if self.gpu_available else "cpu-processing"
                 ]
@@ -154,19 +154,19 @@ class CrankImageClassifier:
             try:
                 # Read image content
                 content = await file.read()
-                
+
                 # Parse classification types
                 types = [t.strip() for t in classification_types.split(",")]
-                
+
                 logger.info(f"Classifying {file.filename} with types: {types}")
-                
+
                 # Perform classification
                 start_time = datetime.utcnow()
                 results = await self.classify_image(content, types, confidence_threshold)
                 processing_time = (datetime.utcnow() - start_time).total_seconds()
-                
+
                 classification_id = str(uuid4())
-                
+
                 return ImageClassificationResponse(
                     classification_id=classification_id,
                     status="completed",
@@ -174,7 +174,7 @@ class CrankImageClassifier:
                     processing_time=processing_time,
                     message=f"Successfully classified {file.filename}"
                 )
-                
+
             except Exception as e:
                 logger.error(f"Classification failed: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
@@ -194,70 +194,70 @@ class CrankImageClassifier:
                 ],
                 "gpu_enabled": self.gpu_available
             }
-    
+
     async def classify_image(self, image_content: bytes, classification_types: List[str], confidence_threshold: float) -> Dict[str, Any]:
         """Classify image using available models."""
         results = {}
-        
+
         try:
             # Convert bytes to PIL Image
             image = Image.open(io.BytesIO(image_content))
             image_array = np.array(image)
-            
+
             # Basic image properties
             results["image_info"] = {
                 "format": image.format,
                 "size": image.size,
                 "mode": image.mode
             }
-            
+
             # Object detection (simplified)
             if "object_detection" in classification_types:
                 results["object_detection"] = await self._detect_objects(image_array, confidence_threshold)
-            
+
             # Scene classification (basic)
             if "scene_classification" in classification_types:
                 results["scene_classification"] = await self._classify_scene(image_array)
-            
+
             # Color analysis
             if "color_analysis" in classification_types:
                 results["color_analysis"] = await self._analyze_colors(image)
-            
+
             # Basic content analysis
             if "basic_content_analysis" in classification_types:
                 results["content_analysis"] = await self._analyze_content(image_array)
-            
+
             return results
-            
+
         except Exception as e:
             logger.error(f"Image classification error: {e}")
             return {"error": str(e)}
-    
+
     async def _detect_objects(self, image_array: np.ndarray, confidence_threshold: float) -> Dict[str, Any]:
         """Basic object detection."""
         # Simplified object detection using OpenCV
         gray = cv2.cvtColor(image_array, cv2.COLOR_RGB2GRAY)
-        
+
         # Basic feature detection
         sift = cv2.SIFT_create()
         keypoints, descriptors = sift.detectAndCompute(gray, None)
-        
+
         return {
             "method": "SIFT features",
             "keypoints_detected": len(keypoints),
             "confidence": confidence_threshold,
             "gpu_accelerated": self.gpu_available
         }
-    
+
     async def _classify_scene(self, image_array: np.ndarray) -> Dict[str, Any]:
         """Basic scene classification."""
         # Simplified scene classification based on basic features
         gray = cv2.cvtColor(image_array, cv2.COLOR_RGB2GRAY)
-        
+
         # Calculate basic statistics
         mean_brightness = np.mean(gray)
         contrast = np.std(gray)
-        
+
         # Simple scene classification based on brightness and contrast
         if mean_brightness > 200:
             scene_type = "bright/outdoor"
@@ -265,23 +265,23 @@ class CrankImageClassifier:
             scene_type = "dark/indoor"
         else:
             scene_type = "mixed_lighting"
-        
+
         return {
             "scene_type": scene_type,
             "brightness": float(mean_brightness),
             "contrast": float(contrast),
             "method": "statistical_analysis"
         }
-    
+
     async def _analyze_colors(self, image: Image.Image) -> Dict[str, Any]:
         """Color analysis of the image."""
         # Get dominant colors
         image_rgb = image.convert('RGB')
         pixels = list(image_rgb.getdata())
-        
+
         # Calculate average color
         avg_color = tuple(sum(c) // len(pixels) for c in zip(*pixels))
-        
+
         return {
             "average_color": {
                 "rgb": avg_color,
@@ -289,15 +289,15 @@ class CrankImageClassifier:
             },
             "total_pixels": len(pixels)
         }
-    
+
     async def _analyze_content(self, image_array: np.ndarray) -> Dict[str, Any]:
         """Basic content analysis."""
         height, width = image_array.shape[:2]
-        
+
         # Calculate some basic metrics
         total_pixels = height * width
         aspect_ratio = width / height
-        
+
         return {
             "dimensions": {"width": width, "height": height},
             "total_pixels": total_pixels,
@@ -308,10 +308,10 @@ class CrankImageClassifier:
     async def _startup(self):
         """Startup handler - register with platform."""
         logger.info("🖼️ Starting Crank Image Classifier...")
-        
+
         # Log security level for visibility (certificates already loaded synchronously)
         logger.info("🔐 Using certificates loaded synchronously at startup")
-        
+
         # Prepare registration info
         worker_info = WorkerRegistration(
             worker_id=f"image-classifier-{uuid4().hex[:8]}",
@@ -320,30 +320,36 @@ class CrankImageClassifier:
             health_url=f"{self.worker_url}/health",
             capabilities=["image-classification", "object-detection", "scene-analysis", "gpu-acceleration" if self.gpu_available else "cpu-processing"]
         )
-        
+
         self.worker_id = worker_info.worker_id
-        
+
         # Register with platform
         await self._register_with_platform(worker_info)
-        
+
         # Start heartbeat background task
         self._start_heartbeat_task()
-    
+
     async def _register_with_platform(self, worker_info: WorkerRegistration):
         """Register this worker with the platform."""
         try:
             async with self._create_client() as client:
+                # Get the service endpoint from environment or default
+                service_endpoint = os.getenv("IMAGE_CLASSIFIER_SERVICE_NAME", "crank-image-classifier-gpu-dev")
                 response = await client.post(
-                    f"{self.platform_url}/workers/register",
-                    json=worker_info.dict(),
-                    timeout=30.0
+                    f"{self.platform_url}/v1/workers/register",
+                    data={
+                        "worker_id": self.worker_id,
+                        "service_type": "image_classification",
+                        "endpoint": f"https://{service_endpoint}:{worker_port}"
+                    },
+                    headers={"Authorization": f"Bearer {self.platform_auth_token}"}
                 )
-                
-            if response.status_code == 200:
-                logger.info(f"✅ Successfully registered worker {worker_info.worker_id}")
-            else:
-                logger.error(f"❌ Registration failed: {response.status_code} - {response.text}")
-                
+
+                if response.status_code == 200:
+                    logger.info(f"✅ Successfully registered worker {worker_info.worker_id}")
+                else:
+                    logger.error(f"❌ Registration failed: {response.status_code} - {response.text}")
+
         except Exception as e:
             logger.error(f"❌ Registration error: {e}")
 
@@ -358,7 +364,7 @@ class CrankImageClassifier:
     def _start_heartbeat_task(self):
         """Start the background heartbeat task."""
         heartbeat_interval = int(os.getenv("WORKER_HEARTBEAT_INTERVAL", "20"))
-        
+
         async def heartbeat_loop():
             """Background task to send periodic heartbeats."""
             while True:
@@ -371,7 +377,7 @@ class CrankImageClassifier:
                     break
                 except Exception as e:
                     logger.warning(f"Heartbeat failed: {e}")
-        
+
         # Start the background task
         asyncio.create_task(heartbeat_loop())
         logger.info(f"🫀 Started heartbeat task with {heartbeat_interval}s interval")
@@ -381,16 +387,19 @@ class CrankImageClassifier:
         try:
             async with self._create_client() as client:
                 response = await client.post(
-                    f"{self.platform_url}/workers/{self.worker_id}/heartbeat",
-                    json={"timestamp": datetime.utcnow().isoformat()},
-                    timeout=5.0
+                    f"{self.platform_url}/v1/workers/{self.worker_id}/heartbeat",
+                    data={
+                        "service_type": "image_classification",
+                        "load_score": 0.2
+                    },
+                    headers={"Authorization": f"Bearer {self.platform_auth_token}"}
                 )
-                
+
             if response.status_code == 200:
                 logger.debug(f"🫀 Heartbeat sent successfully")
             else:
                 logger.warning(f"Heartbeat failed: {response.status_code}")
-                
+
         except Exception as e:
             logger.debug(f"Heartbeat error: {e}")
 
@@ -416,11 +425,11 @@ def main():
     """Main entry point with HTTPS enforcement and Certificate Authority Service integration."""
     import uvicorn
     from pathlib import Path
-    
+
     # 🔒 ENFORCE HTTPS-ONLY MODE: No HTTP fallback allowed
     https_only = os.getenv("HTTPS_ONLY", "true").lower() == "true"
     ca_service_url = os.getenv("CA_SERVICE_URL")
-    
+
     if https_only and ca_service_url:
         print("🔐 Initializing certificates using SECURE CSR pattern...")
         try:
@@ -429,55 +438,55 @@ def main():
             sys.path.append('/app/scripts')
             import asyncio
             from crank_cert_initialize import main as init_certificates, cert_store
-            
+
             # Run secure certificate initialization
             asyncio.run(init_certificates())
-            
+
             # Check if certificates were loaded
             if cert_store.platform_cert is None:
                 raise RuntimeError("🚫 Certificate initialization completed but no certificates in memory")
-            
+
             print("✅ Certificates loaded successfully using SECURE CSR pattern")
             print("🔒 SECURITY: Private keys generated locally and never transmitted")
-            
+
             use_https = True
             logger.info("🔐 Using in-memory certificates from secure initialization")
         except Exception as e:
             raise RuntimeError(f"🚫 Failed to initialize certificates with CA service: {e}")
     else:
         raise RuntimeError("🚫 HTTPS_ONLY environment requires Certificate Authority Service")
-    
-    # 🚢 PORT CONFIGURATION: Use environment variables for flexible deployment  
+
+    # 🚢 PORT CONFIGURATION: Use environment variables for flexible deployment
     service_port = int(os.getenv("IMAGE_CLASSIFIER_PORT", "8400"))  # HTTP fallback port
     service_host = os.getenv("IMAGE_CLASSIFIER_HOST", "0.0.0.0")
     https_port = int(os.getenv("IMAGE_CLASSIFIER_HTTPS_PORT", "8400"))
-    
+
     # Create FastAPI app with pre-loaded certificates
     app = create_crank_image_classifier(cert_store=cert_store)
-    
+
     # 🔒 HTTPS-ONLY MODE: Always use HTTPS with Certificate Authority Service certificates
     if https_only:
         if not use_https:
             raise RuntimeError("🚫 HTTPS_ONLY=true but certificates not found. Cannot start service.")
         logger.info(f"🔒 Starting Crank Image Classifier with HTTPS/mTLS ONLY on port {https_port}")
         logger.info("🔐 Using in-memory certificates from Certificate Authority Service")
-        
+
         # Create SSL context from in-memory certificates (SECURE CSR pattern)
         try:
             import sys
             sys.path.append('/app/scripts')
             from crank_cert_initialize import cert_store
             ssl_context = cert_store.get_ssl_context()
-            
+
             print("🔒 Using certificates obtained via SECURE CSR pattern")
-            
+
             # Get the temporary certificate file paths for uvicorn
             cert_file = cert_store._temp_cert_file
             key_file = cert_store._temp_key_file
-            
+
             uvicorn.run(
-                app, 
-                host=service_host, 
+                app,
+                host=service_host,
                 port=https_port,
                 ssl_keyfile=key_file,
                 ssl_certfile=cert_file
