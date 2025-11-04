@@ -399,23 +399,37 @@ class ContainerSmokeTest:
 
 def main():
     """Main smoke test execution."""
-    if len(sys.argv) > 1:
-        compose_file = sys.argv[1]
-    else:
-        compose_file = "docker-compose.development.yml"
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Container smoke test suite')
+    parser.add_argument('compose_file', nargs='?', default='docker-compose.development.yml',
+                       help='Docker compose file to test')
+    parser.add_argument('--json', action='store_true',
+                       help='Output results in JSON format')
+    
+    args = parser.parse_args()
 
-    print(f"🔥 Running smoke tests with {compose_file}")
+    if not args.json:
+        print(f"🔥 Running smoke tests with {args.compose_file}")
 
-    smoke_test = ContainerSmokeTest(compose_file)
+    smoke_test = ContainerSmokeTest(args.compose_file)
     results = smoke_test.run_comprehensive_test()
-    smoke_test.print_results(results)
+    
+    if args.json:
+        # Output JSON for automation
+        print(json.dumps(results, indent=2))
+    else:
+        # Human-readable output
+        smoke_test.print_results(results)
 
     # Exit with error code if any services failed
     if results["summary"]["failed_services"]:
-        print(f"\n❌ {len(results['summary']['failed_services'])} services failed!")
+        if not args.json:
+            print(f"\n❌ {len(results['summary']['failed_services'])} services failed!")
         sys.exit(1)
     else:
-        print("\n✅ All services are healthy!")
+        if not args.json:
+            print("\n✅ All services are healthy!")
         sys.exit(0)
 
 if __name__ == "__main__":

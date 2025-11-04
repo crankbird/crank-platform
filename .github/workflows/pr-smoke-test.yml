@@ -1,0 +1,71 @@
+name: 🔍 PR Smoke Test & Auto-Issue Creation
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  smoke-test-pr:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout PR code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+        
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests pyyaml
+        
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Start services
+      run: |
+        docker-compose -f docker-compose.development.yml up -d
+        
+    - name: Wait for services
+      run: sleep 30
+        
+    - name: Run smoke tests
+      id: smoke_test
+      run: |
+        python3 tests/smoke_test_containers.py --json > smoke_test_results.json
+        echo "exit_code=$?" >> $GITHUB_OUTPUT
+        
+    - name: Parse results and create PR comment
+      id: pr_comment
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+      run: |
+        python3 .github/scripts/create_pr_comment.py
+        
+    - name: Create issues for new warnings
+      if: steps.smoke_test.outputs.exit_code == 0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+      run: |
+        python3 .github/scripts/create_warning_issues.py --pr-mode
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: pr-smoke-test-results
+        path: smoke_test_results.json
+        
+    - name: Clean up
+      if: always()
+      run: |
+        docker-compose -f docker-compose.development.yml down

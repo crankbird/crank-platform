@@ -1,0 +1,69 @@
+name: 🧪 Smoke Tests with Issue Creation
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests pyyaml
+        
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Start services
+      run: |
+        # Start the development environment
+        docker-compose -f docker-compose.development.yml up -d
+        
+    - name: Wait for services to be ready
+      run: |
+        echo "Waiting for services to start..."
+        sleep 30
+        
+    - name: Run smoke tests with JSON output
+      id: smoke_test
+      run: |
+        python3 tests/smoke_test_containers.py --json > smoke_test_results.json
+        echo "smoke_test_exit_code=$?" >> $GITHUB_OUTPUT
+        
+    - name: Parse smoke test results
+      id: parse_results
+      run: |
+        python3 .github/scripts/parse_smoke_results.py
+        
+    - name: Create issues for warnings
+      if: steps.parse_results.outputs.warnings_count > 0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        python3 .github/scripts/create_warning_issues.py
+        
+    - name: Upload smoke test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: smoke-test-results
+        path: |
+          smoke_test_results.json
+          warnings.json
+          
+    - name: Clean up
+      if: always()
+      run: |
+        docker-compose -f docker-compose.development.yml down
