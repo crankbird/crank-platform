@@ -1,0 +1,492 @@
+{
+  "timestamp": "2025-11-05T17:28:29.429814",
+  "total_services": 8,
+  "warnings": [
+    "Message Text Classification not registered with platform",
+    "Still Image Classification (CPU) not registered with platform",
+    "Still Image Classification (GPU) not registered with platform",
+    "Streaming Data Processing not registered with platform",
+    "Document Conversion (In-Memory) capabilities not fully validated",
+    "File Processing (Large Files) capabilities not fully validated",
+    "Message Text Classification capabilities not fully validated",
+    "Still Image Classification (CPU) capabilities not fully validated",
+    "Still Image Classification (GPU) capabilities not fully validated",
+    "Still Image Classification (GPU) GPU not available",
+    "Streaming Data Processing capabilities not fully validated"
+  ],
+  "critical_failures": [],
+  "summary": {
+    "passed": 0,
+    "failed": 6,
+    "warning_count": 11,
+    "overall_success": false
+  },
+  "detailed_results": {
+    "container_status": {
+      "crank-doc-converter-dev": {
+        "status": "Up 16 minutes (healthy)",
+        "state": "running",
+        "ports": "0.0.0.0:8100->8100/tcp, [::]:8100->8100/tcp"
+      },
+      "crank-streaming-dev": {
+        "status": "Up 47 minutes (healthy)",
+        "state": "running",
+        "ports": "0.0.0.0:8500->8500/tcp, [::]:8500->8500/tcp"
+      },
+      "crank-email-parser-dev": {
+        "status": "Up 48 minutes (healthy)",
+        "state": "running",
+        "ports": "0.0.0.0:8300->8300/tcp, [::]:8300->8300/tcp"
+      },
+      "crank-image-classifier-gpu-dev": {
+        "status": "Up 48 minutes (healthy)",
+        "state": "running",
+        "ports": "0.0.0.0:8400->8400/tcp, [::]:8400->8400/tcp"
+      },
+      "crank-image-classifier-cpu-dev": {
+        "status": "Up 48 minutes (healthy)",
+        "state": "running",
+        "ports": "0.0.0.0:8401->8401/tcp, [::]:8401->8401/tcp"
+      },
+      "crank-email-classifier-dev": {
+        "status": "Up 48 minutes (healthy)",
+        "state": "running",
+        "ports": "0.0.0.0:8200->8200/tcp, [::]:8200->8200/tcp"
+      },
+      "crank-platform-dev": {
+        "status": "Up 48 minutes (healthy)",
+        "state": "running",
+        "ports": "0.0.0.0:8443->8443/tcp, [::]:8443->8443/tcp"
+      },
+      "crank-cert-authority-dev": {
+        "status": "Up 48 minutes (healthy)",
+        "state": "running",
+        "ports": "0.0.0.0:9090->9090/tcp, [::]:9090->9090/tcp"
+      }
+    },
+    "health_checks": {
+      "crank-doc-converter-dev": {
+        "status_code": 200,
+        "response_time_ms": 9.72,
+        "healthy": true,
+        "endpoint": "https://localhost:8100/health",
+        "response_data": {
+          "status": "healthy",
+          "service": "crank-document-converter",
+          "worker_id": "doc-converter-7ae85e22",
+          "timestamp": "2025-11-05T06:28:29.491869",
+          "security": {
+            "ssl_enabled": true,
+            "ca_cert_available": true,
+            "certificate_source": "Certificate Authority Service"
+          }
+        },
+        "service_info": "crank-document-converter"
+      },
+      "crank-email-parser-dev": {
+        "status_code": 200,
+        "response_time_ms": 6.52,
+        "healthy": true,
+        "endpoint": "https://localhost:8300/health",
+        "response_data": {
+          "status": "healthy",
+          "service": "crank-email-parser",
+          "service_id": "email-parser-d7ab990a",
+          "capabilities": [
+            "mbox_parsing",
+            "eml_parsing",
+            "bulk_processing"
+          ]
+        },
+        "service_info": "crank-email-parser"
+      },
+      "crank-email-classifier-dev": {
+        "status_code": 200,
+        "response_time_ms": 6.42,
+        "healthy": true,
+        "endpoint": "https://localhost:8200/health",
+        "response_data": {
+          "status": "healthy",
+          "service": "crank-email-classifier",
+          "capabilities": [
+            "spam_detection",
+            "bill_detection",
+            "receipt_detection",
+            "sentiment_analysis",
+            "category",
+            "priority",
+            "language_detection"
+          ],
+          "ml_models": "initialized",
+          "security": {},
+          "timestamp": "2025-11-05T06:28:29.505571"
+        },
+        "service_info": "crank-email-classifier"
+      },
+      "crank-image-classifier-cpu-dev": {
+        "status_code": 200,
+        "response_time_ms": 7.72,
+        "healthy": true,
+        "endpoint": "https://localhost:8401/health",
+        "response_data": {
+          "status": "healthy",
+          "service": "crank-image-classifier",
+          "worker_id": "image-classifier-802a5849",
+          "timestamp": "2025-11-05T06:28:29.513516",
+          "gpu_available": false,
+          "security": {
+            "ssl_enabled": true,
+            "ca_cert_available": true,
+            "certificate_source": "Certificate Authority Service"
+          }
+        },
+        "service_info": "crank-image-classifier"
+      },
+      "crank-image-classifier-gpu-dev": {
+        "status_code": 200,
+        "response_time_ms": 8.12,
+        "healthy": true,
+        "endpoint": "https://localhost:8400/health",
+        "response_data": {
+          "status": "healthy",
+          "service": "crank-image-classifier",
+          "worker_id": "image-classifier-8b9f44c2",
+          "timestamp": "2025-11-05T06:28:29.521916",
+          "gpu_available": false,
+          "security": {
+            "ssl_enabled": true,
+            "ca_cert_available": true,
+            "certificate_source": "Certificate Authority Service"
+          }
+        },
+        "service_info": "crank-image-classifier"
+      },
+      "crank-streaming-dev": {
+        "status_code": 200,
+        "response_time_ms": 8.59,
+        "healthy": true,
+        "endpoint": "https://localhost:8500/health",
+        "response_data": {
+          "status": "healthy",
+          "service": "crank-streaming",
+          "worker_id": "streaming-d7dcc288",
+          "timestamp": "2025-11-05T06:28:29.530713",
+          "active_connections": 0,
+          "active_streams": 0,
+          "security": {
+            "ssl_enabled": true,
+            "ca_cert_available": true
+          }
+        },
+        "service_info": "crank-streaming"
+      },
+      "crank-platform-dev": {
+        "status_code": 200,
+        "response_time_ms": 10.63,
+        "healthy": true,
+        "endpoint": "https://localhost:8443/health/live",
+        "response_data": {
+          "status": "live",
+          "service": "crank-platform",
+          "timestamp": "2025-11-05T06:28:29.541270+00:00",
+          "modules": [
+            "diagnostics",
+            "auth",
+            "billing",
+            "discovery"
+          ]
+        },
+        "service_info": "crank-platform"
+      },
+      "crank-cert-authority-dev": {
+        "status_code": 200,
+        "response_time_ms": 6.44,
+        "healthy": true,
+        "endpoint": "https://localhost:9090/health",
+        "response_data": {
+          "status": "healthy",
+          "service": "certificate-authority",
+          "provider": "development"
+        },
+        "service_info": "certificate-authority"
+      }
+    },
+    "platform_registration": {
+      "worker_list": {
+        "accessible": true,
+        "worker_count": 2,
+        "workers": [
+          {
+            "worker_id": "email-parser-d7ab990a",
+            "endpoint": "https://crank-email-parser:8300",
+            "capabilities": [
+              "mbox_parsing",
+              "eml_parsing",
+              "bulk_processing",
+              "archive_analysis"
+            ],
+            "last_seen": "2025-11-05T06:28:21.126128+00:00",
+            "load_score": 0.3,
+            "service_type": "email_parsing"
+          },
+          {
+            "worker_id": "doc-converter-7ae85e22",
+            "endpoint": "https://crank-doc-converter:8100",
+            "capabilities": [
+              "document-conversion",
+              "format-detection",
+              "pandoc-integration"
+            ],
+            "last_seen": "2025-11-05T06:28:22.891755+00:00",
+            "load_score": 0.4,
+            "service_type": "document_conversion"
+          }
+        ],
+        "workers_by_type": {
+          "email_parsing": [
+            {
+              "worker_id": "email-parser-d7ab990a",
+              "endpoint": "https://crank-email-parser:8300",
+              "capabilities": [
+                "mbox_parsing",
+                "eml_parsing",
+                "bulk_processing",
+                "archive_analysis"
+              ],
+              "last_seen": "2025-11-05T06:28:21.126128+00:00",
+              "load_score": 0.3,
+              "service_type": "email_parsing"
+            }
+          ],
+          "document_conversion": [
+            {
+              "worker_id": "doc-converter-7ae85e22",
+              "endpoint": "https://crank-doc-converter:8100",
+              "capabilities": [
+                "document-conversion",
+                "format-detection",
+                "pandoc-integration"
+              ],
+              "last_seen": "2025-11-05T06:28:22.891755+00:00",
+              "load_score": 0.4,
+              "service_type": "document_conversion"
+            }
+          ]
+        }
+      },
+      "doc_converter": {
+        "registered": true
+      },
+      "email_parser": {
+        "registered": true
+      },
+      "email_classifier": {
+        "registered": false
+      },
+      "image_classifier_cpu": {
+        "registered": false
+      },
+      "image_classifier_gpu": {
+        "registered": false
+      },
+      "streaming": {
+        "registered": false
+      }
+    },
+    "api_functionality": {
+      "doc_converter": {
+        "service": "Document Conversion (In-Memory)",
+        "endpoints": {
+          "/health": {
+            "status_code": 200,
+            "accessible": true,
+            "response_time_ms": 9.34,
+            "functional": true
+          },
+          "/convert": {
+            "status_code": 405,
+            "accessible": false,
+            "response_time_ms": 0.99,
+            "functional": true
+          },
+          "/docs": {
+            "status_code": 200,
+            "accessible": true,
+            "response_time_ms": 0.94,
+            "functional": true
+          }
+        },
+        "functional": true
+      },
+      "email_parser": {
+        "service": "File Processing (Large Files)",
+        "endpoints": {
+          "/health": {
+            "status_code": 200,
+            "accessible": true,
+            "response_time_ms": 7.29,
+            "functional": true
+          },
+          "/parse": {
+            "status_code": 404,
+            "accessible": false,
+            "response_time_ms": 1.72,
+            "functional": false
+          },
+          "/docs": {
+            "status_code": 200,
+            "accessible": true,
+            "response_time_ms": 0.83,
+            "functional": true
+          }
+        },
+        "functional": true
+      },
+      "email_classifier": {
+        "service": "Message Text Classification",
+        "endpoints": {
+          "/health": {
+            "status_code": 200,
+            "accessible": true,
+            "response_time_ms": 7.12,
+            "functional": true
+          },
+          "/classify": {
+            "status_code": 405,
+            "accessible": false,
+            "response_time_ms": 0.94,
+            "functional": true
+          },
+          "/docs": {
+            "status_code": 200,
+            "accessible": true,
+            "response_time_ms": 1.07,
+            "functional": true
+          }
+        },
+        "functional": true
+      },
+      "image_classifier_cpu": {
+        "service": "Still Image Classification (CPU)",
+        "endpoints": {
+          "/health": {
+            "status_code": 200,
+            "accessible": true,
+            "response_time_ms": 8.91,
+            "functional": true
+          },
+          "/classify": {
+            "status_code": 405,
+            "accessible": false,
+            "response_time_ms": 1.31,
+            "functional": true
+          },
+          "/docs": {
+            "status_code": 200,
+            "accessible": true,
+            "response_time_ms": 2.78,
+            "functional": true
+          }
+        },
+        "functional": true
+      },
+      "image_classifier_gpu": {
+        "service": "Still Image Classification (GPU)",
+        "endpoints": {
+          "/health": {
+            "status_code": 200,
+            "accessible": true,
+            "response_time_ms": 8.07,
+            "functional": true
+          },
+          "/classify": {
+            "status_code": 405,
+            "accessible": false,
+            "response_time_ms": 0.95,
+            "functional": true
+          },
+          "/docs": {
+            "status_code": 200,
+            "accessible": true,
+            "response_time_ms": 2.92,
+            "functional": true
+          }
+        },
+        "functional": true
+      },
+      "streaming": {
+        "service": "Streaming Data Processing",
+        "endpoints": {
+          "/health": {
+            "status_code": 200,
+            "accessible": true,
+            "response_time_ms": 7.11,
+            "functional": true
+          },
+          "/stream": {
+            "status_code": 404,
+            "accessible": false,
+            "response_time_ms": 1.29,
+            "functional": false
+          },
+          "/docs": {
+            "status_code": 200,
+            "accessible": true,
+            "response_time_ms": 2.56,
+            "functional": true
+          }
+        },
+        "functional": true
+      }
+    },
+    "archetype_validation": {
+      "doc_converter": {
+        "archetype": "Document Conversion (In-Memory)",
+        "capabilities_validated": false,
+        "gpu_validation": null,
+        "pattern_compliance": false
+      },
+      "email_parser": {
+        "archetype": "File Processing (Large Files)",
+        "capabilities_validated": false,
+        "gpu_validation": null,
+        "pattern_compliance": false
+      },
+      "email_classifier": {
+        "archetype": "Message Text Classification",
+        "capabilities_validated": false,
+        "gpu_validation": null,
+        "pattern_compliance": false
+      },
+      "image_classifier_cpu": {
+        "archetype": "Still Image Classification (CPU)",
+        "capabilities_validated": false,
+        "gpu_validation": null,
+        "pattern_compliance": false
+      },
+      "image_classifier_gpu": {
+        "archetype": "Still Image Classification (GPU)",
+        "capabilities_validated": false,
+        "gpu_validation": {
+          "required": true,
+          "available": false
+        },
+        "pattern_compliance": false
+      },
+      "streaming": {
+        "archetype": "Streaming Data Processing",
+        "capabilities_validated": false,
+        "gpu_validation": null,
+        "pattern_compliance": false
+      }
+    },
+    "archetype_status": {
+      "doc_converter": false,
+      "email_parser": false,
+      "email_classifier": false,
+      "image_classifier_cpu": false,
+      "image_classifier_gpu": false,
+      "streaming": false
+    }
+  }
+}

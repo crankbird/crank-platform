@@ -35,10 +35,10 @@ jobs:
       - name: Wait for services
         run: sleep 30
 
-      - name: Run smoke tests
+      - name: Run enhanced smoke tests
         id: smoke_test
         run: |
-          python3 tests/smoke_test_containers.py --json > smoke_test_results.json
+          python3 tests/enhanced_smoke_test.py --json > smoke_test_results.json
           echo "exit_code=$?" >> $GITHUB_OUTPUT
 
       - name: Parse results and create PR comment
