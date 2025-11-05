@@ -1,45 +1,65 @@
 # 🏗️ Worker Archetype Patterns & Test Harness Architecture
 
-## 🎯 Overview
+## 🎯 Strategic Intent
 
-The crank-platform workers serve a dual purpose:
+**CORE MISSION**: Establish 6 proven worker archetype patterns that serve as replicable templates for any Python-based service, using successful patterns from `crank-email-classifier` and `crank-image-classifier-cpu` as the foundation.
+
+**DUAL PURPOSE**: The crank-platform workers serve as:
 
 1. **Reference Implementations**: Archetypal patterns for external worker development
 2. **Test Harness**: Validation components for platform functionality
 
-## 🎮 Current Worker Archetypes
+## 🎮 The 6 Core Worker Archetypes
 
-### 📧 **Email Processing Pattern** (`crank-email-parser-dev`)
+These archetypes are designed to be **adaptable enough for pretty much any Python-based program**:
 
-- **Port**: 8300
-- **Pattern**: Stream processing with classification
-- **Archetype**: High-throughput document ingestion
-- **Reference for**: Mail archive processing, document pipelines
-- **Test Validation**: Streaming APIs, worker registration, health checks
-
-### 📄 **Document Conversion Pattern** (`crank-doc-converter-dev`)
+### 1. � **File Conversion (In-Memory)** - `crank-doc-converter`
 
 - **Port**: 8100
-- **Pattern**: Transformation services with format conversion
-- **Archetype**: Document processing workflows
-- **Reference for**: File format conversion, content transformation
-- **Test Validation**: File upload/download, format handling, error recovery
+- **Pattern**: Transform files that easily fit in memory
+- **Use Cases**: PDF→text, image format conversion, small document processing
+- **Memory Profile**: Single file operations, <100MB typical
+- **Reference Implementation**: Based on proven email-classifier pattern
 
-### 🖼️ **Image Classification Pattern** (`crank-image-classifier-*-dev`)
+### 2. � **File Processing (Large Files)** - `crank-email-parser`
 
-- **Ports**: 8400 (GPU), 8401 (CPU)
-- **Pattern**: ML inference with resource allocation
-- **Archetype**: AI model deployment (dual CPU/GPU)
-- **Reference for**: Computer vision, ML inference services
-- **Test Validation**: GPU allocation, model loading, inference APIs
+- **Port**: 8300
+- **Pattern**: Parse/process arbitrarily large files with streaming
+- **Use Cases**: Log file analysis, large dataset processing, archive parsing
+- **Memory Profile**: Streaming operations, handles multi-GB files
+- **Reference Implementation**: Established working pattern
 
-### 📊 **Streaming Analytics Pattern** (`crank-streaming-dev`)
+### 3. 🏷️ **Message Text Classification** - `crank-email-classifier`
+
+- **Port**: 8200
+- **Pattern**: Classify discrete text units that fit in memory
+- **Use Cases**: Email classification, sentiment analysis, text categorization
+- **Memory Profile**: Per-message processing, <10MB typical
+- **Reference Implementation**: ✅ **PROVEN SUCCESSFUL PATTERN**
+
+### 4. 🖼️ **Still Image Classification (CPU)** - `crank-image-classifier-cpu`
+
+- **Port**: 8401
+- **Pattern**: CPU-only image processing with limited capability/speed
+- **Use Cases**: Basic image recognition, fallback processing, development
+- **Resource Profile**: CPU-bound, moderate performance
+- **Reference Implementation**: ✅ **PROVEN SUCCESSFUL PATTERN**
+
+### 5. 🚀 **Still Image Classification (GPU)** - `crank-image-classifier-gpu`
+
+- **Port**: 8400
+- **Pattern**: GPU-enabled processing with full capabilities
+- **Use Cases**: High-performance computer vision, real-time inference
+- **Resource Profile**: GPU-accelerated, high performance
+- **Reference Implementation**: Based on proven CPU pattern
+
+### 6. 📊 **Streaming Data Processing** - `crank-streaming`
 
 - **Port**: 8500
-- **Pattern**: Real-time data processing
-- **Archetype**: Event-driven analytics
-- **Reference for**: Real-time dashboards, event processing
-- **Test Validation**: WebSocket connections, real-time data flow
+- **Pattern**: Real-time data stream processing
+- **Use Cases**: Live analytics, event processing, real-time dashboards
+- **Memory Profile**: Continuous processing, bounded memory usage
+- **Reference Implementation**: Needs alignment to proven patterns
 
 ## 🔧 Extraction Patterns for External Repos
 

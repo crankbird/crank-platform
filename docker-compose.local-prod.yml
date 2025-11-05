@@ -1,5 +1,5 @@
 # Production-Ready Zero-Trust mTLS Architecture
-# 
+#
 # This docker-compose demonstrates production-level security:
 # - Strict certificate validation with proper CA chain
 # - Private keys with secure permissions (0600)
@@ -16,19 +16,31 @@ services:
       dockerfile: Dockerfile.platform
     container_name: crank-platform-prod
     ports:
-      - "8443:8443"  # HTTPS ONLY - no HTTP port
+      - "8443:8443" # HTTPS ONLY - no HTTP port
     volumes:
-      - ./certs-production:/etc/certs:ro  # Read-only certificate mount
+      - ./certs-production:/etc/certs:ro # Read-only certificate mount
     environment:
       - PLATFORM_ENV=docker
-      - CRANK_ENVIRONMENT=production  # 🔒 STRICT: Full certificate validation
+      - CRANK_ENVIRONMENT=production # 🔒 STRICT: Full certificate validation
       - LOG_LEVEL=INFO
       - PLATFORM_HTTPS_PORT=8443
       - HTTPS_ONLY=true
-      - CERT_VALIDATION=strict  # 🔒 Enforce strict certificate validation
-      - PLATFORM_AUTH_TOKEN=prod-mesh-key-v1  # 🔒 Production auth token
+      - CERT_VALIDATION=strict # 🔒 Enforce strict certificate validation
+      - PLATFORM_AUTH_TOKEN=prod-mesh-key-v1 # 🔒 Production auth token
     healthcheck:
-      test: ["CMD", "curl", "--cacert", "/etc/certs/ca.crt", "--cert", "/etc/certs/client.crt", "--key", "/etc/certs/client.key", "-f", "https://localhost:8443/health/live"]
+      test:
+        [
+          "CMD",
+          "curl",
+          "--cacert",
+          "/etc/certs/ca.crt",
+          "--cert",
+          "/etc/certs/client.crt",
+          "--key",
+          "/etc/certs/client.key",
+          "-f",
+          "https://localhost:8443/health/live",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -44,23 +56,35 @@ services:
       dockerfile: Dockerfile.crank-doc-converter
     container_name: crank-doc-converter-prod
     ports:
-      - "8101:8101"  # HTTPS ONLY
+      - "8101:8101" # HTTPS ONLY
     volumes:
-      - ./certs-production:/etc/certs:ro  # Read-only certificate mount
+      - ./certs-production:/etc/certs:ro # Read-only certificate mount
     environment:
       - PLATFORM_URL=https://platform:8443
-      - CRANK_ENVIRONMENT=production  # 🔒 STRICT: Full certificate validation
+      - CRANK_ENVIRONMENT=production # 🔒 STRICT: Full certificate validation
       - LOG_LEVEL=INFO
-      - PLATFORM_AUTH_TOKEN=prod-mesh-key-v1  # 🔒 Production auth token
+      - PLATFORM_AUTH_TOKEN=prod-mesh-key-v1 # 🔒 Production auth token
       - DOC_CONVERTER_HTTPS_PORT=8101
       - DOC_CONVERTER_HOST=0.0.0.0
       - HTTPS_ONLY=true
-      - CERT_VALIDATION=strict  # 🔒 Enforce strict certificate validation
+      - CERT_VALIDATION=strict # 🔒 Enforce strict certificate validation
     depends_on:
       platform:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "--cacert", "/etc/certs/ca.crt", "--cert", "/etc/certs/client.crt", "--key", "/etc/certs/client.key", "-f", "https://localhost:8101/health"]
+      test:
+        [
+          "CMD",
+          "curl",
+          "--cacert",
+          "/etc/certs/ca.crt",
+          "--cert",
+          "/etc/certs/client.crt",
+          "--key",
+          "/etc/certs/client.key",
+          "-f",
+          "https://localhost:8101/health",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -76,27 +100,39 @@ services:
       dockerfile: Dockerfile.crank-email-classifier
     container_name: crank-email-classifier-prod
     ports:
-      - "8201:8201"  # HTTPS ONLY
+      - "8201:8201" # HTTPS ONLY
     volumes:
-      - ./certs-production:/etc/certs:ro  # Read-only certificate mount
+      - ./certs-production:/etc/certs:ro # Read-only certificate mount
     environment:
       - PLATFORM_URL=https://platform:8443
-      - CRANK_ENVIRONMENT=production  # 🔒 STRICT: Full certificate validation
+      - CRANK_ENVIRONMENT=production # 🔒 STRICT: Full certificate validation
       - LOG_LEVEL=INFO
-      - PLATFORM_AUTH_TOKEN=prod-mesh-key-v1  # 🔒 Production auth token
+      - PLATFORM_AUTH_TOKEN=prod-mesh-key-v1 # 🔒 Production auth token
       - EMAIL_CLASSIFIER_HTTPS_PORT=8201
       - EMAIL_CLASSIFIER_HOST=0.0.0.0
       - HTTPS_ONLY=true
-      - CERT_VALIDATION=strict  # 🔒 Enforce strict certificate validation
+      - CERT_VALIDATION=strict # 🔒 Enforce strict certificate validation
     depends_on:
       platform:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "--cacert", "/etc/certs/ca.crt", "--cert", "/etc/certs/client.crt", "--key", "/etc/certs/client.key", "-f", "https://localhost:8201/health"]
+      test:
+        [
+          "CMD",
+          "curl",
+          "--cacert",
+          "/etc/certs/ca.crt",
+          "--cert",
+          "/etc/certs/client.crt",
+          "--key",
+          "/etc/certs/client.key",
+          "-f",
+          "https://localhost:8201/health",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s  # ML models need time
+      start_period: 30s # ML models need time
     networks:
       - crank-net-prod
     restart: unless-stopped
@@ -105,7 +141,6 @@ networks:
   crank-net-prod:
     driver: bridge
     name: crank-network-production
-
 # Production deployment notes:
 # 1. Certificates must be pre-generated with proper CA chain
 # 2. Private keys have secure permissions (0600)

@@ -67,6 +67,7 @@ class CrankDocumentConverter:
         # Always use HTTPS with Certificate Authority Service certificates
         self.platform_url = platform_url or os.getenv("PLATFORM_URL", "https://platform:8443")
         self.worker_url = os.getenv("WORKER_URL", "https://crank-doc-converter:8100")
+        self.platform_auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "dev-mesh-key")
 
         # Certificate files are purely in-memory now - no disk dependencies
         self.cert_file = None
@@ -264,18 +265,15 @@ class CrankDocumentConverter:
         """Register this worker with the platform."""
         try:
             async with self._create_client() as client:
-            response = await client.post(
-                f"{self.platform_url}/v1/workers/register",
-                data={
-                    "worker_id": self.worker_id,
-                    "service_type": "document_conversion",
-                    "endpoint": f"https://crank-doc-converter-dev:{worker_port}"
-                },
-                headers={"Authorization": f"Bearer {self.platform_auth_token}"}
-            )            if response.status_code == 200:
-                logger.info(f"✅ Successfully registered worker {worker_info.worker_id}")
-            else:
-                logger.error(f"❌ Registration failed: {response.status_code} - {response.text}")
+                response = await client.post(
+                    f"{self.platform_url}/v1/workers/register",
+                    json=worker_info.model_dump(),
+                    headers={"Authorization": f"Bearer {self.platform_auth_token}"}
+                )
+                if response.status_code == 200:
+                    logger.info(f"✅ Successfully registered worker {worker_info.worker_id}")
+                else:
+                    logger.error(f"❌ Registration failed: {response.status_code} - {response.text}")
 
         except Exception as e:
             logger.error(f"❌ Registration error: {e}")
