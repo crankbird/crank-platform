@@ -6,6 +6,8 @@
 # - Full mTLS between all services
 # - No development backdoors or relaxed security
 
+name: crank
+
 services:
   # Platform Service (Production Security)
   platform:

@@ -8,6 +8,8 @@
 
 version: '3.8'
 
+name: crank
+
 services:
   # Platform Service (PaaS Layer)
   platform:

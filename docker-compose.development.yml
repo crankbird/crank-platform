@@ -2,6 +2,8 @@
 # Environment: development
 # Generated from service build manifests
 
+name: crank
+
 services:
   crank-cert-authority-dev:
     build:
