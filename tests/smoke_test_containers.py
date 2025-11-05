@@ -400,13 +400,13 @@ class ContainerSmokeTest:
 def main():
     """Main smoke test execution."""
     import argparse
-    
+
     parser = argparse.ArgumentParser(description='Container smoke test suite')
     parser.add_argument('compose_file', nargs='?', default='docker-compose.development.yml',
                        help='Docker compose file to test')
     parser.add_argument('--json', action='store_true',
                        help='Output results in JSON format')
-    
+
     args = parser.parse_args()
 
     if not args.json:
@@ -414,7 +414,7 @@ def main():
 
     smoke_test = ContainerSmokeTest(args.compose_file)
     results = smoke_test.run_comprehensive_test()
-    
+
     if args.json:
         # Output JSON for automation
         print(json.dumps(results, indent=2))

@@ -8,26 +8,26 @@ import requests
 
 def create_pr_comment():
     """Create a comment on the PR with smoke test results."""
-    
+
     github_token = os.environ.get('GITHUB_TOKEN')
     pr_number = os.environ.get('PR_NUMBER')
     github_repository = os.environ.get('GITHUB_REPOSITORY', 'crankbird/crank-platform')
-    
+
     if not all([github_token, pr_number]):
         print("Missing required environment variables")
         return
-    
+
     try:
         with open('smoke_test_results.json', 'r') as f:
             results = json.load(f)
     except FileNotFoundError:
         print("No smoke test results found")
         return
-    
+
     # Format the comment
     summary = results.get('summary', {})
     warnings = results.get('warnings', [])
-    
+
     comment_body = f"""## 🧪 Smoke Test Results
 
 ### 📊 Summary
@@ -49,10 +49,10 @@ def create_pr_comment():
         comment_body += "### ⚠️ Warnings\n"
         for i, warning in enumerate(warnings[:5], 1):  # Limit to first 5
             comment_body += f"{i}. {warning}\n"
-        
+
         if len(warnings) > 5:
             comment_body += f"\n... and {len(warnings) - 5} more warnings\n"
-        
+
         comment_body += "\n🤖 **Automated issues will be created for these warnings if this PR is merged.**\n"
     else:
         comment_body += "### ✅ No Warnings\nAll smoke tests passed without warnings!\n"
@@ -62,16 +62,16 @@ def create_pr_comment():
     # Post the comment
     repo_owner, repo_name = github_repository.split('/')
     url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/issues/{pr_number}/comments"
-    
+
     headers = {
         'Authorization': f'token {github_token}',
         'Accept': 'application/vnd.github.v3+json',
     }
-    
+
     comment_data = {'body': comment_body}
-    
+
     response = requests.post(url, headers=headers, json=comment_data)
-    
+
     if response.status_code == 201:
         print("✅ PR comment created successfully")
     else:

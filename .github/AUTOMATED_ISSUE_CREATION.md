@@ -9,13 +9,14 @@ This repository includes automated GitHub Actions workflows that create issues f
 **Workflow**: `.github/workflows/smoke-test-and-issues.yml`
 
 - **Trigger**: Every push to `main` branch
-- **Process**: 
+- **Process**:
   1. Runs smoke tests automatically
   2. Parses warnings from test results
   3. Creates GitHub issues for each unique warning
   4. Labels issues with `enhancement`, `smoke-test-warning`, `automated`
 
 **Benefits**:
+
 - ✅ Simple - works with current push-based workflow
 - ✅ Immediate feedback on main branch issues
 - ✅ No workflow changes needed
@@ -32,6 +33,7 @@ This repository includes automated GitHub Actions workflows that create issues f
   4. Assigns issues to PR author
 
 **Benefits**:
+
 - ✅ Prevents warnings from entering main branch
 - ✅ Better attribution (issues assigned to change author)
 - ✅ PR-level visibility of test results
@@ -42,17 +44,20 @@ This repository includes automated GitHub Actions workflows that create issues f
 Issues created from warnings include:
 
 ### 📋 Automatic Content
+
 - **Title**: Descriptive title based on warning type
 - **Labels**: `enhancement`, `smoke-test-warning`, `automated`
 - **Mascot Assignment**: Auto-assigns relevant mascot based on warning
 - **Context**: Commit SHA, test time, full warning details
 
 ### 🎮 Mascot Mapping
+
 - **GPU warnings** → 🦙 Kevin (Portability)
-- **API endpoint warnings** → 🎭 Bella (Modularity)  
+- **API endpoint warnings** → 🎭 Bella (Modularity)
 - **Performance warnings** → 🐢 Gary (Testing)
 
 ### 📊 Issue Lifecycle
+
 - **Auto-creation**: From smoke test warnings
 - **Auto-deduplication**: Prevents duplicate issues
 - **Manual resolution**: Developer investigation and fixes
@@ -61,6 +66,7 @@ Issues created from warnings include:
 ## 🔧 Configuration
 
 ### Environment Variables
+
 ```bash
 GITHUB_TOKEN    # Provided by GitHub Actions automatically
 GITHUB_REPOSITORY  # Repository name (owner/repo)
@@ -68,6 +74,7 @@ GITHUB_SHA      # Commit hash for context
 ```
 
 ### Customization
+
 - **Warning filters**: Edit `.github/scripts/create_warning_issues.py`
 - **Issue templates**: Modify issue body generation
 - **Mascot mapping**: Update mascot assignment logic
@@ -93,7 +100,7 @@ The system is ready to use! Just:
 Each issue is automatically assigned to the most relevant mascot:
 
 - **🐰 Wendy**: Security-related warnings
-- **🦙 Kevin**: GPU/portability warnings  
+- **🦙 Kevin**: GPU/portability warnings
 - **🎭 Bella**: API/modularity warnings
 - **🦉 Oliver**: Code quality warnings
 - **🐢 Gary**: Testing/performance warnings
