@@ -1,9 +1,13 @@
 name: 🔍 PR Smoke Test & Auto-Issue Creation
 
+# Disabled until Azure deployment target is ready
+# on:
+#   pull_request:
+#     branches: [main]
+#     types: [opened, synchronize, reopened]
+
 on:
-  pull_request:
-    branches: [main]
-    types: [opened, synchronize, reopened]
+  workflow_dispatch:  # Only manual trigger for now
 
 jobs:
   smoke-test-pr:
@@ -23,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests pyyaml
+          pip install requests pyyaml httpx
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
