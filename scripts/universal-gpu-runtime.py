@@ -18,12 +18,10 @@ Integration with existing UniversalGPUManager:
 """
 
 import sys
-import os
-import logging
-from pathlib import Path
 
 # TODO: Implement after Issue #20 (GPU manager integration) is complete
 # This placeholder ensures documentation examples work
+
 
 def main():
     print("🔍 Universal GPU Runtime Detection Starting...")
@@ -38,6 +36,7 @@ def main():
 
     # Exit successfully so containers don't crash
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -6,9 +6,10 @@ Validates that all required dependencies are available before service startup.
 Prevents silent failures from missing GPU libraries.
 """
 
-import sys
 import importlib
-from typing import List, Optional
+import sys
+from typing import Optional
+
 
 def check_dependency(package: str, import_name: Optional[str] = None) -> bool:
     """Check if a package can be imported"""
@@ -19,7 +20,8 @@ def check_dependency(package: str, import_name: Optional[str] = None) -> bool:
     except ImportError:
         return False
 
-def get_service_dependencies(service_name: str) -> List[str]:
+
+def get_service_dependencies(service_name: str) -> list[str]:
     """Get required dependencies for a service"""
 
     dependencies = {
@@ -30,15 +32,16 @@ def get_service_dependencies(service_name: str) -> List[str]:
             "cv2:opencv-python",
             "GPUtil",
             "psutil",
-            "PIL:Pillow"
+            "PIL:Pillow",
         ],
         "universal_gpu_base": [
             "torch",
-            "psutil"
-        ]
+            "psutil",
+        ],
     }
 
     return dependencies.get(service_name, [])
+
 
 def validate_service_dependencies(service_name: str) -> bool:
     """Validate all dependencies for a service"""
@@ -86,6 +89,7 @@ def validate_service_dependencies(service_name: str) -> bool:
     print(f"\n🎯 All dependencies satisfied for {service_name}!")
     return True
 
+
 def main():
     """Main dependency checker"""
 
@@ -102,6 +106,7 @@ def main():
         sys.exit(0)
     else:
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

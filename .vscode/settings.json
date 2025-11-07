@@ -1,4 +1,29 @@
 {
+    "python.defaultInterpreterPath": "./.venv/bin/python",
+    "python.terminal.activateEnvironment": true,
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.ruffEnabled": true,
+    "python.formatting.provider": "black",
+    "python.analysis.typeCheckingMode": "strict",
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.autoSearchPaths": true,
+    "python.analysis.extraPaths": [
+        "./src",
+        "./services",
+        "./tests"
+    ],
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
+    },
+    "files.associations": {
+        "*.py": "python"
+    },
+    "mypy-type-checker.importStrategy": "fromEnvironment",
+    "ruff.importStrategy": "fromEnvironment",
     "python-envs.pythonProjects": [
         {
             "path": "",

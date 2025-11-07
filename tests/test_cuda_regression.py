@@ -9,9 +9,9 @@ Prevents regression of Issue #20 work.
 import re
 import sys
 from pathlib import Path
-from typing import List, Tuple
 
-def find_cuda_only_patterns(file_path: Path) -> List[Tuple[int, str]]:
+
+def find_cuda_only_patterns(file_path: Path) -> list[tuple[int, str]]:
     """Find lines with CUDA-only detection patterns"""
     patterns = [
         r"torch\.cuda\.is_available\(\)",
@@ -21,11 +21,11 @@ def find_cuda_only_patterns(file_path: Path) -> List[Tuple[int, str]]:
 
     violations = []
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, encoding="utf-8") as f:
             for line_num, line in enumerate(f, 1):
                 line_stripped = line.strip()
                 # Skip comments and documentation
-                if line_stripped.startswith('#') or '"""' in line_stripped:
+                if line_stripped.startswith("#") or '"""' in line_stripped:
                     continue
 
                 for pattern in patterns:
@@ -36,7 +36,8 @@ def find_cuda_only_patterns(file_path: Path) -> List[Tuple[int, str]]:
 
     return violations
 
-def scan_gpu_services() -> List[Tuple[Path, List[Tuple[int, str]]]]:
+
+def scan_gpu_services() -> list[tuple[Path, list[tuple[int, str]]]]:
     """Scan all GPU services for CUDA-only patterns"""
 
     # Define paths to scan for GPU services
@@ -51,7 +52,7 @@ def scan_gpu_services() -> List[Tuple[Path, List[Tuple[int, str]]]]:
         "*gpu*.py",
         "*image*classifier*.py",
         "*cuda*.py",
-        "*gpu_manager*.py"  # Allow gpu_manager.py since it needs CUDA detection internally
+        "*gpu_manager*.py",  # Allow gpu_manager.py since it needs CUDA detection internally
     ]
 
     violations = []
@@ -62,9 +63,9 @@ def scan_gpu_services() -> List[Tuple[Path, List[Tuple[int, str]]]]:
 
         for pattern in gpu_file_patterns:
             for file_path in service_path.rglob(pattern):
-                if file_path.is_file() and file_path.suffix == '.py':
+                if file_path.is_file() and file_path.suffix == ".py":
                     # Skip the UniversalGPUManager itself and test files
-                    if file_path.name == 'gpu_manager.py' or 'test_' in file_path.name:
+                    if file_path.name == "gpu_manager.py" or "test_" in file_path.name:
                         continue
 
                     file_violations = find_cuda_only_patterns(file_path)
@@ -72,6 +73,7 @@ def scan_gpu_services() -> List[Tuple[Path, List[Tuple[int, str]]]]:
                         violations.append((file_path, file_violations))
 
     return violations
+
 
 def main():
     """Main regression test"""
@@ -109,6 +111,7 @@ def main():
     print("📚 See: docs/development/universal-gpu-dependencies.md")
 
     return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

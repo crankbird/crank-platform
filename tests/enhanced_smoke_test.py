@@ -28,11 +28,11 @@ import logging
 import platform
 import subprocess
 import sys
-import time
 import traceback
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any, Optional
+
 import urllib3
 
 try:
@@ -46,14 +46,25 @@ except ImportError:
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 
 class ArchetypeConfig:
     """Configuration for each worker archetype"""
-    def __init__(self, name: str, container_name: str, port: int, service_type: str,
-                 test_endpoints: List[str], capabilities: List[str], gpu_required: bool = False):
+
+    def __init__(
+        self,
+        name: str,
+        container_name: str,
+        port: int,
+        service_type: str,
+        test_endpoints: list[str],
+        capabilities: list[str],
+        gpu_required: bool = False,
+    ):
         self.name = name
         self.container_name = container_name
         self.port = port
@@ -81,9 +92,9 @@ class EnhancedSmokeTest:
             self.compose_file = str(self.base_path / "docker-compose.development.yml")
 
         # Display platform information at startup
-        logger.info(f"🖥️  Platform: {self.platform_info['description']}")
-        logger.info(f"🏗️  Architecture: {self.platform_info['architecture']}")
-        logger.info(f"🐳  Docker Environment: {self.platform_info['docker_env']}")
+        logger.info("🖥️  Platform: {self.platform_info['description']}")
+        logger.info("🏗️  Architecture: {self.platform_info['architecture']}")
+        logger.info("🐳  Docker Environment: {self.platform_info['docker_env']}")
 
         # 6 Core Worker Archetypes
         self.archetypes = {
@@ -93,7 +104,7 @@ class EnhancedSmokeTest:
                 port=8100,
                 service_type="document_conversion",
                 test_endpoints=["/health", "/convert", "/docs"],
-                capabilities=["pdf_to_text", "docx_to_text", "format_conversion"]
+                capabilities=["pdf_to_text", "docx_to_text", "format_conversion"],
             ),
             "email_parser": ArchetypeConfig(
                 name="File Processing (Large Files)",
@@ -101,7 +112,7 @@ class EnhancedSmokeTest:
                 port=8300,
                 service_type="email_parsing",
                 test_endpoints=["/health", "/parse", "/docs"],
-                capabilities=["mbox_parsing", "eml_parsing", "attachment_extraction"]
+                capabilities=["mbox_parsing", "eml_parsing", "attachment_extraction"],
             ),
             "email_classifier": ArchetypeConfig(
                 name="Message Text Classification",
@@ -109,7 +120,7 @@ class EnhancedSmokeTest:
                 port=8200,
                 service_type="email_classification",
                 test_endpoints=["/health", "/classify", "/docs"],
-                capabilities=["text_classification", "sentiment_analysis", "spam_detection"]
+                capabilities=["text_classification", "sentiment_analysis", "spam_detection"],
             ),
             "image_classifier_cpu": ArchetypeConfig(
                 name="Still Image Classification (CPU)",
@@ -118,7 +129,7 @@ class EnhancedSmokeTest:
                 service_type="image_classification",
                 test_endpoints=["/health", "/classify", "/docs"],
                 capabilities=["basic_classification", "cpu_inference"],
-                gpu_required=False
+                gpu_required=False,
             ),
             "image_classifier_gpu": ArchetypeConfig(
                 name="Still Image Classification (GPU)",
@@ -127,7 +138,7 @@ class EnhancedSmokeTest:
                 service_type="image_classification",
                 test_endpoints=["/health", "/classify", "/docs"],
                 capabilities=["advanced_classification", "gpu_inference", "real_time_processing"],
-                gpu_required=True
+                gpu_required=True,
             ),
             "streaming": ArchetypeConfig(
                 name="Streaming Data Processing",
@@ -135,8 +146,8 @@ class EnhancedSmokeTest:
                 port=8500,
                 service_type="streaming_analytics",
                 test_endpoints=["/health", "/stream", "/docs"],
-                capabilities=["real_time_processing", "websocket_streaming", "event_processing"]
-            )
+                capabilities=["real_time_processing", "websocket_streaming", "event_processing"],
+            ),
         }
 
         # Platform configuration
@@ -146,7 +157,7 @@ class EnhancedSmokeTest:
             port=8443,
             service_type="platform",
             test_endpoints=["/health/live", "/v1/workers", "/api/docs"],
-            capabilities=["worker_registration", "service_discovery", "health_monitoring"]
+            capabilities=["worker_registration", "service_discovery", "health_monitoring"],
         )
 
         self.cert_authority_config = ArchetypeConfig(
@@ -155,10 +166,10 @@ class EnhancedSmokeTest:
             port=9090,
             service_type="certificate_authority",
             test_endpoints=["/health", "/ca/cert", "/api/docs"],
-            capabilities=["certificate_generation", "ca_services", "mtls_support"]
+            capabilities=["certificate_generation", "ca_services", "mtls_support"],
         )
 
-    def _detect_platform(self) -> Dict[str, str]:
+    def _detect_platform(self) -> dict[str, str]:
         """Detect the current platform and Docker environment."""
         system = platform.system()
         machine = platform.machine()
@@ -169,36 +180,34 @@ class EnhancedSmokeTest:
                     "os": "macOS",
                     "architecture": "Apple Silicon",
                     "docker_env": "Docker Desktop",
-                    "description": "macOS Apple Silicon (M1/M2/M3)"
+                    "description": "macOS Apple Silicon (M1/M2/M3)",
                 }
-            else:
-                return {
-                    "os": "macOS",
-                    "architecture": "Intel x86_64",
-                    "docker_env": "Docker Desktop",
-                    "description": "macOS Intel"
-                }
-        elif system == "Linux":
+            return {
+                "os": "macOS",
+                "architecture": "Intel x86_64",
+                "docker_env": "Docker Desktop",
+                "description": "macOS Intel",
+            }
+        if system == "Linux":
             return {
                 "os": "Linux",
                 "architecture": machine,
                 "docker_env": "Native Docker",
-                "description": f"Linux {machine}"
+                "description": f"Linux {machine}",
             }
-        elif system == "Windows":
+        if system == "Windows":
             return {
                 "os": "Windows",
                 "architecture": machine,
                 "docker_env": "Docker Desktop (WSL2)",
-                "description": f"Windows {machine}"
+                "description": f"Windows {machine}",
             }
-        else:
-            return {
-                "os": system,
-                "architecture": machine,
-                "docker_env": "Unknown",
-                "description": f"{system} {machine}"
-            }
+        return {
+            "os": system,
+            "architecture": machine,
+            "docker_env": "Unknown",
+            "description": f"{system} {machine}",
+        }
 
     async def _rebuild_and_restart_environment(self) -> bool:
         """
@@ -211,32 +220,66 @@ class EnhancedSmokeTest:
         try:
             # Stop all containers
             logger.info("  ⏹️  Stopping all containers...")
-            result = subprocess.run([
-                "docker", "compose", "-f", self.compose_file, "down"
-            ], cwd=self.base_path, capture_output=True, text=True, timeout=60)
+            result = subprocess.run(
+                [
+                    "docker",
+                    "compose",
+                    "-f",
+                    self.compose_file,
+                    "down",
+                ],
+                check=False,
+                cwd=self.base_path,
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
 
             if result.returncode != 0:
-                logger.error(f"  ❌ Failed to stop containers: {result.stderr}")
+                logger.error("  ❌ Failed to stop containers: {result.stderr}")
                 return False
 
             # Build all services to ensure latest code
             logger.info("  🔨 Building all services with latest code...")
-            result = subprocess.run([
-                "docker", "compose", "-f", self.compose_file, "build"
-            ], cwd=self.base_path, capture_output=True, text=True, timeout=600)  # Increased to 10 minutes for GPU builds
+            result = subprocess.run(
+                [
+                    "docker",
+                    "compose",
+                    "-f",
+                    self.compose_file,
+                    "build",
+                ],
+                check=False,
+                cwd=self.base_path,
+                capture_output=True,
+                text=True,
+                timeout=600,
+            )  # Increased to 10 minutes for GPU builds
 
             if result.returncode != 0:
-                logger.error(f"  ❌ Failed to build services: {result.stderr}")
+                logger.error("  ❌ Failed to build services: {result.stderr}")
                 return False
 
             # Start all containers
             logger.info("  🚀 Starting all containers...")
-            result = subprocess.run([
-                "docker", "compose", "-f", self.compose_file, "up", "-d"
-            ], cwd=self.base_path, capture_output=True, text=True, timeout=120)
+            result = subprocess.run(
+                [
+                    "docker",
+                    "compose",
+                    "-f",
+                    self.compose_file,
+                    "up",
+                    "-d",
+                ],
+                check=False,
+                cwd=self.base_path,
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
 
             if result.returncode != 0:
-                logger.error(f"  ❌ Failed to start containers: {result.stderr}")
+                logger.error("  ❌ Failed to start containers: {result.stderr}")
                 return False
 
             # Wait for containers to fully initialize
@@ -246,14 +289,14 @@ class EnhancedSmokeTest:
             logger.info("  ✅ Environment rebuild and restart completed successfully")
             return True
 
-        except subprocess.TimeoutExpired as e:
-            logger.error(f"  ❌ Timeout during environment rebuild: {e}")
+        except subprocess.TimeoutExpired:
+            logger.exception("  ❌ Timeout during environment rebuild: {e}")
             return False
-        except Exception as e:
-            logger.error(f"  ❌ Error during environment rebuild: {e}")
+        except Exception:
+            logger.exception("  ❌ Error during environment rebuild: {e}")
             return False
 
-    async def run_comprehensive_test(self, rebuild_environment: bool = False) -> Dict[str, Any]:
+    async def run_comprehensive_test(self, rebuild_environment: bool = False) -> dict[str, Any]:
         """Run all enhanced smoke tests
 
         Args:
@@ -277,11 +320,13 @@ class EnhancedSmokeTest:
                         "failed": 1,
                         "warnings": [],
                         "critical_failures": ["Environment rebuild failed"],
-                        "overall_success": False
-                    }
+                        "overall_success": False,
+                    },
                 }
         else:
-            logger.info("🎯 Testing existing environment (use --rebuild to force container restart)")
+            logger.info(
+                "🎯 Testing existing environment (use --rebuild to force container restart)",
+            )
 
         results = {
             "timestamp": datetime.now().isoformat(),
@@ -298,8 +343,8 @@ class EnhancedSmokeTest:
                 "failed": 0,
                 "warnings": [],
                 "critical_failures": [],
-                "archetype_status": {}
-            }
+                "archetype_status": {},
+            },
         }
 
         try:
@@ -328,8 +373,8 @@ class EnhancedSmokeTest:
             await self._test_cross_service_communication(results)
 
         except Exception as e:
-            logger.error(f"❌ Test suite failed with exception: {e}")
-            logger.error(traceback.format_exc())
+            logger.exception("❌ Test suite failed with exception: {e}")
+            logger.exception(traceback.format_exc())
             results["summary"]["critical_failures"].append(f"Test suite exception: {e}")
 
         # Calculate final summary
@@ -337,7 +382,7 @@ class EnhancedSmokeTest:
 
         return results
 
-    async def _test_container_health(self, results: Dict[str, Any]):
+    async def _test_container_health(self, results: dict[str, Any]):
         """Test container health and Docker status"""
         logger.info("  🔍 Checking Docker container status...")
 
@@ -345,7 +390,10 @@ class EnhancedSmokeTest:
             # Get container status using docker ps
             result = subprocess.run(
                 ["docker", "ps", "--format", "json"],
-                capture_output=True, text=True, timeout=30
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=30,
             )
 
             if result.returncode != 0:
@@ -354,15 +402,15 @@ class EnhancedSmokeTest:
 
             # Parse container status
             containers = {}
-            for line in result.stdout.strip().split('\n'):
+            for line in result.stdout.strip().split("\n"):
                 if line.strip():
                     try:
                         container_data = json.loads(line)
-                        name = container_data.get('Names', 'unknown')
+                        name = container_data.get("Names", "unknown")
                         containers[name] = {
-                            'status': container_data.get('Status', 'unknown'),
-                            'state': container_data.get('State', 'unknown'),
-                            'ports': container_data.get('Ports', 'unknown')
+                            "status": container_data.get("Status", "unknown"),
+                            "state": container_data.get("State", "unknown"),
+                            "ports": container_data.get("Ports", "unknown"),
                         }
                     except json.JSONDecodeError:
                         continue
@@ -370,31 +418,39 @@ class EnhancedSmokeTest:
             results["container_status"] = containers
 
             # Check if all expected containers are running
-            all_expected = list(self.archetypes.values()) + [self.platform_config, self.cert_authority_config]
+            all_expected = [
+                *list(self.archetypes.values()),
+                self.platform_config,
+                self.cert_authority_config,
+            ]
 
             for archetype in all_expected:
                 if archetype.container_name not in containers:
                     results["summary"]["critical_failures"].append(
-                        f"Container {archetype.container_name} not found"
+                        f"Container {archetype.container_name} not found",
                     )
-                    logger.error(f"  ❌ {archetype.container_name}: NOT FOUND")
-                elif 'Up' not in containers[archetype.container_name]['status']:
+                    logger.error("  ❌ {archetype.container_name}: NOT FOUND")
+                elif "Up" not in containers[archetype.container_name]["status"]:
                     results["summary"]["warnings"].append(
-                        f"Container {archetype.container_name} not running"
+                        f"Container {archetype.container_name} not running",
                     )
-                    logger.warning(f"  ⚠️  {archetype.container_name}: NOT RUNNING")
+                    logger.warning("  ⚠️  {archetype.container_name}: NOT RUNNING")
                 else:
-                    logger.info(f"  ✅ {archetype.container_name}: Running")
+                    logger.info("  ✅ {archetype.container_name}: Running")
 
         except Exception as e:
             results["summary"]["critical_failures"].append(f"Container health check failed: {e}")
-            logger.error(f"  ❌ Container health check failed: {e}")
+            logger.exception("  ❌ Container health check failed: {e}")
 
-    async def _test_health_endpoints(self, results: Dict[str, Any]):
+    async def _test_health_endpoints(self, results: dict[str, Any]):
         """Test health endpoints for all services"""
         logger.info("  🏥 Testing health endpoints...")
 
-        all_configs = list(self.archetypes.values()) + [self.platform_config, self.cert_authority_config]
+        all_configs = [
+            *list(self.archetypes.values()),
+            self.platform_config,
+            self.cert_authority_config,
+        ]
 
         async with httpx.AsyncClient(verify=False, timeout=10.0) as client:
             for config in all_configs:
@@ -410,7 +466,7 @@ class EnhancedSmokeTest:
                         "status_code": response.status_code,
                         "response_time_ms": round(response.elapsed.total_seconds() * 1000, 2),
                         "healthy": response.status_code == 200,
-                        "endpoint": health_url
+                        "endpoint": health_url,
                     }
 
                     # Try to parse JSON response
@@ -424,23 +480,29 @@ class EnhancedSmokeTest:
                     results["health_checks"][config.container_name] = health_data
 
                     if health_data["healthy"]:
-                        logger.info(f"  ✅ {config.name}: Health OK ({health_data['response_time_ms']}ms)")
+                        logger.info(
+                            f"  ✅ {config.name}: Health OK ({health_data['response_time_ms']}ms)",
+                        )
                     else:
-                        logger.error(f"  ❌ {config.name}: Health FAILED (HTTP {response.status_code})")
+                        logger.error(
+                            f"  ❌ {config.name}: Health FAILED (HTTP {response.status_code})",
+                        )
                         results["summary"]["warnings"].append(
-                            f"{config.name} health check failed: HTTP {response.status_code}"
+                            f"{config.name} health check failed: HTTP {response.status_code}",
                         )
 
                 except Exception as e:
-                    logger.error(f"  ❌ {config.name}: Health endpoint error: {e}")
+                    logger.exception("  ❌ {config.name}: Health endpoint error: {e}")
                     results["health_checks"][config.container_name] = {
                         "healthy": False,
                         "error": str(e),
-                        "endpoint": health_url
+                        "endpoint": health_url,
                     }
-                    results["summary"]["warnings"].append(f"{config.name} health endpoint error: {e}")
+                    results["summary"]["warnings"].append(
+                        f"{config.name} health endpoint error: {e}",
+                    )
 
-    async def _test_platform_registration(self, results: Dict[str, Any]):
+    async def _test_platform_registration(self, results: dict[str, Any]):
         """Test worker registration with platform"""
         logger.info("  🔗 Testing worker registration...")
 
@@ -449,9 +511,12 @@ class EnhancedSmokeTest:
         async with httpx.AsyncClient(verify=False, timeout=15.0) as client:
             try:
                 # Test 1: Get list of registered workers
-                response = await client.get(platform_url, headers={
-                    "Authorization": "Bearer dev-mesh-key"
-                })
+                response = await client.get(
+                    platform_url,
+                    headers={
+                        "Authorization": "Bearer dev-mesh-key",
+                    },
+                )
 
                 if response.status_code == 200:
                     response_data = response.json()
@@ -465,59 +530,63 @@ class EnhancedSmokeTest:
                             worker["service_type"] = service_type  # Add service_type to worker
                             all_workers.append(worker)
 
-                    logger.info(f"  ✅ Platform worker endpoint accessible")
-                    logger.info(f"  📊 Registered workers: {len(all_workers)} found")
+                    logger.info("  ✅ Platform worker endpoint accessible")
+                    logger.info("  📊 Registered workers: {len(all_workers)} found")
 
                     results["platform_registration"]["worker_list"] = {
                         "accessible": True,
                         "worker_count": len(all_workers),
                         "workers": all_workers,
-                        "workers_by_type": workers_by_type
+                        "workers_by_type": workers_by_type,
                     }
 
                     # Check if our expected workers are registered
                     registered_services = {worker.get("service_type") for worker in all_workers}
-                    expected_services = {config.service_type for config in self.archetypes.values()}
+                    {config.service_type for config in self.archetypes.values()}
 
                     for archetype_key, config in self.archetypes.items():
                         if config.service_type in registered_services:
-                            logger.info(f"  ✅ {config.name}: Registered with platform")
+                            logger.info("  ✅ {config.name}: Registered with platform")
                             results["platform_registration"][archetype_key] = {"registered": True}
                         else:
-                            logger.warning(f"  ⚠️  {config.name}: NOT registered with platform")
+                            logger.warning("  ⚠️  {config.name}: NOT registered with platform")
                             results["platform_registration"][archetype_key] = {"registered": False}
                             results["summary"]["warnings"].append(
-                                f"{config.name} not registered with platform"
+                                f"{config.name} not registered with platform",
                             )
 
                 else:
-                    logger.error(f"  ❌ Platform worker endpoint failed: HTTP {response.status_code}")
+                    logger.error(
+                        f"  ❌ Platform worker endpoint failed: HTTP {response.status_code}",
+                    )
                     results["platform_registration"]["worker_list"] = {
                         "accessible": False,
                         "error": f"HTTP {response.status_code}",
-                        "response": response.text[:200]
+                        "response": response.text[:200],
                     }
                     results["summary"]["critical_failures"].append(
-                        f"Platform worker endpoint failed: HTTP {response.status_code}"
+                        f"Platform worker endpoint failed: HTTP {response.status_code}",
                     )
 
             except Exception as e:
-                logger.error(f"  ❌ Platform registration test failed: {e}")
+                logger.exception("  ❌ Platform registration test failed: {e}")
                 results["platform_registration"]["error"] = str(e)
-                results["summary"]["critical_failures"].append(f"Platform registration test failed: {e}")
+                results["summary"]["critical_failures"].append(
+                    f"Platform registration test failed: {e}",
+                )
 
-    async def _test_api_functionality(self, results: Dict[str, Any]):
+    async def _test_api_functionality(self, results: dict[str, Any]):
         """Test API functionality for each service"""
         logger.info("  ⚡ Testing API functionality...")
 
         async with httpx.AsyncClient(verify=False, timeout=15.0) as client:
             for archetype_key, config in self.archetypes.items():
-                logger.info(f"    🔍 Testing {config.name} APIs...")
+                logger.info("    🔍 Testing {config.name} APIs...")
 
                 api_results = {
                     "service": config.name,
                     "endpoints": {},
-                    "functional": False
+                    "functional": False,
                 }
 
                 # Test each endpoint
@@ -529,8 +598,9 @@ class EnhancedSmokeTest:
 
                         endpoint_data = {
                             "status_code": response.status_code,
-                            "accessible": response.status_code in [200, 401, 422],  # These are OK responses
-                            "response_time_ms": round(response.elapsed.total_seconds() * 1000, 2)
+                            "accessible": response.status_code
+                            in [200, 401, 422],  # These are OK responses
+                            "response_time_ms": round(response.elapsed.total_seconds() * 1000, 2),
                         }
 
                         # Special handling for different endpoint types
@@ -548,31 +618,36 @@ class EnhancedSmokeTest:
                         api_results["endpoints"][endpoint] = endpoint_data
 
                         if endpoint_data["functional"]:
-                            logger.info(f"      ✅ {endpoint}: OK (HTTP {response.status_code})")
+                            logger.info("      ✅ {endpoint}: OK (HTTP {response.status_code})")
                         else:
-                            logger.warning(f"      ⚠️  {endpoint}: Unexpected (HTTP {response.status_code})")
+                            logger.warning(
+                                f"      ⚠️  {endpoint}: Unexpected (HTTP {response.status_code})",
+                            )
 
                     except Exception as e:
-                        logger.error(f"      ❌ {endpoint}: Error - {e}")
+                        logger.exception("      ❌ {endpoint}: Error - {e}")
                         api_results["endpoints"][endpoint] = {
                             "accessible": False,
-                            "error": str(e)
+                            "error": str(e),
                         }
 
                 # Determine if service is functional
-                functional_endpoints = sum(1 for ep_data in api_results["endpoints"].values()
-                                         if ep_data.get("functional", False))
+                functional_endpoints = sum(
+                    1
+                    for ep_data in api_results["endpoints"].values()
+                    if ep_data.get("functional", False)
+                )
                 api_results["functional"] = functional_endpoints >= 2  # At least health + one other
 
                 results["api_functionality"][archetype_key] = api_results
 
                 if api_results["functional"]:
-                    logger.info(f"    ✅ {config.name}: API Functional")
+                    logger.info("    ✅ {config.name}: API Functional")
                 else:
-                    logger.error(f"    ❌ {config.name}: API NOT Functional")
+                    logger.error("    ❌ {config.name}: API NOT Functional")
                     results["summary"]["warnings"].append(f"{config.name} API not functional")
 
-    async def _test_archetype_patterns(self, results: Dict[str, Any]):
+    async def _test_archetype_patterns(self, results: dict[str, Any]):
         """Test archetype-specific patterns"""
         logger.info("  🎯 Testing archetype-specific patterns...")
 
@@ -584,7 +659,7 @@ class EnhancedSmokeTest:
                 "archetype": config.name,
                 "capabilities_validated": False,
                 "gpu_validation": None,
-                "pattern_compliance": False
+                "pattern_compliance": False,
             }
 
             # Check health endpoint response for capabilities
@@ -611,18 +686,23 @@ class EnhancedSmokeTest:
 
                 # Check if expected capabilities are present
                 if isinstance(reported_capabilities, list):
-                    capability_match = any(cap.lower() in [rc.lower() for rc in reported_capabilities] for cap in config.capabilities)
+                    capability_match = any(
+                        cap.lower() in [rc.lower() for rc in reported_capabilities]
+                        for cap in config.capabilities
+                    )
                 else:
                     # String matching for capabilities
-                    capability_match = any(cap.lower() in reported_capabilities for cap in config.capabilities)
+                    capability_match = any(
+                        cap.lower() in reported_capabilities for cap in config.capabilities
+                    )
 
                 if capability_match:
                     pattern_results["capabilities_validated"] = True
-                    logger.info(f"    ✅ {config.name}: Capabilities validated")
+                    logger.info("    ✅ {config.name}: Capabilities validated")
                 else:
-                    logger.warning(f"    ⚠️  {config.name}: Capabilities not fully validated")
+                    logger.warning("    ⚠️  {config.name}: Capabilities not fully validated")
                     results["summary"]["warnings"].append(
-                        f"{config.name} capabilities not fully validated"
+                        f"{config.name} capabilities not fully validated",
                     )
 
             # GPU validation for GPU-required services
@@ -630,13 +710,13 @@ class EnhancedSmokeTest:
                 gpu_available = health_data.get("response_data", {}).get("gpu_available", False)
                 pattern_results["gpu_validation"] = {
                     "required": True,
-                    "available": gpu_available
+                    "available": gpu_available,
                 }
 
                 if gpu_available:
-                    logger.info(f"    ✅ {config.name}: GPU validation passed")
+                    logger.info("    ✅ {config.name}: GPU validation passed")
                 else:
-                    logger.warning(f"    ⚠️  {config.name}: GPU validation failed")
+                    logger.warning("    ⚠️  {config.name}: GPU validation failed")
                     results["summary"]["warnings"].append(f"{config.name} GPU not available")
 
             # Overall pattern compliance
@@ -648,9 +728,11 @@ class EnhancedSmokeTest:
             # GPU archetype identity != GPU hardware requirement
 
             results["archetype_validation"][archetype_key] = pattern_results
-            results["summary"]["archetype_status"][archetype_key] = pattern_results["pattern_compliance"]
+            results["summary"]["archetype_status"][archetype_key] = pattern_results[
+                "pattern_compliance"
+            ]
 
-    async def _test_cross_service_communication(self, results: Dict[str, Any]):
+    async def _test_cross_service_communication(self, results: dict[str, Any]):
         """Test cross-service communication patterns"""
         logger.info("  🌐 Testing cross-service communication...")
 
@@ -659,9 +741,12 @@ class EnhancedSmokeTest:
 
         async with httpx.AsyncClient(verify=False, timeout=15.0) as client:
             try:
-                response = await client.get(platform_url, headers={
-                    "Authorization": "Bearer local-dev-key"
-                })
+                response = await client.get(
+                    platform_url,
+                    headers={
+                        "Authorization": "Bearer local-dev-key",
+                    },
+                )
 
                 if response.status_code == 200:
                     response_data = response.json()
@@ -678,7 +763,7 @@ class EnhancedSmokeTest:
                     communication_results = {
                         "platform_to_workers": True,
                         "worker_count": len(all_workers),
-                        "reachable_workers": []
+                        "reachable_workers": [],
                     }
 
                     # Test if platform can reach each worker's health endpoint
@@ -688,36 +773,41 @@ class EnhancedSmokeTest:
                             try:
                                 # Extract the port from the endpoint URL
                                 import re
-                                port_match = re.search(r':(\d+)', endpoint)
+
+                                port_match = re.search(r":(\d+)", endpoint)
                                 if port_match:
                                     port = port_match.group(1)
                                     health_url = f"https://localhost:{port}/health"
 
                                     health_response = await client.get(health_url)
                                     if health_response.status_code == 200:
-                                        communication_results["reachable_workers"].append(worker.get("service_type"))
+                                        communication_results["reachable_workers"].append(
+                                            worker.get("service_type"),
+                                        )
 
                             except Exception:
                                 pass  # Worker not reachable, continue
 
                     results["cross_service_communication"] = communication_results
 
-                    logger.info(f"    ✅ Platform communication: {len(communication_results['reachable_workers'])}/{len(all_workers)} workers reachable")
+                    logger.info(
+                        f"    ✅ Platform communication: {len(communication_results['reachable_workers'])}/{len(all_workers)} workers reachable",
+                    )
 
                 else:
                     results["cross_service_communication"] = {
                         "platform_to_workers": False,
-                        "error": f"Platform endpoint failed: HTTP {response.status_code}"
+                        "error": f"Platform endpoint failed: HTTP {response.status_code}",
                     }
 
             except Exception as e:
                 results["cross_service_communication"] = {
                     "platform_to_workers": False,
-                    "error": str(e)
+                    "error": str(e),
                 }
-                logger.error(f"    ❌ Cross-service communication test failed: {e}")
+                logger.exception("    ❌ Cross-service communication test failed: {e}")
 
-    def _calculate_summary(self, results: Dict[str, Any]):
+    def _calculate_summary(self, results: dict[str, Any]):
         """Calculate final test summary"""
         summary = results["summary"]
 
@@ -725,7 +815,7 @@ class EnhancedSmokeTest:
         passed = 0
         failed = 0
 
-        for archetype_key, status in summary["archetype_status"].items():
+        for _archetype_key, status in summary["archetype_status"].items():
             if status:
                 passed += 1
             else:
@@ -736,11 +826,11 @@ class EnhancedSmokeTest:
 
         # Overall success
         summary["overall_success"] = (
-            len(summary["critical_failures"]) == 0 and
-            passed >= len(self.archetypes) * 0.8  # 80% success rate
+            len(summary["critical_failures"]) == 0
+            and passed >= len(self.archetypes) * 0.8  # 80% success rate
         )
 
-    def print_results(self, results: Dict[str, Any]):
+    def print_results(self, results: dict[str, Any]):
         """Print comprehensive test results"""
         print("\n" + "=" * 80)
         print("📊 ENHANCED SMOKE TEST RESULTS")
@@ -774,10 +864,10 @@ class EnhancedSmokeTest:
 
         print("\n" + "=" * 80)
 
-    def format_json_output(self, results: Dict[str, Any]) -> Dict[str, Any]:
+    def format_json_output(self, results: dict[str, Any]) -> dict[str, Any]:
         """Format results for JSON output compatible with GitHub Actions"""
         # Convert to format expected by GitHub Actions parsing scripts
-        json_output = {
+        return {
             "timestamp": results["timestamp"],
             "total_services": results["total_services"],
             "warnings": results["summary"]["warnings"],  # This is what the parser looks for
@@ -786,7 +876,7 @@ class EnhancedSmokeTest:
                 "passed": results["summary"]["passed"],
                 "failed": results["summary"]["failed"],
                 "warning_count": len(results["summary"]["warnings"]),
-                "overall_success": results["summary"]["overall_success"]
+                "overall_success": results["summary"]["overall_success"],
             },
             "detailed_results": {
                 "container_status": results["container_status"],
@@ -794,10 +884,9 @@ class EnhancedSmokeTest:
                 "platform_registration": results["platform_registration"],
                 "api_functionality": results["api_functionality"],
                 "archetype_validation": results["archetype_validation"],
-                "archetype_status": results["summary"]["archetype_status"]
-            }
+                "archetype_status": results["summary"]["archetype_status"],
+            },
         }
-        return json_output
 
 
 async def main():
@@ -806,10 +895,16 @@ async def main():
 
     parser = argparse.ArgumentParser(description="Enhanced Crank Platform Smoke Test")
     parser.add_argument("--json", action="store_true", help="Output results as JSON")
-    parser.add_argument("--compose-file", default="docker-compose.development.yml",
-                       help="Docker compose file to use")
-    parser.add_argument("--rebuild", action="store_true",
-                       help="Rebuild and restart containers before testing (default: test existing environment)")
+    parser.add_argument(
+        "--compose-file",
+        default="docker-compose.development.yml",
+        help="Docker compose file to use",
+    )
+    parser.add_argument(
+        "--rebuild",
+        action="store_true",
+        help="Rebuild and restart containers before testing (default: test existing environment)",
+    )
 
     args = parser.parse_args()
 

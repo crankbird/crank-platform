@@ -2,28 +2,33 @@
 """
 Create GitHub issues from smoke test warnings.
 """
+
+import hashlib
 import json
 import os
-import requests
-import hashlib
+import sys
 from datetime import datetime
+
+import requests
+
 
 def create_issue_title(warning):
     """Create a concise issue title from warning."""
     # Extract key parts of the warning
     if "GPU allocated but not detected" in warning:
         return "[ENHANCEMENT] GPU runtime libraries missing"
-    elif "Expected endpoint" in warning and "not available" in warning:
+    if "Expected endpoint" in warning and "not available" in warning:
         # Extract endpoint from warning
         import re
-        endpoint_match = re.search(r'Expected endpoint (/\S+)', warning)
+
+        endpoint_match = re.search(r"Expected endpoint (/\S+)", warning)
         endpoint = endpoint_match.group(1) if endpoint_match else "unknown"
         return f"[ENHANCEMENT] Add missing endpoint: {endpoint}"
-    elif "Slow response" in warning:
+    if "Slow response" in warning:
         return "[PERFORMANCE] Service response time optimization"
-    else:
-        # Generic title for unknown warning types
-        return "[ENHANCEMENT] Smoke test warning resolution"
+    # Generic title for unknown warning types
+    return "[ENHANCEMENT] Smoke test warning resolution"
+
 
 def create_issue_body(warning, test_time, commit_sha):
     """Create detailed issue body from warning."""
@@ -39,7 +44,7 @@ def create_issue_body(warning, test_time, commit_sha):
     else:
         mascot_section = "- [ ] 🎭 Bella (Modularity)\n- [ ] 🐢 Gary (Testing)"
 
-    body = f"""## 🚨 Smoke Test Warning
+    return f"""## 🚨 Smoke Test Warning
 
 **Warning Details:**
 ```
@@ -87,22 +92,21 @@ This issue was automatically created from smoke test pipeline warnings. The smok
 
 *This issue will auto-close if the warning is resolved in future smoke tests.*"""
 
-    return body
 
 def get_existing_issues(headers, repo_owner, repo_name):
     """Get existing open issues with smoke-test-warning label."""
     url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/issues"
     params = {
-        'state': 'open',
-        'labels': 'smoke-test-warning,enhancement'
+        "state": "open",
+        "labels": "smoke-test-warning,enhancement",
     }
 
     response = requests.get(url, headers=headers, params=params)
     if response.status_code == 200:
         return response.json()
-    else:
-        print(f"Failed to fetch existing issues: {response.status_code}")
-        return []
+    print(f"Failed to fetch existing issues: {response.status_code}")
+    return []
+
 
 def create_github_issue(warning, headers, repo_owner, repo_name, test_time, commit_sha):
     """Create a GitHub issue for a warning."""
@@ -111,13 +115,13 @@ def create_github_issue(warning, headers, repo_owner, repo_name, test_time, comm
     body = create_issue_body(warning, test_time, commit_sha)
 
     # Create a hash of the warning to avoid duplicates
-    warning_hash = hashlib.md5(warning.encode()).hexdigest()[:8]
+    hashlib.md5(warning.encode()).hexdigest()[:8]
 
     issue_data = {
         "title": title,
         "body": body,
         "labels": ["enhancement", "smoke-test-warning", "automated"],
-        "assignees": []
+        "assignees": [],
     }
 
     url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/issues"
@@ -128,31 +132,31 @@ def create_github_issue(warning, headers, repo_owner, repo_name, test_time, comm
         issue = response.json()
         print(f"✅ Created issue #{issue['number']}: {title}")
         return issue
-    else:
-        print(f"❌ Failed to create issue: {response.status_code} - {response.text}")
-        return None
+    print(f"❌ Failed to create issue: {response.status_code} - {response.text}")
+    return None
+
 
 def main():
     # Get environment variables
-    github_token = os.environ.get('GITHUB_TOKEN')
-    github_repository = os.environ.get('GITHUB_REPOSITORY', 'crankbird/crank-platform')
-    github_sha = os.environ.get('GITHUB_SHA', 'unknown')
+    github_token = os.environ.get("GITHUB_TOKEN")
+    github_repository = os.environ.get("GITHUB_REPOSITORY", "crankbird/crank-platform")
+    github_sha = os.environ.get("GITHUB_SHA", "unknown")
 
     if not github_token:
         print("ERROR: GITHUB_TOKEN environment variable not set")
-        exit(1)
+        sys.exit(1)
 
-    repo_owner, repo_name = github_repository.split('/')
+    repo_owner, repo_name = github_repository.split("/")
 
     headers = {
-        'Authorization': f'token {github_token}',
-        'Accept': 'application/vnd.github.v3+json',
-        'User-Agent': 'crank-platform-smoke-test-bot'
+        "Authorization": f"token {github_token}",
+        "Accept": "application/vnd.github.v3+json",
+        "User-Agent": "crank-platform-smoke-test-bot",
     }
 
     # Load warnings
     try:
-        with open('warnings.json', 'r') as f:
+        with open("warnings.json") as f:
             warnings = json.load(f)
     except FileNotFoundError:
         print("No warnings.json file found")
@@ -162,11 +166,11 @@ def main():
         print("No warnings to process")
         return
 
-    test_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')
+    test_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
 
     # Get existing issues to avoid duplicates
     existing_issues = get_existing_issues(headers, repo_owner, repo_name)
-    existing_titles = [issue['title'] for issue in existing_issues]
+    existing_titles = [issue["title"] for issue in existing_issues]
 
     print(f"Processing {len(warnings)} warnings...")
     created_count = 0
@@ -185,5 +189,6 @@ def main():
 
     print(f"📊 Summary: Created {created_count} new issues from {len(warnings)} warnings")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

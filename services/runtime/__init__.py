@@ -6,27 +6,27 @@ Kevin believes in portability without pain.
 
 Usage:
     from runtime import RuntimeManager
-    
+
     # Kevin chooses the best available runtime
     runtime = RuntimeManager()
-    
+
     # Deploy a service
     container_id = runtime.run_service(
         "crank/email-classifier:latest",
         ports=["8200:8200"],
         environment=["LOG_LEVEL=INFO"]
     )
-    
+
     # Build a service
     runtime.build_service("Dockerfile", "crank/my-service:latest")
 """
 
 from .container_runtime import (
     ContainerRuntime,
-    DockerRuntime, 
+    DockerRuntime,
     PodmanRuntime,
     RuntimeManager,
-    create_runtime_manager
+    create_runtime_manager,
 )
 
 __version__ = "1.0.0"
@@ -36,7 +36,7 @@ __author__ = "Kevin the Portability Llama 🦙"
 __all__ = [
     "ContainerRuntime",
     "DockerRuntime",
-    "PodmanRuntime", 
+    "PodmanRuntime",
     "RuntimeManager",
-    "create_runtime_manager"
+    "create_runtime_manager",
 ]

@@ -11,7 +11,6 @@ This validates:
 """
 
 import sys
-import os
 from pathlib import Path
 
 # Add src directory to path for imports
@@ -19,12 +18,14 @@ sys.path.append(str(Path(__file__).parent.parent / "src"))
 
 try:
     import torch
-    from gpu_manager import UniversalGPUManager, get_optimal_device
+
+    from gpu_manager import UniversalGPUManager
 except ImportError as e:
     print(f"❌ Import error: {e}")
     print("💡 Make sure to activate the virtual environment:")
     print("   source .venv/bin/activate")
     sys.exit(1)
+
 
 def test_basic_detection():
     """Test basic GPU detection - replacing torch.cuda.is_available()"""
@@ -44,6 +45,7 @@ def test_basic_detection():
     print(f"✅ Device object: {device}")
     print(f"✅ GPU available (universal): {device_str != 'cpu'}")
     print()
+
 
 def test_device_initialization():
     """Test device initialization pattern"""
@@ -69,6 +71,7 @@ def test_device_initialization():
     print(f"✅ Tensor created successfully on: {test_tensor.device}")
     print()
 
+
 def test_device_info():
     """Test device information retrieval"""
     print("🔍 Test 3: Device Information")
@@ -81,13 +84,14 @@ def test_device_info():
     print(f"✅ Platform: {info['platform']}")
     print(f"✅ Architecture: {info['architecture']}")
 
-    if info.get('memory_gb'):
+    if info.get("memory_gb"):
         print(f"✅ Memory: {info['memory_gb']:.1f} GB")
 
-    if info.get('compute_capability'):
+    if info.get("compute_capability"):
         print(f"✅ Compute capability: {info['compute_capability']}")
 
     print()
+
 
 def test_integration_pattern():
     """Test the exact integration pattern for services"""
@@ -114,8 +118,9 @@ def test_integration_pattern():
     device = gpu_manager.get_device()
 
     print(f"✅ Result: device = {device}")
-    print(f"✅ Works on: CUDA, MPS (Apple Silicon), and CPU")
+    print("✅ Works on: CUDA, MPS (Apple Silicon), and CPU")
     print()
+
 
 def test_model_loading():
     """Test that models can be loaded and moved to detected device"""
@@ -140,6 +145,7 @@ def test_model_loading():
     print(f"✅ Inference successful on: {output.device}")
     print()
 
+
 def main():
     """Run all integration pattern tests"""
     print("🎯 UniversalGPUManager Integration Pattern Tests")
@@ -162,8 +168,10 @@ def main():
     except Exception as e:
         print(f"❌ Test failed: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
