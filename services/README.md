@@ -58,7 +58,7 @@ pip install -r requirements.txt
 # Terminal 1: CrankDoc service
 python crankdoc_mesh.py
 
-# Terminal 2: CrankEmail service  
+# Terminal 2: CrankEmail service
 python crankemail_mesh.py
 
 # Terminal 3: Gateway
@@ -157,7 +157,7 @@ curl -X POST http://localhost:8080/v1/process \
   -F "parameters={}" \
   -F "file=@test.md"
 
-# Test email classification  
+# Test email classification
 curl -X POST http://localhost:8080/v1/process \
   -H "Authorization: Bearer dev-mesh-key" \
   -F "service_type=email" \
@@ -216,7 +216,7 @@ from mesh_interface import MeshInterface, MeshRequest, MeshResponse
 class MyMeshService(MeshInterface):
     def __init__(self):
         super().__init__("myservice")
-    
+
     async def handle_request(self, request: MeshRequest, file) -> MeshResponse:
         # Implement your processing logic
         return MeshResponse(
@@ -226,7 +226,7 @@ class MyMeshService(MeshInterface):
             status="completed",
             result={"message": "Hello from my service!"}
         )
-    
+
     # Implement other required methods...
 ```
 
