@@ -89,7 +89,7 @@ echo "🔧 Testing nvidia-smi availability (using nvidia/cuda base image):"
 # Use nvidia/cuda image which includes nvidia-smi binary
 SMI_RESULT=$(docker run --rm --gpus all \
     nvidia/cuda:12.1-base-ubuntu22.04 \
-    nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1)
+    nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1 || true)
 
 # Check if we got a meaningful result
 if [ -z "$SMI_RESULT" ]; then
@@ -108,7 +108,7 @@ echo "   🔍 Testing nvidia-smi with CUDA_VISIBLE_DEVICES (problematic in WSL2)
 SMI_CUDA_RESULT=$(docker run --rm --gpus all \
     -e CUDA_VISIBLE_DEVICES=all \
     nvidia/cuda:12.1-base-ubuntu22.04 \
-    nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1)
+    nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1 || true)
 
 if [ -z "$SMI_CUDA_RESULT" ]; then
     echo "   ⚠️  With CUDA_VISIBLE_DEVICES=all: No GPU name returned (WSL2 compatibility issue)"
