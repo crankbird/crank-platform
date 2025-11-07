@@ -36,6 +36,12 @@ import psutil
 # Import security configuration and models
 from security_config import initialize_security
 
+# Import Universal GPU Manager for cross-platform GPU detection
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent / "src"))
+from gpu_manager import UniversalGPUManager
+
 # Suppress warnings for cleaner output
 warnings.filterwarnings("ignore")
 
@@ -81,7 +87,7 @@ class GPUClassificationResponse(BaseModel):
 
 class GPUImageClassifier:
     """GPU-accelerated computer vision classifier with modern deep learning models."""
-    
+
     def __init__(self):
         self.device = None
         self.yolo_model = None
@@ -90,63 +96,74 @@ class GPUImageClassifier:
         self.sentence_transformer = None
         self._check_gpu_availability()
         self._initialize_models()
-        
+
     def _check_gpu_availability(self):
-        """Check GPU availability and initialize device."""
-        if not torch.cuda.is_available():
-            raise RuntimeError("❌ CUDA not available. This service requires GPU support.")
-        
-        gpu_count = torch.cuda.device_count()
-        if gpu_count == 0:
-            raise RuntimeError("❌ No CUDA devices found. This service requires GPU support.")
-        
-        self.device = torch.device("cuda:0")
-        gpu_props = torch.cuda.get_device_properties(0)
-        vram_gb = gpu_props.total_memory / (1024**3)
-        
-        logger.info(f"🎮 GPU Device: {gpu_props.name}")
-        logger.info(f"🎮 VRAM: {vram_gb:.1f}GB")
-        logger.info(f"🎮 CUDA Capability: {gpu_props.major}.{gpu_props.minor}")
-        
-        if vram_gb < 4.0:
-            logger.warning("⚠️ Low VRAM detected. Some models may not load.")
-        
-        # Set memory optimization
-        torch.cuda.empty_cache()
-        
+        """Check GPU availability and initialize device using UniversalGPUManager."""
+        # Use UniversalGPUManager for universal GPU detection
+        gpu_manager = UniversalGPUManager()
+        device_info = gpu_manager.get_info()
+
+        # Ensure we have GPU acceleration available
+        if device_info["device"] == "cpu":
+            raise RuntimeError("❌ No GPU acceleration available. This service requires GPU support.")
+
+        self.device = gpu_manager.get_device()
+
+        # Log GPU information in a platform-agnostic way
+        logger.info(f"🎮 GPU Device: {device_info['type']}")
+        if device_info.get('memory_gb'):
+            logger.info(f"🎮 Memory: {device_info['memory_gb']:.1f}GB")
+        logger.info(f"🎮 Compute Capability: {device_info.get('compute_capability', 'Unknown')}")
+        logger.info(f"🎮 Platform: {device_info['platform']} ({device_info['architecture']})")
+
+        # Memory optimization based on device type
+        if self.device.type == "cuda":
+            # CUDA-specific optimizations
+            torch.cuda.empty_cache()
+            vram_gb = device_info.get('memory_gb', 0)
+            if vram_gb < 4.0:
+                logger.warning("⚠️ Low VRAM detected. Some models may not load.")
+        elif self.device.type == "mps":
+            # Apple Silicon optimizations
+            logger.info("🍎 Using Apple Metal Performance Shaders")
+        else:
+            logger.info(f"💻 Using {self.device.type} device")
+
     def _initialize_models(self):
         """Initialize GPU-accelerated ML models."""
         logger.info("🚀 Initializing GPU-accelerated ML models...")
-        
+
         try:
             # Initialize YOLOv8 for object detection
             logger.info("📦 Loading YOLOv8 model...")
             self.yolo_model = YOLO('yolov8n.pt')  # Start with nano model for speed
             self.yolo_model.to(self.device)
             logger.info("✅ YOLOv8 model loaded on GPU")
-            
+
             # Initialize CLIP for image-text understanding
             logger.info("📦 Loading CLIP model...")
             self.clip_model, self.clip_preprocess = clip.load("ViT-B/32", device=self.device)
             logger.info("✅ CLIP model loaded on GPU")
-            
+
             # Initialize sentence transformer for embeddings
             logger.info("📦 Loading Sentence Transformer...")
             self.sentence_transformer = SentenceTransformer('clip-ViT-B-32')
             self.sentence_transformer = self.sentence_transformer.to(self.device)
             logger.info("✅ Sentence Transformer loaded on GPU")
-            
+
         except Exception as e:
             logger.error(f"❌ Failed to initialize models: {e}")
             raise RuntimeError(f"Model initialization failed: {e}")
-        
-        # Clear cache after model loading
-        torch.cuda.empty_cache()
+
+        # Clear cache after model loading (device-specific)
+        if self.device.type == "cuda":
+            torch.cuda.empty_cache()
         logger.info("🎯 All GPU models initialized successfully")
-    
+
     def get_gpu_stats(self) -> Dict[str, Any]:
-        """Get current GPU utilization statistics."""
+        """Get current GPU utilization statistics using UniversalGPUManager."""
         try:
+            # Try to get detailed GPU stats with GPUtil first
             gpu = GPUtil.getGPUs()[0] if GPUtil.getGPUs() else None
             if gpu:
                 return {
@@ -158,41 +175,60 @@ class GPUImageClassifier:
                     "temperature": f"{gpu.temperature}°C"
                 }
         except Exception as e:
-            logger.warning(f"Could not get GPU stats: {e}")
-        
-        # Fallback to PyTorch CUDA info
-        return {
-            "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "Unknown",
-            "memory_allocated": f"{torch.cuda.memory_allocated(0) / 1024**2:.1f}MB",
-            "memory_reserved": f"{torch.cuda.memory_reserved(0) / 1024**2:.1f}MB",
-            "device_count": torch.cuda.device_count()
+            logger.warning(f"Could not get GPU stats from GPUtil: {e}")
+
+        # Fallback to UniversalGPUManager info
+        gpu_manager = UniversalGPUManager()
+        device_info = gpu_manager.get_info()
+
+        stats = {
+            "gpu_name": device_info.get("type", "Unknown"),
+            "device": device_info.get("device", "unknown"),
+            "platform": device_info.get("platform", "Unknown"),
+            "architecture": device_info.get("architecture", "Unknown")
         }
-    
+
+        # Add device-specific memory information
+        if device_info["device"] == "cuda":
+            try:
+                stats.update({
+                    "memory_allocated": f"{torch.cuda.memory_allocated(0) / 1024**2:.1f}MB",
+                    "memory_reserved": f"{torch.cuda.memory_reserved(0) / 1024**2:.1f}MB",
+                    "device_count": torch.cuda.device_count()
+                })
+            except Exception as e:
+                logger.warning(f"Could not get CUDA memory stats: {e}")
+        elif device_info["device"] == "mps":
+            if device_info.get("memory_gb"):
+                stats["total_memory"] = f"{device_info['memory_gb']:.1f}GB"
+
+        return stats
+
     def _load_image(self, image_data: bytes) -> Tuple[np.ndarray, Image.Image, torch.Tensor]:
         """Load image from bytes into multiple formats for different models."""
         # Load with PIL
         pil_image = Image.open(io.BytesIO(image_data)).convert('RGB')
-        
+
         # Convert to OpenCV format
         opencv_image = cv2.imdecode(np.frombuffer(image_data, np.uint8), cv2.IMREAD_COLOR)
-        
+
         # Convert to PyTorch tensor for CLIP
         clip_tensor = self.clip_preprocess(pil_image).unsqueeze(0).to(self.device)
-        
+
         return opencv_image, pil_image, clip_tensor
-    
+
     @torch.no_grad()
     def yolo_object_detection(self, image_data: bytes, confidence: float = 0.5) -> Tuple[str, float, Dict]:
         """Advanced object detection using YOLOv8."""
         try:
             opencv_image, pil_image, _ = self._load_image(image_data)
-            
+
             # Run YOLO inference
             results = self.yolo_model(opencv_image, conf=confidence, verbose=False)
-            
+
             detections = []
             total_confidence = 0.0
-            
+
             for result in results:
                 boxes = result.boxes
                 if boxes is not None:
@@ -201,49 +237,49 @@ class GPUImageClassifier:
                         class_id = int(box.cls[0])
                         class_name = self.yolo_model.names[class_id]
                         conf = float(box.conf[0])
-                        
+
                         # Get bounding box coordinates
                         x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
-                        
+
                         detections.append({
                             "class": class_name,
                             "confidence": conf,
                             "bbox": [int(x1), int(y1), int(x2), int(y2)]
                         })
                         total_confidence += conf
-            
+
             if detections:
                 # Sort by confidence and get top detection
                 detections.sort(key=lambda x: x["confidence"], reverse=True)
                 top_detection = detections[0]
-                
+
                 prediction = f"{len(detections)} objects: {top_detection['class']}"
                 confidence = min(0.99, total_confidence / len(detections))
-                
+
                 details = {
                     "detections": detections,
                     "model": "YOLOv8n",
                     "total_objects": len(detections)
                 }
-                
+
                 return prediction, confidence, details
             else:
                 return "no_objects_detected", 0.1, {"model": "YOLOv8n", "detections": []}
-                
+
         except Exception as e:
             logger.error(f"YOLO detection error: {e}")
             return "detection_failed", 0.0, {"error": str(e)}
-    
+
     @torch.no_grad()
     def clip_image_analysis(self, image_data: bytes) -> Tuple[str, float, Dict]:
         """Advanced image understanding using CLIP."""
         try:
             _, pil_image, clip_tensor = self._load_image(image_data)
-            
+
             # Define scene categories for classification
             scene_categories = [
                 "a photo of nature and outdoors",
-                "a photo of people and portraits", 
+                "a photo of people and portraits",
                 "a photo of buildings and architecture",
                 "a photo of vehicles and transportation",
                 "a photo of food and dining",
@@ -253,76 +289,76 @@ class GPUImageClassifier:
                 "a photo of sports and recreation",
                 "a photo of indoor scenes and interiors"
             ]
-            
+
             # Tokenize text descriptions
             text_tokens = clip.tokenize(scene_categories).to(self.device)
-            
+
             # Calculate similarities
             with torch.no_grad():
                 image_features = self.clip_model.encode_image(clip_tensor)
                 text_features = self.clip_model.encode_text(text_tokens)
-                
+
                 # Normalize features
                 image_features = image_features / image_features.norm(dim=-1, keepdim=True)
                 text_features = text_features / text_features.norm(dim=-1, keepdim=True)
-                
+
                 # Calculate similarities
                 similarities = (image_features @ text_features.T).cpu().numpy()[0]
-            
+
             # Get best match
             best_idx = np.argmax(similarities)
             best_category = scene_categories[best_idx].replace("a photo of ", "")
             confidence = float(similarities[best_idx])
-            
+
             # Convert to percentage and normalize
             confidence = min(0.95, max(0.1, (confidence + 1) / 2))  # Convert from [-1,1] to [0,1]
-            
+
             details = {
                 "model": "CLIP-ViT-B/32",
                 "all_similarities": {
-                    cat.replace("a photo of ", ""): float(sim) 
+                    cat.replace("a photo of ", ""): float(sim)
                     for cat, sim in zip(scene_categories, similarities)
                 },
                 "image_embedding_shape": list(image_features.shape)
             }
-            
+
             return best_category, confidence, details
-            
+
         except Exception as e:
             logger.error(f"CLIP analysis error: {e}")
             return "analysis_failed", 0.0, {"error": str(e)}
-    
+
     @torch.no_grad()
     def advanced_scene_classification(self, image_data: bytes) -> Tuple[str, float, Dict]:
         """Advanced scene classification combining multiple signals."""
         try:
             opencv_image, pil_image, clip_tensor = self._load_image(image_data)
-            
+
             # Get CLIP analysis
             clip_result, clip_conf, clip_details = self.clip_image_analysis(image_data)
-            
+
             # Additional analysis using color and texture
             hsv = cv2.cvtColor(opencv_image, cv2.COLOR_BGR2HSV)
-            
+
             # Color analysis
-            blue_pixels = np.sum((opencv_image[:,:,0] > opencv_image[:,:,1]) & 
+            blue_pixels = np.sum((opencv_image[:,:,0] > opencv_image[:,:,1]) &
                                (opencv_image[:,:,0] > opencv_image[:,:,2]))
-            green_pixels = np.sum((opencv_image[:,:,1] > opencv_image[:,:,0]) & 
+            green_pixels = np.sum((opencv_image[:,:,1] > opencv_image[:,:,0]) &
                                 (opencv_image[:,:,1] > opencv_image[:,:,2]))
-            
+
             total_pixels = opencv_image.shape[0] * opencv_image.shape[1]
             blue_ratio = blue_pixels / total_pixels
             green_ratio = green_pixels / total_pixels
-            
+
             # Texture analysis
             gray = cv2.cvtColor(opencv_image, cv2.COLOR_BGR2GRAY)
             edges = cv2.Canny(gray, 50, 150)
             edge_density = np.sum(edges > 0) / edges.size
-            
+
             # Combine signals for enhanced classification
             enhanced_confidence = clip_conf
             enhanced_scene = clip_result
-            
+
             # Adjust based on color analysis
             if "nature" in clip_result and green_ratio > 0.3:
                 enhanced_confidence += 0.1
@@ -330,9 +366,9 @@ class GPUImageClassifier:
                 enhanced_confidence += 0.1
             elif edge_density > 0.1 and "architecture" in clip_result:
                 enhanced_confidence += 0.1
-            
+
             enhanced_confidence = min(0.95, enhanced_confidence)
-            
+
             details = {
                 "clip_analysis": clip_details,
                 "color_analysis": {
@@ -346,28 +382,28 @@ class GPUImageClassifier:
                 },
                 "fusion_method": "clip_color_texture"
             }
-            
+
             return enhanced_scene, enhanced_confidence, details
-            
+
         except Exception as e:
             logger.error(f"Advanced scene classification error: {e}")
             return "classification_failed", 0.0, {"error": str(e)}
-    
+
     @torch.no_grad()
     def generate_image_embeddings(self, image_data: bytes) -> Tuple[str, float, Dict]:
         """Generate image embeddings for similarity search."""
         try:
             _, pil_image, clip_tensor = self._load_image(image_data)
-            
+
             # Generate CLIP embeddings
             with torch.no_grad():
                 image_features = self.clip_model.encode_image(clip_tensor)
                 normalized_features = image_features / image_features.norm(dim=-1, keepdim=True)
                 embeddings = normalized_features.cpu().numpy()[0].tolist()
-            
+
             # Also generate sentence transformer embeddings
             st_embeddings = self.sentence_transformer.encode([pil_image])
-            
+
             details = {
                 "clip_embeddings": embeddings,
                 "sentence_transformer_embeddings": st_embeddings[0].tolist(),
@@ -377,9 +413,9 @@ class GPUImageClassifier:
                 },
                 "similarity_ready": True
             }
-            
+
             return "embeddings_generated", 0.95, details
-            
+
         except Exception as e:
             logger.error(f"Embedding generation error: {e}")
             return "embedding_failed", 0.0, {"error": str(e)}
@@ -387,33 +423,33 @@ class GPUImageClassifier:
 
 class CrankGPUImageClassifier:
     """Crank GPU Image Classifier Service that registers with platform."""
-    
+
     def __init__(self, platform_url: str = None):
         self.app = FastAPI(title="Crank GPU Image Classifier", version="1.0.0")
-        
+
         # Worker registration configuration
         self.worker_id = f"image-classifier-gpu-{uuid4().hex[:8]}"
         self.platform_url = os.getenv("PLATFORM_URL", "https://platform:8443")
         self.worker_url = f"https://crank-image-classifier-gpu:{os.getenv('IMAGE_CLASSIFIER_GPU_HTTPS_PORT', '8506')}"
         self.platform_auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "dev-mesh-key")
         self.heartbeat_task = None
-        
+
         # Initialize GPU classifier
         self.classifier = GPUImageClassifier()
-        
+
         self._setup_routes()
         self.setup_startup()
-        
+
         # Setup routes
         self._setup_routes()
-        
+
         # Register startup/shutdown handlers
         self.app.add_event_handler("startup", self._startup)
         self.app.add_event_handler("shutdown", self._shutdown)
-    
+
     def _setup_routes(self):
         """Setup FastAPI routes."""
-        
+
         @self.app.get("/health")
         async def health_check():
             """Health check endpoint."""
@@ -432,7 +468,7 @@ class CrankGPUImageClassifier:
                 "supported_formats": ["jpg", "jpeg", "png", "bmp", "gif", "webp"],
                 "timestamp": datetime.now().isoformat()
             }
-        
+
         @self.app.post("/classify", response_model=GPUClassificationResponse)
         async def classify_image_gpu(
             file: UploadFile = File(...),
@@ -443,19 +479,19 @@ class CrankGPUImageClassifier:
                 # Validate file type
                 if not file.content_type or not file.content_type.startswith('image/'):
                     raise HTTPException(status_code=400, detail="File must be an image")
-                
+
                 # Read image data
                 image_data = await file.read()
-                
+
                 # Generate image ID
                 image_id = f"gpu-image-{uuid4().hex[:8]}"
-                
+
                 # Parse classification types
                 types = [t.strip() for t in classification_types.split(",")]
-                
+
                 # Perform GPU-accelerated classifications
                 results = []
-                
+
                 for class_type in types:
                     if class_type == "yolo_detection":
                         prediction, confidence, details = self.classifier.yolo_object_detection(image_data)
@@ -465,7 +501,7 @@ class CrankGPUImageClassifier:
                             confidence=confidence,
                             details=details
                         ))
-                    
+
                     elif class_type == "clip_analysis":
                         prediction, confidence, details = self.classifier.clip_image_analysis(image_data)
                         results.append(GPUImageClassificationResult(
@@ -474,7 +510,7 @@ class CrankGPUImageClassifier:
                             confidence=confidence,
                             details=details
                         ))
-                    
+
                     elif class_type == "advanced_scene_classification":
                         prediction, confidence, details = self.classifier.advanced_scene_classification(image_data)
                         results.append(GPUImageClassificationResult(
@@ -483,7 +519,7 @@ class CrankGPUImageClassifier:
                             confidence=confidence,
                             details=details
                         ))
-                    
+
                     elif class_type == "image_embeddings":
                         prediction, confidence, details = self.classifier.generate_image_embeddings(image_data)
                         results.append(GPUImageClassificationResult(
@@ -492,10 +528,10 @@ class CrankGPUImageClassifier:
                             confidence=confidence,
                             details=details
                         ))
-                
+
                 # Get GPU stats for response
                 gpu_stats = self.classifier.get_gpu_stats()
-                
+
                 return GPUClassificationResponse(
                     success=True,
                     image_id=image_id,
@@ -510,11 +546,11 @@ class CrankGPUImageClassifier:
                     },
                     gpu_stats=gpu_stats
                 )
-                
+
             except Exception as e:
                 logger.error(f"GPU image classification error: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
-        
+
         @self.app.get("/plugin")
         async def get_plugin_metadata():
             """Get plugin metadata for platform integration."""
@@ -528,7 +564,7 @@ class CrankGPUImageClassifier:
                     return plugin_data
                 except Exception as e:
                     logger.warning(f"Failed to read plugin metadata: {e}")
-            
+
             # Fallback to hardcoded metadata
             return {
                 "name": "crank-image-classifier-gpu",
@@ -540,13 +576,13 @@ class CrankGPUImageClassifier:
                 "health_endpoint": "/health",
                 "separation_ready": True
             }
-    
+
     def _create_mtls_client(self, timeout: float = 10.0) -> httpx.AsyncClient:
         """Create HTTP client with mTLS configuration for platform communication."""
         if self.cert_file and self.key_file and self.ca_file:
             # 🔒 ZERO-TRUST: Use mTLS for secure worker-to-platform communication
             environment = os.getenv("CRANK_ENVIRONMENT", "development")
-            
+
             if environment == "development":
                 logger.info("🔒 Using mTLS with relaxed verification for development")
                 return httpx.AsyncClient(
@@ -564,24 +600,24 @@ class CrankGPUImageClassifier:
         else:
             logger.warning("⚠️  Using plain HTTP client - certificates not available")
             return httpx.AsyncClient(timeout=timeout)
-    
+
     def setup_startup(self):
         """Setup startup and shutdown events."""
-        
+
         @self.app.on_event("startup")
         async def startup_event():
             """Initialize security and register with platform."""
             logger.info("🎮 Starting Crank GPU Image Classifier Service...")
-            
+
             # Initialize security and certificates
             logger.info("🔐 Initializing security configuration and certificates...")
             initialize_security()
-            
+
             # Register with platform
             await self._register_with_platform()
-            
+
             logger.info("✅ Crank GPU Image Classifier Service startup complete!")
-        
+
         @self.app.on_event("shutdown")
         async def shutdown_event():
             """Cleanup on shutdown."""
@@ -601,7 +637,7 @@ class CrankGPUImageClassifier:
             health_url=f"{self.worker_url}/health",
             capabilities=["yolo_object_detection", "clip_image_understanding", "advanced_scene_analysis", "image_embeddings", "batch_processing"]
         )
-        
+
         # Try to register with retries
         max_retries = 5
         for attempt in range(max_retries):
@@ -615,7 +651,7 @@ class CrankGPUImageClassifier:
                     )
                     response.raise_for_status()
                     logger.info(f"🔒 Successfully registered GPU image classifier service via mTLS. Worker ID: {self.worker_id}")
-                    
+
                     # Start heartbeat task
                     self._start_heartbeat_task()
                     return
@@ -623,7 +659,7 @@ class CrankGPUImageClassifier:
                 logger.warning(f"Registration attempt {attempt + 1} failed: {e}")
                 if attempt < max_retries - 1:
                     await asyncio.sleep(2 ** attempt)
-        
+
         logger.error("Failed to register with platform after all retries")
 
     def _start_heartbeat_task(self):
@@ -638,7 +674,7 @@ class CrankGPUImageClassifier:
                     break
                 except Exception as e:
                     logger.error(f"Heartbeat error: {e}")
-        
+
         self.heartbeat_task = asyncio.create_task(heartbeat_loop())
         heartbeat_interval = os.getenv("WORKER_HEARTBEAT_INTERVAL", "20")
         logger.info(f"🫀 Started heartbeat task with {heartbeat_interval}s interval")
@@ -681,22 +717,22 @@ def main():
     """Main entry point with HTTPS auto-detection."""
     import uvicorn
     from pathlib import Path
-    
+
     app = create_crank_gpu_image_classifier()
-    
+
     # 🔒 ZERO-TRUST: Auto-detect HTTPS based on certificate availability
     cert_dir = Path("/etc/certs")
     has_certs = (cert_dir / "platform.crt").exists() and (cert_dir / "platform.key").exists()
-    
+
     # Kevin's port configuration - environment-based for maximum portability
     https_port = int(os.getenv('GPU_CLASSIFIER_HTTPS_PORT', '8443'))
     http_port = int(os.getenv('GPU_CLASSIFIER_HTTP_PORT', '8007'))
-    
+
     if has_certs:
         print(f"🔒 Starting Crank GPU Image Classifier with HTTPS on port {https_port}")
         uvicorn.run(
-            app, 
-            host="0.0.0.0", 
+            app,
+            host="0.0.0.0",
             port=https_port,
             ssl_keyfile=str(cert_dir / "platform.key"),
             ssl_certfile=str(cert_dir / "platform.crt")

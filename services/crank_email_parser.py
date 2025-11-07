@@ -43,7 +43,7 @@ class WorkerRegistration(BaseModel):
 # Import the existing parse_mbox functionality
 DEFAULT_KEYWORDS = [
     "receipt",
-    "invoice", 
+    "invoice",
     "order confirmation",
     "payment confirmation",
     "statement",
@@ -73,35 +73,35 @@ class EmailParseResponse(BaseModel):
 
 class CrankEmailParserService:
     """Email parser service implementing crank-platform mesh interface."""
-    
+
     def __init__(self):
         self.app = FastAPI(title="Crank Email Parser", version="1.0.0")
-        
+
         # Worker registration configuration
         self.worker_id = f"email-parser-{uuid4().hex[:8]}"
         self.platform_url = os.getenv("PLATFORM_URL", "https://platform:8443")
         self.worker_url = f"https://crank-email-parser:{os.getenv('EMAIL_PARSER_HTTPS_PORT', '8301')}"
         self.platform_auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "dev-mesh-key")
         self.heartbeat_task = None
-        
+
         # Legacy service_id for compatibility
         self.service_id = self.worker_id
-        
+
         self.setup_routes()
         self.setup_startup()
-        
+
     def setup_routes(self):
         """Setup FastAPI routes for the service."""
-        
+
         @self.app.get("/health")
         async def health_check():
             return {
                 "status": "healthy",
                 "service": "crank-email-parser",
                 "service_id": self.service_id,
-                "capabilities": ["mbox_parsing", "eml_parsing", "bulk_processing"]
+                "capabilities": ["mbox_parsing", "eml_parsing", "attachment_extraction", "bulk_processing"]
             }
-        
+
         @self.app.post("/parse/mbox", response_model=EmailParseResponse)
         async def parse_mbox_file(
             file: UploadFile = File(...),
@@ -114,7 +114,7 @@ class CrankEmailParserService:
             except Exception as e:
                 logger.error(f"Error parsing mbox: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
-        
+
         @self.app.post("/parse/eml", response_model=EmailParseResponse)
         async def parse_eml_file(
             file: UploadFile = File(...),
@@ -127,7 +127,7 @@ class CrankEmailParserService:
             except Exception as e:
                 logger.error(f"Error parsing EML: {str(e)}")
                 raise HTTPException(status_code=500, detail=str(e))
-        
+
         @self.app.post("/analyze/archive")
         async def analyze_email_archive(
             file: UploadFile = File(...),
@@ -145,15 +145,15 @@ class CrankEmailParserService:
         """Parse mbox file using streaming parser."""
         start_time = datetime.now()
         job_id = f"mbox-{uuid4().hex[:8]}"
-        
+
         # Read file content
         content = await file.read()
-        
+
         # Create temporary file for mailbox parsing
         with tempfile.NamedTemporaryFile() as temp_file:
             temp_file.write(content)
             temp_file.flush()
-            
+
             # Use the streaming parser logic
             messages = list(self._iter_parsed_messages(
                 temp_file.name,
@@ -161,14 +161,14 @@ class CrankEmailParserService:
                 body_snippet_chars=request.snippet_length,
                 max_messages=request.max_messages
             ))
-        
+
         # Calculate metrics
         receipt_count = sum(1 for msg in messages if msg.get('is_receipt', False))
         processing_time_ms = (datetime.now() - start_time).total_seconds() * 1000
-        
+
         # Generate summary
         summary = self._generate_summary(messages)
-        
+
         return EmailParseResponse(
             job_id=job_id,
             status="completed",
@@ -183,11 +183,11 @@ class CrankEmailParserService:
         """Parse single EML file."""
         start_time = datetime.now()
         job_id = f"eml-{uuid4().hex[:8]}"
-        
+
         # Read and parse EML
         content = await file.read()
         message = email.message_from_bytes(content, policy=policy.default)
-        
+
         # Convert to our format
         parsed_message = self._message_to_record(
             message,
@@ -195,14 +195,14 @@ class CrankEmailParserService:
             lowered_keywords=[(kw or "").lower() for kw in (request.keywords or DEFAULT_KEYWORDS)],
             body_snippet_chars=request.snippet_length
         )
-        
+
         messages = [parsed_message]
         receipt_count = 1 if parsed_message.get('is_receipt', False) else 0
         processing_time_ms = (datetime.now() - start_time).total_seconds() * 1000
-        
+
         return EmailParseResponse(
             job_id=job_id,
-            status="completed", 
+            status="completed",
             message_count=1,
             receipt_count=receipt_count,
             processing_time_ms=processing_time_ms,
@@ -215,7 +215,7 @@ class CrankEmailParserService:
         # First parse the archive
         parse_response = await self._parse_mbox(file, request)
         messages = parse_response.messages
-        
+
         # Perform analysis
         analysis = {
             "total_messages": len(messages),
@@ -226,7 +226,7 @@ class CrankEmailParserService:
             "size_distribution": self._analyze_message_sizes(messages),
             "temporal_distribution": self._analyze_temporal_patterns(messages)
         }
-        
+
         return {
             "job_id": parse_response.job_id,
             "status": "completed",
@@ -251,7 +251,7 @@ class CrankEmailParserService:
             for i, message in enumerate(mbox):
                 if max_messages and i >= max_messages:
                     break
-                    
+
                 yield self._message_to_record(
                     message,
                     keyword_list=keyword_list,
@@ -345,7 +345,7 @@ class CrankEmailParserService:
         """Generate summary statistics from parsed messages."""
         if not messages:
             return {}
-        
+
         return {
             "date_range": self._get_date_range(messages),
             "top_senders": self._get_top_senders(messages, limit=5),
@@ -359,7 +359,7 @@ class CrankEmailParserService:
         dates = [m.get('date', '') for m in messages if m.get('date')]
         if not dates:
             return {"earliest": None, "latest": None}
-        
+
         # Simple date extraction (could be improved with proper parsing)
         return {
             "earliest": min(dates) if dates else None,
@@ -373,7 +373,7 @@ class CrankEmailParserService:
         for msg in messages:
             sender = msg.get('from', 'Unknown')
             sender_counts[sender] = sender_counts.get(sender, 0) + 1
-        
+
         top_senders = sorted(sender_counts.items(), key=lambda x: x[1], reverse=True)[:limit]
         return [{"sender": sender, "count": count} for sender, count in top_senders]
 
@@ -383,7 +383,7 @@ class CrankEmailParserService:
         for msg in messages:
             for keyword in msg.get('matched_keywords', []):
                 keyword_counts[keyword] = keyword_counts.get(keyword, 0) + 1
-        
+
         top_keywords = sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True)[:5]
         return [{"keyword": keyword, "count": count} for keyword, count in top_keywords]
 
@@ -396,7 +396,7 @@ class CrankEmailParserService:
             for word in words:
                 if len(word) > 3:  # Skip short words
                     word_counts[word] = word_counts.get(word, 0) + 1
-        
+
         # Return top 10 words
         return dict(sorted(word_counts.items(), key=lambda x: x[1], reverse=True)[:10])
 
@@ -405,7 +405,7 @@ class CrankEmailParserService:
         sizes = [msg.get('body_length', 0) for msg in messages]
         if not sizes:
             return {}
-        
+
         return {
             "min_size": min(sizes),
             "max_size": max(sizes),
@@ -420,15 +420,15 @@ class CrankEmailParserService:
             "analysis_note": "Temporal analysis requires enhanced date parsing",
             "message_count_by_period": "not_implemented"
         }
-    
+
     class _SecureHTTPClientManager:
         """Context manager for creating HTTP client with CA certificate verification."""
-        
+
         def __init__(self, ca_service_url="https://cert-authority:9090"):
             self.ca_service_url = ca_service_url
             self.ca_cert_file = None
             self.client = None
-            
+
         async def __aenter__(self):
             import tempfile
             import os
@@ -438,20 +438,20 @@ class CrankEmailParserService:
                 import sys
                 sys.path.append('/app/scripts')
                 from crank_cert_initialize import CertificateAuthorityClient
-                
+
                 # Get CA certificate directly from the Certificate Authority Service
                 ca_client = CertificateAuthorityClient(self.ca_service_url)
                 ca_cert = await ca_client.get_ca_certificate()
-                
+
                 if ca_cert:
                     # Create SSL context with CA certificate
                     ssl_context = ssl.create_default_context()
                     ssl_context.check_hostname = False  # For development environment
                     ssl_context.verify_mode = ssl.CERT_REQUIRED
-                    
+
                     # Load CA certificate directly into SSL context
                     ssl_context.load_verify_locations(cadata=ca_cert)
-                    
+
                     # Configure httpx to use the SSL context
                     self.client = httpx.AsyncClient(
                         verify=ssl_context,
@@ -468,7 +468,7 @@ class CrankEmailParserService:
                 logger.warning(f"Failed to access CA certificate: {e}, using insecure client")
                 self.client = httpx.AsyncClient(verify=False, timeout=10.0)
                 return self.client
-                
+
         async def __aexit__(self, exc_type, exc_val, exc_tb):
             if self.client:
                 await self.client.aclose()
@@ -479,17 +479,17 @@ class CrankEmailParserService:
 
     def setup_startup(self):
         """Setup startup and shutdown events."""
-        
+
         @self.app.on_event("startup")
         async def startup_event():
             """Initialize security and register with platform."""
             logger.info("📧 Starting Crank Email Parser Service...")
-            
+
             # Certificate initialization handled in main() - just register
             await self._register_with_platform()
-            
+
             logger.info("✅ Crank Email Parser Service startup complete!")
-        
+
         @self.app.on_event("shutdown")
         async def shutdown_event():
             """Cleanup on shutdown."""
@@ -507,9 +507,9 @@ class CrankEmailParserService:
             service_type="email_parsing",
             endpoint=self.worker_url,
             health_url=f"{self.worker_url}/health",
-            capabilities=["mbox_parsing", "eml_parsing", "bulk_processing", "archive_analysis"]
+            capabilities=["mbox_parsing", "eml_parsing", "attachment_extraction", "bulk_processing", "archive_analysis"]
         )
-        
+
         # Try to register with retries
         max_retries = 5
         for attempt in range(max_retries):
@@ -522,7 +522,7 @@ class CrankEmailParserService:
                     )
                     response.raise_for_status()
                     logger.info(f"🔒 Successfully registered email parser service via mTLS. Worker ID: {self.worker_id}")
-                    
+
                     # Start heartbeat task
                     self._start_heartbeat_task()
                     return
@@ -530,7 +530,7 @@ class CrankEmailParserService:
                 logger.warning(f"Registration attempt {attempt + 1} failed: {e}")
                 if attempt < max_retries - 1:
                     await asyncio.sleep(2 ** attempt)
-        
+
         logger.error("Failed to register with platform after all retries")
 
     def _start_heartbeat_task(self):
@@ -545,7 +545,7 @@ class CrankEmailParserService:
                     break
                 except Exception as e:
                     logger.error(f"Heartbeat error: {e}")
-        
+
         self.heartbeat_task = asyncio.create_task(heartbeat_loop())
         heartbeat_interval = os.getenv("WORKER_HEARTBEAT_INTERVAL", "20")
         logger.info(f"🫀 Started heartbeat task with {heartbeat_interval}s interval")
@@ -573,11 +573,11 @@ app = email_parser_service.app
 def main():
     """Main entry point with clean certificate initialization."""
     import uvicorn
-    
+
     # Initialize certificates using SECURE CSR pattern
     https_only = os.getenv("HTTPS_ONLY", "true").lower() == "true"
     ca_service_url = os.getenv("CA_SERVICE_URL")
-    
+
     if https_only and ca_service_url:
         logger.info("🔐 Initializing certificates using SECURE CSR pattern...")
         try:
@@ -586,41 +586,41 @@ def main():
             sys.path.append('/app/scripts')
             import asyncio
             from crank_cert_initialize import main as init_certificates, cert_store
-            
+
             # Run secure certificate initialization
             asyncio.run(init_certificates())
-            
+
             # Check if certificates were loaded
             if cert_store.platform_cert is None:
                 raise RuntimeError("🚫 Certificate initialization completed but no certificates in memory")
-            
+
             logger.info("✅ Certificates loaded successfully using SECURE CSR pattern")
             logger.info("🔒 SECURITY: Private keys generated locally and never transmitted")
-            
+
         except Exception as e:
             logger.error(f"❌ Failed to initialize certificates with CA service: {e}")
             exit(1)
     else:
         logger.error("🚫 HTTPS_ONLY environment requires Certificate Authority Service")
         exit(1)
-    
+
     # Start server with in-memory certificates
     service_port = int(os.getenv("EMAIL_PARSER_HTTPS_PORT", "8301"))
     service_host = os.getenv("EMAIL_PARSER_HOST", "0.0.0.0")
-    
+
     logger.info(f"� Starting Crank Email Parser with HTTPS/mTLS ONLY on port {service_port}")
     logger.info("🔐 Using in-memory certificates from Certificate Authority Service")
-    
+
     # Create SSL context from in-memory certificates (SECURE CSR pattern)
     try:
         ssl_context = cert_store.get_ssl_context()
-        
+
         logger.info("🔒 Using certificates obtained via SECURE CSR pattern")
-        
+
         # Get the temporary certificate file paths for uvicorn
         cert_file = cert_store._temp_cert_file
         key_file = cert_store._temp_key_file
-        
+
         uvicorn.run(
             app,
             host=service_host,

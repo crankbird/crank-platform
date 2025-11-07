@@ -86,18 +86,18 @@ class WorkerRegistration(BaseModel):
 
 class SimpleEmailClassifier:
     """Simple ML-based email classifier with multiple classification types."""
-    
+
     def __init__(self):
         self.spam_classifier = None
         self.bill_classifier = None
         self.receipt_classifier = None
         self.category_classifier = None
         self._initialize_models()
-        
+
     def _initialize_models(self):
         """Initialize ML models with basic training data."""
         logger.info("🤖 Initializing ML models for email classification...")
-        
+
         # Simple spam detection model with basic training data
         spam_data = [
             ("Get rich quick! Click here!", "spam"),
@@ -111,7 +111,7 @@ class SimpleEmailClassifier:
             ("Limited time offer! Act now!", "spam"),
             ("Project update: milestone completed", "not_spam")
         ]
-        
+
         # Bill detection training data
         bill_data = [
             ("Your monthly electricity bill is ready for review", "bill"),
@@ -129,8 +129,8 @@ class SimpleEmailClassifier:
             ("Phone bill is ready for payment", "bill"),
             ("Insurance premium due notice", "bill")
         ]
-        
-        # Receipt detection training data  
+
+        # Receipt detection training data
         receipt_data = [
             ("Thank you for your purchase at Coffee Shop", "receipt"),
             ("Receipt for your order #12345", "receipt"),
@@ -147,11 +147,11 @@ class SimpleEmailClassifier:
             ("Restaurant receipt - tip included", "receipt"),
             ("Purchase total: $49.99 - paid with card", "receipt")
         ]
-        
+
         # Category classification data
         category_data = [
             ("Meeting scheduled for tomorrow", "business"),
-            ("Happy birthday! Hope you have a great day", "personal"), 
+            ("Happy birthday! Hope you have a great day", "personal"),
             ("Special offer: 50% off all items", "marketing"),
             ("Issue with your order #12345", "support"),
             ("Please review the quarterly report", "business"),
@@ -159,7 +159,7 @@ class SimpleEmailClassifier:
             ("New product launch announcement", "marketing"),
             ("Password reset confirmation", "support")
         ]
-        
+
         # Train spam classifier
         spam_texts, spam_labels = zip(*spam_data)
         self.spam_classifier = Pipeline([
@@ -167,7 +167,7 @@ class SimpleEmailClassifier:
             ('classifier', MultinomialNB())
         ])
         self.spam_classifier.fit(spam_texts, spam_labels)
-        
+
         # Train bill classifier
         bill_texts, bill_labels = zip(*bill_data)
         self.bill_classifier = Pipeline([
@@ -175,7 +175,7 @@ class SimpleEmailClassifier:
             ('classifier', MultinomialNB())
         ])
         self.bill_classifier.fit(bill_texts, bill_labels)
-        
+
         # Train receipt classifier
         receipt_texts, receipt_labels = zip(*receipt_data)
         self.receipt_classifier = Pipeline([
@@ -183,117 +183,117 @@ class SimpleEmailClassifier:
             ('classifier', MultinomialNB())
         ])
         self.receipt_classifier.fit(receipt_texts, receipt_labels)
-        
-        # Train category classifier  
+
+        # Train category classifier
         category_texts, category_labels = zip(*category_data)
         self.category_classifier = Pipeline([
             ('tfidf', TfidfVectorizer(stop_words='english', max_features=1000)),
             ('classifier', MultinomialNB())
         ])
         self.category_classifier.fit(category_texts, category_labels)
-        
+
         logger.info("✅ ML models initialized successfully (spam, bill, receipt, category detection)")
-    
+
     def _preprocess_email(self, email_content: str) -> str:
         """Preprocess email content for classification."""
         # Remove HTML tags if present
         soup = BeautifulSoup(email_content, 'html.parser')
         text = soup.get_text()
-        
+
         # Basic text cleaning
         text = re.sub(r'http\S+', '', text)  # Remove URLs
-        text = re.sub(r'\S+@\S+', '', text)  # Remove email addresses  
+        text = re.sub(r'\S+@\S+', '', text)  # Remove email addresses
         text = re.sub(r'[^a-zA-Z\s]', ' ', text)  # Keep only letters and spaces
         text = re.sub(r'\s+', ' ', text).strip()  # Normalize whitespace
-        
+
         return text.lower()
-    
+
     def detect_spam(self, email_content: str, threshold: float = 0.7) -> Tuple[str, float]:
         """Detect if email is spam."""
         processed_text = self._preprocess_email(email_content)
-        
+
         # Get prediction probabilities
         probabilities = self.spam_classifier.predict_proba([processed_text])[0]
         classes = self.spam_classifier.classes_
-        
+
         # Find spam probability
         spam_idx = list(classes).index('spam') if 'spam' in classes else 0
         spam_confidence = probabilities[spam_idx]
-        
+
         prediction = "spam" if spam_confidence > threshold else "not_spam"
         confidence = spam_confidence if prediction == "spam" else (1 - spam_confidence)
-        
+
         return prediction, float(confidence)
-    
+
     def analyze_sentiment(self, email_content: str) -> Tuple[str, float]:
         """Analyze email sentiment using simple heuristics."""
         processed_text = self._preprocess_email(email_content)
-        
+
         # Simple sentiment analysis based on keywords
         positive_words = ['thank', 'great', 'excellent', 'good', 'happy', 'pleased', 'wonderful']
         negative_words = ['urgent', 'problem', 'issue', 'error', 'failed', 'disappointed', 'angry']
-        
+
         words = processed_text.split()
         positive_count = sum(1 for word in words if word in positive_words)
         negative_count = sum(1 for word in words if word in negative_words)
-        
+
         if positive_count > negative_count:
             return "positive", min(0.9, 0.6 + (positive_count - negative_count) * 0.1)
         elif negative_count > positive_count:
             return "negative", min(0.9, 0.6 + (negative_count - positive_count) * 0.1)
         else:
             return "neutral", 0.5
-    
+
     def classify_category(self, email_content: str, threshold: float = 0.7) -> Tuple[str, float]:
         """Classify email category."""
         processed_text = self._preprocess_email(email_content)
-        
+
         # Get prediction probabilities
         probabilities = self.category_classifier.predict_proba([processed_text])[0]
         classes = self.category_classifier.classes_
-        
+
         # Find best prediction
         best_idx = np.argmax(probabilities)
         prediction = classes[best_idx]
         confidence = float(probabilities[best_idx])
-        
+
         return prediction, confidence
-    
+
     def detect_bill(self, email_content: str, threshold: float = 0.7) -> Tuple[str, float]:
         """Detect if email is a bill or statement."""
         processed_text = self._preprocess_email(email_content)
-        
+
         # Get prediction probabilities
         probabilities = self.bill_classifier.predict_proba([processed_text])[0]
         classes = self.bill_classifier.classes_
-        
+
         # Find best prediction
         best_idx = np.argmax(probabilities)
         prediction = classes[best_idx]
         confidence = float(probabilities[best_idx])
-        
+
         return prediction, confidence
-    
+
     def detect_receipt(self, email_content: str, threshold: float = 0.7) -> Tuple[str, float]:
         """Detect if email is a receipt or purchase confirmation."""
         processed_text = self._preprocess_email(email_content)
-        
+
         # Get prediction probabilities
         probabilities = self.receipt_classifier.predict_proba([processed_text])[0]
         classes = self.receipt_classifier.classes_
-        
+
         # Find best prediction
         best_idx = np.argmax(probabilities)
         prediction = classes[best_idx]
         confidence = float(probabilities[best_idx])
-        
+
         return prediction, confidence
-    
+
     def detect_language(self, email_content: str) -> Tuple[str, float]:
         """Detect email language using simple heuristics."""
         # Simple language detection based on common words
         processed_text = self._preprocess_email(email_content).lower()
-        
+
         # Simple keyword-based language detection
         if any(word in processed_text for word in ['the', 'and', 'you', 'that', 'this']):
             return "en", 0.7
@@ -303,18 +303,18 @@ class SimpleEmailClassifier:
             return "fr", 0.6
         else:
             return "unknown", 0.5
-    
+
     def classify_priority(self, email_content: str) -> Tuple[str, float]:
         """Classify email priority based on keywords."""
         processed_text = self._preprocess_email(email_content)
-        
+
         high_priority_words = ['urgent', 'asap', 'emergency', 'critical', 'immediate']
         medium_priority_words = ['important', 'soon', 'deadline', 'meeting']
-        
+
         words = processed_text.split()
         high_count = sum(1 for word in words if word in high_priority_words)
         medium_count = sum(1 for word in words if word in medium_priority_words)
-        
+
         if high_count > 0:
             return "high", min(0.9, 0.7 + high_count * 0.1)
         elif medium_count > 0:
@@ -325,10 +325,10 @@ class SimpleEmailClassifier:
 
 class CrankEmailClassifier:
     """Crank Email Classifier Service that registers with platform."""
-    
+
     def __init__(self, platform_url: str = None, cert_store=None):
         self.app = FastAPI(title="Crank Email Classifier", version="1.0.0")
-        
+
         # 🔐 ZERO-TRUST: Use pre-loaded certificates from synchronous initialization
         if cert_store is not None:
             logger.info("🔐 Using pre-loaded certificates from synchronous initialization")
@@ -339,31 +339,31 @@ class CrankEmailClassifier:
             sys.path.append('/app/scripts')
             from crank_cert_initialize import SecureCertificateStore
             self.cert_store = SecureCertificateStore()
-        
+
         # Always use HTTPS with Certificate Authority Service certificates
         self.platform_url = platform_url or os.getenv("PLATFORM_URL", "https://platform:8443")
         self.worker_url = os.getenv("WORKER_URL", "https://crank-email-classifier:8201")
-        
+
         # Certificate files are purely in-memory now - no disk dependencies
         self.cert_file = None
-        self.key_file = None 
+        self.key_file = None
         self.ca_file = None
-        
+
         self.worker_id = None
-        
+
         # Initialize ML classifier
         self.classifier = SimpleEmailClassifier()
-        
+
         # Setup routes
         self._setup_routes()
-        
+
         # Register startup/shutdown handlers
         self.app.add_event_handler("startup", self._startup)
         self.app.add_event_handler("shutdown", self._shutdown)
-    
+
     def _setup_routes(self):
         """Setup FastAPI routes."""
-        
+
         @self.app.get("/health")
         async def health_check():
             """Health check endpoint with security status."""
@@ -375,16 +375,16 @@ class CrankEmailClassifier:
                     "ca_cert_available": self.cert_store.ca_cert is not None,
                     "certificate_source": "Certificate Authority Service"
                 }
-            
+
             return {
                 "status": "healthy",
                 "service": "crank-email-classifier",
-                "capabilities": ["spam_detection", "bill_detection", "receipt_detection", "sentiment_analysis", "category", "priority", "language_detection"],
+                "capabilities": ["text_classification", "spam_detection", "bill_detection", "receipt_detection", "sentiment_analysis", "category", "priority", "language_detection"],
                 "ml_models": "initialized",
                 "security": security_status,
                 "timestamp": datetime.now().isoformat()
             }
-        
+
         @self.app.post("/classify", response_model=ClassificationResponse)
         async def classify_email(
             email_content: str = Form(...),
@@ -394,13 +394,13 @@ class CrankEmailClassifier:
             try:
                 # Parse classification types
                 types = [t.strip() for t in classification_types.split(",")]
-                
+
                 # Generate email ID
                 email_id = f"email-{uuid4().hex[:8]}"
-                
+
                 # Perform classifications
                 results = []
-                
+
                 for class_type in types:
                     if class_type == "spam_detection":
                         prediction, confidence = self.classifier.detect_spam(email_content)
@@ -410,7 +410,7 @@ class CrankEmailClassifier:
                             confidence=confidence,
                             details={"algorithm": "naive_bayes"}
                         ))
-                    
+
                     elif class_type == "bill_detection":
                         prediction, confidence = self.classifier.detect_bill(email_content)
                         results.append(EmailClassificationResult(
@@ -419,7 +419,7 @@ class CrankEmailClassifier:
                             confidence=confidence,
                             details={"algorithm": "naive_bayes"}
                         ))
-                    
+
                     elif class_type == "receipt_detection":
                         prediction, confidence = self.classifier.detect_receipt(email_content)
                         results.append(EmailClassificationResult(
@@ -428,16 +428,16 @@ class CrankEmailClassifier:
                             confidence=confidence,
                             details={"algorithm": "naive_bayes"}
                         ))
-                    
+
                     elif class_type == "sentiment_analysis":
                         prediction, confidence = self.classifier.analyze_sentiment(email_content)
                         results.append(EmailClassificationResult(
-                            classification_type="sentiment_analysis", 
+                            classification_type="sentiment_analysis",
                             prediction=prediction,
                             confidence=confidence,
                             details={"algorithm": "keyword_based"}
                         ))
-                    
+
                     elif class_type == "category":
                         prediction, confidence = self.classifier.classify_category(email_content)
                         results.append(EmailClassificationResult(
@@ -446,7 +446,7 @@ class CrankEmailClassifier:
                             confidence=confidence,
                             details={"algorithm": "naive_bayes"}
                         ))
-                    
+
                     elif class_type == "priority":
                         prediction, confidence = self.classifier.classify_priority(email_content)
                         results.append(EmailClassificationResult(
@@ -455,7 +455,7 @@ class CrankEmailClassifier:
                             confidence=confidence,
                             details={"algorithm": "keyword_based"}
                         ))
-                    
+
                     elif class_type == "language_detection":
                         prediction, confidence = self.classifier.detect_language(email_content)
                         results.append(EmailClassificationResult(
@@ -464,7 +464,7 @@ class CrankEmailClassifier:
                             confidence=confidence,
                             details={"algorithm": "langdetect"}
                         ))
-                
+
                 return ClassificationResponse(
                     success=True,
                     email_id=email_id,
@@ -476,11 +476,11 @@ class CrankEmailClassifier:
                         "worker_id": self.worker_id
                     }
                 )
-                
+
             except Exception as e:
                 logger.error(f"Classification error: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
-        
+
         @self.app.get("/plugin")
         async def get_plugin_metadata():
             """Get plugin metadata for platform integration."""
@@ -494,34 +494,34 @@ class CrankEmailClassifier:
                     return plugin_data
                 except Exception as e:
                     logger.warning(f"Failed to read plugin metadata: {e}")
-            
+
             # Fallback to hardcoded metadata
             return {
                 "name": "crank-email-classifier",
                 "version": "1.0.0",
                 "description": "ML-based email classification for spam detection and categorization",
                 "author": "Crank Platform Team",
-                "capabilities": ["spam_detection", "sentiment_analysis", "category", "priority", "language_detection"],
+                "capabilities": ["text_classification", "spam_detection", "sentiment_analysis", "category", "priority", "language_detection"],
                 "health_endpoint": "/health",
                 "separation_ready": True  # Indicates this worker is ready for repo separation
             }
-    
+
     def _create_adaptive_client(self, timeout: float = 10.0) -> httpx.AsyncClient:
         """Create HTTP client using in-memory certificates from Certificate Authority Service."""
-        
+
         # 🔐 Use in-memory certificates directly - no disk dependencies
         import ssl
         import tempfile
-        
+
         # For development-https, we need to create a custom SSL context with our CA certificate
         ssl_context = ssl.create_default_context()
-        
+
         if self.cert_store.ca_cert:
             # Create temporary CA certificate for httpx to use
             with tempfile.NamedTemporaryFile(mode='w', suffix='.crt', delete=False) as ca_file:
                 ca_file.write(self.cert_store.ca_cert)
                 ca_file.flush()
-                
+
                 # Configure httpx to trust our CA certificate
                 return httpx.AsyncClient(
                     verify=ca_file.name,
@@ -531,36 +531,36 @@ class CrankEmailClassifier:
             # Fallback for development - disable verification
             logger.warning("⚠️ No CA certificate available, using insecure client")
             return httpx.AsyncClient(verify=False, timeout=timeout)
-    
+
     async def _startup(self):
         """Startup handler - register with platform."""
         logger.info("🤖 Starting Crank Email Classifier...")
-        
+
         # Log security level for visibility (certificates already loaded synchronously)
         logger.info("� Using certificates loaded synchronously at startup")
-        
+
         # Prepare registration info
         worker_info = WorkerRegistration(
             worker_id=f"email-classifier-{uuid4().hex[:8]}",
             service_type="email_classification",
             endpoint=self.worker_url,
             health_url=f"{self.worker_url}/health",
-            capabilities=["spam_detection", "sentiment_analysis", "category", "priority", "language_detection"]
+            capabilities=["text_classification", "spam_detection", "sentiment_analysis", "category", "priority", "language_detection"]
         )
-        
+
         # Register with platform
         await self._register_with_platform(worker_info)
-        
+
         # Start heartbeat background task
         self._start_heartbeat_task()
-    
+
     def _start_heartbeat_task(self):
         """Start the background heartbeat task."""
         import asyncio
-        
+
         # Get heartbeat interval from environment (default 20 seconds)
         heartbeat_interval = int(os.getenv("WORKER_HEARTBEAT_INTERVAL", "20"))
-        
+
         async def heartbeat_loop():
             """Background task to send periodic heartbeats."""
             while True:
@@ -573,47 +573,47 @@ class CrankEmailClassifier:
                     break
                 except Exception as e:
                     logger.warning(f"Heartbeat failed: {e}")
-        
+
         # Start the background task
         asyncio.create_task(heartbeat_loop())
         logger.info(f"🫀 Started heartbeat task with {heartbeat_interval}s interval")
-    
+
     async def _send_heartbeat(self):
         """Send heartbeat to platform."""
         try:
             auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "dev-mesh-key")
             headers = {"Authorization": f"Bearer {auth_token}"}
-            
+
             # Prepare form data as expected by platform
             form_data = {
                 "service_type": "email_classification",
                 "load_score": "0.0"
             }
-            
+
             async with self._create_adaptive_client(timeout=10.0) as client:
                 response = await client.post(
                     f"{self.platform_url}/v1/workers/{self.worker_id}/heartbeat",
                     headers=headers,
                     data=form_data  # Send as form data, not JSON
                 )
-                
+
                 if response.status_code == 200:
                     logger.debug(f"💓 Heartbeat sent successfully for worker {self.worker_id}")
                 else:
                     logger.warning(f"Heartbeat failed: {response.status_code} - {response.text}")
-                    
+
         except Exception as e:
             logger.warning(f"Failed to send heartbeat: {e}")
-    
+
     async def _register_with_platform(self, worker_info: WorkerRegistration):
         """Register this worker with the platform using mTLS."""
         max_retries = 5
         retry_delay = 5  # seconds
-        
+
         # Auth token for platform
         auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "dev-mesh-key")
         headers = {"Authorization": f"Bearer {auth_token}"}
-        
+
         for attempt in range(max_retries):
             try:
                 # 🔒 ZERO-TRUST: Use mTLS client for secure communication
@@ -623,7 +623,7 @@ class CrankEmailClassifier:
                         json=worker_info.model_dump(),
                         headers=headers
                     )
-                    
+
                     if response.status_code == 200:
                         result = response.json()
                         self.worker_id = result.get("worker_id")
@@ -631,17 +631,17 @@ class CrankEmailClassifier:
                         return
                     else:
                         logger.warning(f"Registration attempt {attempt + 1} failed: {response.status_code} - {response.text}")
-                        
+
             except Exception as e:
                 logger.warning(f"Registration attempt {attempt + 1} failed: {e}")
-            
+
             if attempt < max_retries - 1:
                 logger.info(f"Retrying registration in {retry_delay} seconds...")
                 await asyncio.sleep(retry_delay)
-        
+
         logger.error("Failed to register with platform after all retries")
         # Continue running even if registration fails for development purposes
-    
+
     async def _shutdown(self):
         """Shutdown handler - deregister from platform using mTLS."""
         if self.worker_id:
@@ -665,11 +665,11 @@ def main():
     """Main entry point with HTTPS enforcement and Certificate Authority Service integration."""
     import uvicorn
     from pathlib import Path
-    
+
     # 🔒 ENFORCE HTTPS-ONLY MODE: No HTTP fallback allowed
     https_only = os.getenv("HTTPS_ONLY", "true").lower() == "true"
     ca_service_url = os.getenv("CA_SERVICE_URL")
-    
+
     if https_only and ca_service_url:
         print("🔐 Initializing certificates using SECURE CSR pattern...")
         try:
@@ -678,55 +678,55 @@ def main():
             sys.path.append('/app/scripts')
             import asyncio
             from crank_cert_initialize import main as init_certificates, cert_store
-            
+
             # Run secure certificate initialization
             asyncio.run(init_certificates())
-            
+
             # Check if certificates were loaded
             if cert_store.platform_cert is None:
                 raise RuntimeError("🚫 Certificate initialization completed but no certificates in memory")
-            
+
             print("✅ Certificates loaded successfully using SECURE CSR pattern")
             print("🔒 SECURITY: Private keys generated locally and never transmitted")
-            
+
             use_https = True
             logger.info("🔐 Using in-memory certificates from secure initialization")
         except Exception as e:
             raise RuntimeError(f"🚫 Failed to initialize certificates with CA service: {e}")
     else:
         raise RuntimeError("🚫 HTTPS_ONLY environment requires Certificate Authority Service")
-    
-    # 🚢 PORT CONFIGURATION: Use environment variables for flexible deployment  
+
+    # 🚢 PORT CONFIGURATION: Use environment variables for flexible deployment
     service_port = int(os.getenv("EMAIL_CLASSIFIER_PORT", "8200"))  # HTTP fallback port
     service_host = os.getenv("EMAIL_CLASSIFIER_HOST", "0.0.0.0")
     https_port = int(os.getenv("EMAIL_CLASSIFIER_HTTPS_PORT", "8201"))
-    
+
     # Create FastAPI app with pre-loaded certificates
     app = create_crank_email_classifier(cert_store=cert_store)
-    
+
     # 🔒 HTTPS-ONLY MODE: Always use HTTPS with Certificate Authority Service certificates
     if https_only:
         if not use_https:
             raise RuntimeError("🚫 HTTPS_ONLY=true but certificates not found. Cannot start service.")
         logger.info(f"🔒 Starting Crank Email Classifier with HTTPS/mTLS ONLY on port {https_port}")
         logger.info("🔐 Using in-memory certificates from Certificate Authority Service")
-        
+
         # Create SSL context from in-memory certificates (SECURE CSR pattern)
         try:
             import sys
             sys.path.append('/app/scripts')
             from crank_cert_initialize import cert_store
             ssl_context = cert_store.get_ssl_context()
-            
+
             print("🔒 Using certificates obtained via SECURE CSR pattern")
-            
+
             # Get the temporary certificate file paths for uvicorn
             cert_file = cert_store._temp_cert_file
             key_file = cert_store._temp_key_file
-            
+
             uvicorn.run(
-                app, 
-                host=service_host, 
+                app,
+                host=service_host,
                 port=https_port,
                 ssl_keyfile=key_file,
                 ssl_certfile=cert_file

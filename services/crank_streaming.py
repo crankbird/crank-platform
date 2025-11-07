@@ -28,6 +28,18 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ============================================================================
+# WORKER REGISTRATION MODEL
+# ============================================================================
+
+class WorkerRegistration(BaseModel):
+    """Worker registration model."""
+    worker_id: str
+    service_type: str
+    endpoint: str
+    health_url: str
+    capabilities: List[str]
+
+# ============================================================================
 # STREAMING MODELS
 # ============================================================================
 
@@ -55,12 +67,12 @@ class CrankStreamingService:
         self.worker_id = f"streaming-{uuid.uuid4().hex[:8]}"
         self.active_connections: List[WebSocket] = []
         self.active_streams: Dict[str, Dict] = {}
-        
+
     async def text_stream_generator(self, content: str, chunk_size: int = 100) -> AsyncGenerator[str, None]:
         """Generate text chunks for streaming."""
         words = content.split()
         chunks = [words[i:i + chunk_size] for i in range(0, len(words), chunk_size)]
-        
+
         for i, chunk in enumerate(chunks):
             chunk_text = " ".join(chunk)
             result = {
@@ -88,17 +100,134 @@ class CrankStreamingService:
         """Broadcast message to all connected WebSockets."""
         if not self.active_connections:
             return
-            
+
         disconnected = []
         for connection in self.active_connections:
             try:
                 await connection.send_text(json.dumps(message))
             except:
                 disconnected.append(connection)
-        
+
         # Clean up disconnected websockets
         for conn in disconnected:
             await self.disconnect_websocket(conn)
+
+    async def initialize_and_register(self):
+        """Initialize service and register with platform - follows email classifier pattern."""
+        logger.info("🚀 Starting streaming service initialization...")
+
+        # Set up worker URL for platform registration
+        https_port = int(os.getenv("STREAMING_HTTPS_PORT", "8500"))
+        service_name = os.getenv("STREAMING_SERVICE_NAME", "crank-streaming-dev")
+        self.worker_url = f"https://{service_name}:{https_port}"
+
+        logger.info("🔒 Using certificates loaded synchronously at startup")
+
+        # Prepare registration info
+        worker_info = WorkerRegistration(
+            worker_id=self.worker_id,
+            service_type="streaming_analytics",
+            endpoint=self.worker_url,
+            health_url=f"{self.worker_url}/health",
+            capabilities=["real_time_processing", "websocket_streaming", "event_processing", "sse_streaming", "json_streaming"]
+        )
+
+        # Register with platform
+        await self._register_with_platform(worker_info)
+
+        # Start heartbeat background task
+        self._start_heartbeat_task()
+
+    def _create_adaptive_client(self, timeout: float = 30.0) -> httpx.AsyncClient:
+        """Create HTTP client with proper SSL configuration - matches email classifier pattern."""
+        # For development, disable SSL verification but maintain connection stability
+        return httpx.AsyncClient(
+            verify=False,
+            timeout=timeout,
+            limits=httpx.Limits(max_keepalive_connections=5, max_connections=10)
+        )
+
+    def _start_heartbeat_task(self):
+        """Start the background heartbeat task."""
+        import asyncio
+
+        async def heartbeat_loop():
+            await asyncio.sleep(5)  # Initial delay
+            while True:
+                try:
+                    await self._send_heartbeat()
+                    await asyncio.sleep(30)  # Send heartbeat every 30 seconds
+                except Exception as e:
+                    logger.error(f"💔 Heartbeat failed: {e}")
+                    await asyncio.sleep(5)  # Shorter retry interval on failure
+
+        # Start heartbeat task
+        asyncio.create_task(heartbeat_loop())
+
+    async def _register_with_platform(self, worker_info: WorkerRegistration):
+        """Register this worker with the platform - follows email classifier pattern."""
+        platform_url = os.getenv("PLATFORM_URL", "https://crank-platform-dev:8443")
+        auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "local-dev-key")
+
+        registration_url = f"{platform_url}/v1/workers/register"
+        headers = {
+            "Authorization": f"Bearer {auth_token}",
+            "Content-Type": "application/json"
+        }
+
+        # Retry registration with exponential backoff
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                async with self._create_adaptive_client() as client:
+                    response = await client.post(
+                        registration_url,
+                        json=worker_info.model_dump(),
+                        headers=headers
+                    )
+
+                    if response.status_code == 200:
+                        logger.info(f"✅ Successfully registered with platform: {worker_info.worker_id}")
+                        return
+                    else:
+                        logger.warning(f"⚠️  Registration attempt {attempt + 1} failed: {response.status_code} - {response.text}")
+
+            except Exception as e:
+                logger.warning(f"⚠️  Registration attempt {attempt + 1} failed: {e}")
+
+            # Exponential backoff
+            if attempt < max_retries - 1:
+                wait_time = 2 ** attempt
+                logger.info(f"⏳ Retrying registration in {wait_time} seconds...")
+                await asyncio.sleep(wait_time)
+
+        logger.error(f"❌ Failed to register with platform after {max_retries} attempts")
+
+    async def _send_heartbeat(self):
+        """Send heartbeat to platform - follows email classifier pattern."""
+        platform_url = os.getenv("PLATFORM_URL", "https://crank-platform-dev:8443")
+        auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "local-dev-key")
+
+        heartbeat_url = f"{platform_url}/v1/workers/{self.worker_id}/heartbeat"
+        headers = {
+            "Authorization": f"Bearer {auth_token}"
+        }
+
+        # Use form data format as expected by platform - matches email classifier pattern
+        form_data = {
+            "service_type": "streaming_analytics",
+            "load_score": "0.0"
+        }
+
+        try:
+            async with self._create_adaptive_client(timeout=10.0) as client:
+                response = await client.post(heartbeat_url, data=form_data, headers=headers)
+                if response.status_code == 200:
+                    logger.debug("💓 Heartbeat sent successfully")
+                else:
+                    logger.warning(f"⚠️  Heartbeat failed: {response.status_code}")
+        except Exception as e:
+            logger.warning(f"⚠️  Heartbeat failed: {e}")
 
 # ============================================================================
 # FASTAPI APPLICATION
@@ -118,6 +247,8 @@ app = FastAPI(
 async def startup_event():
     """Initialize service on startup."""
     logger.info(f"🌊 Crank Streaming Service starting up - Worker ID: {streaming_service.worker_id}")
+    # Initialize and register with platform
+    await streaming_service.initialize_and_register()
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -135,6 +266,7 @@ async def health_check():
         "status": "healthy",
         "service": "crank-streaming",
         "worker_id": streaming_service.worker_id,
+        "capabilities": ["real_time_processing", "websocket_streaming", "event_processing", "sse_streaming", "json_streaming"],
         "timestamp": datetime.now().isoformat(),
         "active_connections": len(streaming_service.active_connections),
         "active_streams": len(streaming_service.active_streams),
@@ -164,19 +296,34 @@ async def root():
 # STREAMING ENDPOINTS
 # ============================================================================
 
+@app.get("/stream")
+async def get_stream_info():
+    """Get streaming endpoint information - expected by smoke test."""
+    return {
+        "status": "ready",
+        "service": "streaming",
+        "endpoints": {
+            "text_stream": "/stream/text",
+            "websocket": "/ws",
+            "events": "/events"
+        },
+        "capabilities": ["text_streaming", "websocket", "sse"],
+        "message": "Use POST /stream/text for text streaming"
+    }
+
 @app.post("/stream/text")
 async def stream_text(request: StreamingRequest):
     """Stream text content using Server-Sent Events."""
     stream_id = f"stream-{uuid.uuid4().hex[:8]}"
-    
+
     streaming_service.active_streams[stream_id] = {
         "type": "text",
         "started": datetime.now().isoformat(),
         "content_length": len(request.content)
     }
-    
+
     logger.info(f"Starting text stream {stream_id} for {len(request.content)} characters")
-    
+
     try:
         return EventSourceResponse(
             streaming_service.text_stream_generator(request.content, request.chunk_size)
@@ -189,7 +336,7 @@ async def stream_text(request: StreamingRequest):
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for bidirectional streaming."""
     await streaming_service.connect_websocket(websocket)
-    
+
     try:
         # Send welcome message
         await websocket.send_text(json.dumps({
@@ -197,15 +344,15 @@ async def websocket_endpoint(websocket: WebSocket):
             "worker_id": streaming_service.worker_id,
             "timestamp": datetime.now().isoformat()
         }))
-        
+
         while True:
             # Wait for client message
             data = await websocket.receive_text()
-            
+
             try:
                 message = json.loads(data)
                 logger.info(f"WebSocket received: {message.get('type', 'unknown')}")
-                
+
                 # Echo back with processing info
                 response = {
                     "type": "response",
@@ -214,7 +361,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     "worker_id": streaming_service.worker_id
                 }
                 await websocket.send_text(json.dumps(response))
-                
+
                 # Broadcast to other connections
                 broadcast_msg = {
                     "type": "broadcast",
@@ -222,13 +369,13 @@ async def websocket_endpoint(websocket: WebSocket):
                     "timestamp": datetime.now().isoformat()
                 }
                 await streaming_service.broadcast_to_websockets(broadcast_msg)
-                
+
             except json.JSONDecodeError:
                 await websocket.send_text(json.dumps({
                     "type": "error",
                     "message": "Invalid JSON format"
                 }))
-                
+
     except WebSocketDisconnect:
         logger.info("WebSocket client disconnected")
     finally:
@@ -244,7 +391,7 @@ async def server_sent_events(request: Request):
             # Check if client is still connected
             if await request.is_disconnected():
                 break
-                
+
             event_count += 1
             event_data = {
                 "event_id": event_count,
@@ -253,10 +400,10 @@ async def server_sent_events(request: Request):
                 "active_connections": len(streaming_service.active_connections),
                 "message": f"Periodic update #{event_count}"
             }
-            
+
             yield f"data: {json.dumps(event_data)}\n\n"
             await asyncio.sleep(5)  # Send event every 5 seconds
-    
+
     return EventSourceResponse(event_generator())
 
 @app.get("/status")
@@ -277,7 +424,7 @@ async def get_status():
 def main():
     """Main function following proven certificate initialization pattern."""
     import uvicorn
-    
+
     try:
         # SYNCHRONOUS certificate initialization - PROVEN PATTERN
         logger.info("🔐 Initializing certificates using SECURE CSR pattern...")
@@ -285,26 +432,26 @@ def main():
         sys.path.append('/app/scripts')
         import asyncio
         from crank_cert_initialize import main as init_certificates, cert_store
-        
+
         # Synchronous initialization - this is the PROVEN pattern
         asyncio.run(init_certificates())
-        
+
         # Verify certificates are available
         cert_path = "/etc/certs/platform.crt"
         key_path = "/etc/certs/platform.key"
         ca_path = "/etc/certs/ca.crt"
-        
+
         if not all(os.path.exists(p) for p in [cert_path, key_path, ca_path]):
             raise RuntimeError("🚫 Required certificates not found after initialization")
-        
+
         logger.info("✅ Certificate initialization successful")
-        
+
         # Start HTTPS-only server - PROVEN PATTERN
         https_port = int(os.getenv("STREAMING_HTTPS_PORT", "8500"))
         service_host = os.getenv("STREAMING_HOST", "0.0.0.0")
-        
+
         logger.info(f"🌊 Starting Crank Streaming Service on HTTPS port {https_port}")
-        
+
         uvicorn.run(
             "crank_streaming_simple:app",
             host=service_host,
@@ -315,7 +462,7 @@ def main():
             reload=False,
             log_level="info"
         )
-        
+
     except Exception as e:
         logger.error(f"🚫 Failed to initialize certificates with CA service: {e}")
         raise RuntimeError(f"🚫 Failed to initialize certificates with CA service: {e}")

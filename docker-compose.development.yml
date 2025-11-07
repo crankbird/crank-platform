@@ -245,14 +245,6 @@ services:
     depends_on:
       crank-platform-dev:
         condition: service_healthy
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities:
-                - gpu
     restart: unless-stopped
     networks:
       - crank-local-net

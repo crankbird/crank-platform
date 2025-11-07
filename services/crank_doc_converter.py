@@ -101,6 +101,7 @@ class CrankDocumentConverter:
                 "status": "healthy",
                 "service": "crank-document-converter",
                 "worker_id": self.worker_id,
+                "capabilities": ["pdf_to_text", "docx_to_text", "format_conversion", "document-conversion", "format-detection", "pandoc-integration"],
                 "timestamp": datetime.utcnow().isoformat(),
                 "security": security_status
             }

@@ -1,0 +1,643 @@
+{
+  "timestamp": "2025-11-07T16:23:27.988564",
+  "test_suite": "Enhanced Smoke Test",
+  "total_services": 8,
+  "container_status": {
+    "crank-streaming-dev": {
+      "status": "Up 30 seconds (healthy)",
+      "state": "running",
+      "ports": "0.0.0.0:8500->8500/tcp, [::]:8500->8500/tcp"
+    },
+    "crank-email-parser-dev": {
+      "status": "Up 35 seconds (healthy)",
+      "state": "running",
+      "ports": "0.0.0.0:8300->8300/tcp, [::]:8300->8300/tcp"
+    },
+    "crank-image-classifier-cpu-dev": {
+      "status": "Up 35 seconds (healthy)",
+      "state": "running",
+      "ports": "0.0.0.0:8401->8401/tcp, [::]:8401->8401/tcp"
+    },
+    "crank-email-classifier-dev": {
+      "status": "Up 35 seconds (healthy)",
+      "state": "running",
+      "ports": "0.0.0.0:8200->8200/tcp, [::]:8200->8200/tcp"
+    },
+    "crank-doc-converter-dev": {
+      "status": "Up 35 seconds (healthy)",
+      "state": "running",
+      "ports": "0.0.0.0:8100->8100/tcp, [::]:8100->8100/tcp"
+    },
+    "crank-image-classifier-gpu-dev": {
+      "status": "Up 35 seconds (healthy)",
+      "state": "running",
+      "ports": "0.0.0.0:8400->8400/tcp, [::]:8400->8400/tcp"
+    },
+    "crank-platform-dev": {
+      "status": "Up 41 seconds (healthy)",
+      "state": "running",
+      "ports": "0.0.0.0:8443->8443/tcp, [::]:8443->8443/tcp"
+    },
+    "crank-cert-authority-dev": {
+      "status": "Up 46 seconds (healthy)",
+      "state": "running",
+      "ports": "0.0.0.0:9090->9090/tcp, [::]:9090->9090/tcp"
+    }
+  },
+  "health_checks": {
+    "crank-doc-converter-dev": {
+      "status_code": 200,
+      "response_time_ms": 49.33,
+      "healthy": true,
+      "endpoint": "https://localhost:8100/health",
+      "response_data": {
+        "status": "healthy",
+        "service": "crank-document-converter",
+        "worker_id": "doc-converter-c5f3a7db",
+        "capabilities": [
+          "pdf_to_text",
+          "docx_to_text",
+          "format_conversion",
+          "document-conversion",
+          "format-detection",
+          "pandoc-integration"
+        ],
+        "timestamp": "2025-11-07T05:23:28.148760",
+        "security": {
+          "ssl_enabled": true,
+          "ca_cert_available": true,
+          "certificate_source": "Certificate Authority Service"
+        }
+      },
+      "service_info": "crank-document-converter"
+    },
+    "crank-email-parser-dev": {
+      "status_code": 200,
+      "response_time_ms": 14.44,
+      "healthy": true,
+      "endpoint": "https://localhost:8300/health",
+      "response_data": {
+        "status": "healthy",
+        "service": "crank-email-parser",
+        "service_id": "email-parser-d687f971",
+        "capabilities": [
+          "mbox_parsing",
+          "eml_parsing",
+          "attachment_extraction",
+          "bulk_processing"
+        ]
+      },
+      "service_info": "crank-email-parser"
+    },
+    "crank-email-classifier-dev": {
+      "status_code": 200,
+      "response_time_ms": 9.55,
+      "healthy": true,
+      "endpoint": "https://localhost:8200/health",
+      "response_data": {
+        "status": "healthy",
+        "service": "crank-email-classifier",
+        "capabilities": [
+          "text_classification",
+          "spam_detection",
+          "bill_detection",
+          "receipt_detection",
+          "sentiment_analysis",
+          "category",
+          "priority",
+          "language_detection"
+        ],
+        "ml_models": "initialized",
+        "security": {},
+        "timestamp": "2025-11-07T05:23:28.174050"
+      },
+      "service_info": "crank-email-classifier"
+    },
+    "crank-image-classifier-cpu-dev": {
+      "status_code": 200,
+      "response_time_ms": 9.7,
+      "healthy": true,
+      "endpoint": "https://localhost:8401/health",
+      "response_data": {
+        "status": "healthy",
+        "service": "crank-image-classifier",
+        "worker_id": "image-classifier-04b82df4",
+        "capabilities": [
+          "basic_classification",
+          "cpu_inference",
+          "image-classification",
+          "object-detection",
+          "scene-analysis",
+          "cpu-processing"
+        ],
+        "timestamp": "2025-11-07T05:23:28.184228",
+        "gpu_available": false,
+        "security": {
+          "ssl_enabled": true,
+          "ca_cert_available": true,
+          "certificate_source": "Certificate Authority Service"
+        }
+      },
+      "service_info": "crank-image-classifier"
+    },
+    "crank-image-classifier-gpu-dev": {
+      "status_code": 200,
+      "response_time_ms": 9.31,
+      "healthy": true,
+      "endpoint": "https://localhost:8400/health",
+      "response_data": {
+        "status": "healthy",
+        "service": "crank-image-classifier",
+        "worker_id": "image-classifier-39ec6e6d",
+        "capabilities": [
+          "advanced_classification",
+          "gpu_inference",
+          "real_time_processing",
+          "image-classification",
+          "object-detection",
+          "scene-analysis",
+          "cpu-processing"
+        ],
+        "timestamp": "2025-11-07T05:23:28.193730",
+        "gpu_available": false,
+        "security": {
+          "ssl_enabled": true,
+          "ca_cert_available": true,
+          "certificate_source": "Certificate Authority Service"
+        }
+      },
+      "service_info": "crank-image-classifier"
+    },
+    "crank-streaming-dev": {
+      "status_code": 200,
+      "response_time_ms": 13.45,
+      "healthy": true,
+      "endpoint": "https://localhost:8500/health",
+      "response_data": {
+        "status": "healthy",
+        "service": "crank-streaming",
+        "worker_id": "streaming-338818bd",
+        "capabilities": [
+          "real_time_processing",
+          "websocket_streaming",
+          "event_processing",
+          "sse_streaming",
+          "json_streaming"
+        ],
+        "timestamp": "2025-11-07T05:23:28.207629",
+        "active_connections": 0,
+        "active_streams": 0,
+        "security": {
+          "ssl_enabled": true,
+          "ca_cert_available": true
+        }
+      },
+      "service_info": "crank-streaming"
+    },
+    "crank-platform-dev": {
+      "status_code": 200,
+      "response_time_ms": 9.56,
+      "healthy": true,
+      "endpoint": "https://localhost:8443/health/live",
+      "response_data": {
+        "status": "live",
+        "service": "crank-platform",
+        "timestamp": "2025-11-07T05:23:28.217584+00:00",
+        "modules": [
+          "diagnostics",
+          "auth",
+          "billing",
+          "discovery"
+        ]
+      },
+      "service_info": "crank-platform"
+    },
+    "crank-cert-authority-dev": {
+      "status_code": 200,
+      "response_time_ms": 6.34,
+      "healthy": true,
+      "endpoint": "https://localhost:9090/health",
+      "response_data": {
+        "status": "healthy",
+        "service": "certificate-authority",
+        "provider": "development"
+      },
+      "service_info": "certificate-authority"
+    }
+  },
+  "platform_registration": {
+    "worker_list": {
+      "accessible": true,
+      "worker_count": 6,
+      "workers": [
+        {
+          "worker_id": "email-parser-d687f971",
+          "endpoint": "https://crank-email-parser:8300",
+          "capabilities": [
+            "mbox_parsing",
+            "eml_parsing",
+            "attachment_extraction",
+            "bulk_processing",
+            "archive_analysis"
+          ],
+          "last_seen": "2025-11-07T05:23:13.161428+00:00",
+          "load_score": 0.3,
+          "service_type": "email_parsing"
+        },
+        {
+          "worker_id": "image-classifier-04b82df4",
+          "endpoint": "https://crank-image-classifier:8400",
+          "capabilities": [
+            "image-classification",
+            "object-detection",
+            "scene-analysis",
+            "cpu-processing"
+          ],
+          "last_seen": "2025-11-07T05:23:13.284104+00:00",
+          "load_score": 0.2,
+          "service_type": "image_classification"
+        },
+        {
+          "worker_id": "image-classifier-39ec6e6d",
+          "endpoint": "https://crank-image-classifier:8400",
+          "capabilities": [
+            "image-classification",
+            "object-detection",
+            "scene-analysis",
+            "cpu-processing"
+          ],
+          "last_seen": "2025-11-07T05:23:13.841333+00:00",
+          "load_score": 0.2,
+          "service_type": "image_classification"
+        },
+        {
+          "worker_id": "doc-converter-c5f3a7db",
+          "endpoint": "https://crank-doc-converter:8100",
+          "capabilities": [
+            "document-conversion",
+            "format-detection",
+            "pandoc-integration"
+          ],
+          "last_seen": "2025-11-07T05:23:13.304303+00:00",
+          "load_score": 0.4,
+          "service_type": "document_conversion"
+        },
+        {
+          "worker_id": "email-classifier-0a6b2fb7",
+          "endpoint": "https://crank-email-classifier:8201",
+          "capabilities": [
+            "text_classification",
+            "spam_detection",
+            "sentiment_analysis",
+            "category",
+            "priority",
+            "language_detection"
+          ],
+          "last_seen": "2025-11-07T05:23:14.467014+00:00",
+          "load_score": 0.0,
+          "service_type": "email_classification"
+        },
+        {
+          "worker_id": "streaming-338818bd",
+          "endpoint": "https://crank-streaming-dev:8500",
+          "capabilities": [
+            "real_time_processing",
+            "websocket_streaming",
+            "event_processing",
+            "sse_streaming",
+            "json_streaming"
+          ],
+          "last_seen": "2025-11-07T05:23:03.540737+00:00",
+          "load_score": 0.0,
+          "service_type": "streaming_analytics"
+        }
+      ],
+      "workers_by_type": {
+        "email_parsing": [
+          {
+            "worker_id": "email-parser-d687f971",
+            "endpoint": "https://crank-email-parser:8300",
+            "capabilities": [
+              "mbox_parsing",
+              "eml_parsing",
+              "attachment_extraction",
+              "bulk_processing",
+              "archive_analysis"
+            ],
+            "last_seen": "2025-11-07T05:23:13.161428+00:00",
+            "load_score": 0.3,
+            "service_type": "email_parsing"
+          }
+        ],
+        "image_classification": [
+          {
+            "worker_id": "image-classifier-04b82df4",
+            "endpoint": "https://crank-image-classifier:8400",
+            "capabilities": [
+              "image-classification",
+              "object-detection",
+              "scene-analysis",
+              "cpu-processing"
+            ],
+            "last_seen": "2025-11-07T05:23:13.284104+00:00",
+            "load_score": 0.2,
+            "service_type": "image_classification"
+          },
+          {
+            "worker_id": "image-classifier-39ec6e6d",
+            "endpoint": "https://crank-image-classifier:8400",
+            "capabilities": [
+              "image-classification",
+              "object-detection",
+              "scene-analysis",
+              "cpu-processing"
+            ],
+            "last_seen": "2025-11-07T05:23:13.841333+00:00",
+            "load_score": 0.2,
+            "service_type": "image_classification"
+          }
+        ],
+        "document_conversion": [
+          {
+            "worker_id": "doc-converter-c5f3a7db",
+            "endpoint": "https://crank-doc-converter:8100",
+            "capabilities": [
+              "document-conversion",
+              "format-detection",
+              "pandoc-integration"
+            ],
+            "last_seen": "2025-11-07T05:23:13.304303+00:00",
+            "load_score": 0.4,
+            "service_type": "document_conversion"
+          }
+        ],
+        "email_classification": [
+          {
+            "worker_id": "email-classifier-0a6b2fb7",
+            "endpoint": "https://crank-email-classifier:8201",
+            "capabilities": [
+              "text_classification",
+              "spam_detection",
+              "sentiment_analysis",
+              "category",
+              "priority",
+              "language_detection"
+            ],
+            "last_seen": "2025-11-07T05:23:14.467014+00:00",
+            "load_score": 0.0,
+            "service_type": "email_classification"
+          }
+        ],
+        "streaming_analytics": [
+          {
+            "worker_id": "streaming-338818bd",
+            "endpoint": "https://crank-streaming-dev:8500",
+            "capabilities": [
+              "real_time_processing",
+              "websocket_streaming",
+              "event_processing",
+              "sse_streaming",
+              "json_streaming"
+            ],
+            "last_seen": "2025-11-07T05:23:03.540737+00:00",
+            "load_score": 0.0,
+            "service_type": "streaming_analytics"
+          }
+        ]
+      }
+    },
+    "doc_converter": {
+      "registered": true
+    },
+    "email_parser": {
+      "registered": true
+    },
+    "email_classifier": {
+      "registered": true
+    },
+    "image_classifier_cpu": {
+      "registered": true
+    },
+    "image_classifier_gpu": {
+      "registered": true
+    },
+    "streaming": {
+      "registered": true
+    }
+  },
+  "api_functionality": {
+    "doc_converter": {
+      "service": "Document Conversion (In-Memory)",
+      "endpoints": {
+        "/health": {
+          "status_code": 200,
+          "accessible": true,
+          "response_time_ms": 8.29,
+          "functional": true
+        },
+        "/convert": {
+          "status_code": 405,
+          "accessible": false,
+          "response_time_ms": 0.91,
+          "functional": true
+        },
+        "/docs": {
+          "status_code": 200,
+          "accessible": true,
+          "response_time_ms": 0.86,
+          "functional": true
+        }
+      },
+      "functional": true
+    },
+    "email_parser": {
+      "service": "File Processing (Large Files)",
+      "endpoints": {
+        "/health": {
+          "status_code": 200,
+          "accessible": true,
+          "response_time_ms": 8.13,
+          "functional": true
+        },
+        "/parse": {
+          "status_code": 404,
+          "accessible": false,
+          "response_time_ms": 0.99,
+          "functional": false
+        },
+        "/docs": {
+          "status_code": 200,
+          "accessible": true,
+          "response_time_ms": 0.85,
+          "functional": true
+        }
+      },
+      "functional": true
+    },
+    "email_classifier": {
+      "service": "Message Text Classification",
+      "endpoints": {
+        "/health": {
+          "status_code": 200,
+          "accessible": true,
+          "response_time_ms": 7.85,
+          "functional": true
+        },
+        "/classify": {
+          "status_code": 405,
+          "accessible": false,
+          "response_time_ms": 1.03,
+          "functional": true
+        },
+        "/docs": {
+          "status_code": 200,
+          "accessible": true,
+          "response_time_ms": 0.83,
+          "functional": true
+        }
+      },
+      "functional": true
+    },
+    "image_classifier_cpu": {
+      "service": "Still Image Classification (CPU)",
+      "endpoints": {
+        "/health": {
+          "status_code": 200,
+          "accessible": true,
+          "response_time_ms": 7.89,
+          "functional": true
+        },
+        "/classify": {
+          "status_code": 405,
+          "accessible": false,
+          "response_time_ms": 1.04,
+          "functional": true
+        },
+        "/docs": {
+          "status_code": 200,
+          "accessible": true,
+          "response_time_ms": 1.25,
+          "functional": true
+        }
+      },
+      "functional": true
+    },
+    "image_classifier_gpu": {
+      "service": "Still Image Classification (GPU)",
+      "endpoints": {
+        "/health": {
+          "status_code": 200,
+          "accessible": true,
+          "response_time_ms": 9.18,
+          "functional": true
+        },
+        "/classify": {
+          "status_code": 405,
+          "accessible": false,
+          "response_time_ms": 1.37,
+          "functional": true
+        },
+        "/docs": {
+          "status_code": 200,
+          "accessible": true,
+          "response_time_ms": 0.89,
+          "functional": true
+        }
+      },
+      "functional": true
+    },
+    "streaming": {
+      "service": "Streaming Data Processing",
+      "endpoints": {
+        "/health": {
+          "status_code": 200,
+          "accessible": true,
+          "response_time_ms": 9.32,
+          "functional": true
+        },
+        "/stream": {
+          "status_code": 200,
+          "accessible": true,
+          "response_time_ms": 0.93,
+          "functional": true
+        },
+        "/docs": {
+          "status_code": 200,
+          "accessible": true,
+          "response_time_ms": 0.96,
+          "functional": true
+        }
+      },
+      "functional": true
+    }
+  },
+  "archetype_validation": {
+    "doc_converter": {
+      "archetype": "Document Conversion (In-Memory)",
+      "capabilities_validated": true,
+      "gpu_validation": null,
+      "pattern_compliance": true
+    },
+    "email_parser": {
+      "archetype": "File Processing (Large Files)",
+      "capabilities_validated": true,
+      "gpu_validation": null,
+      "pattern_compliance": true
+    },
+    "email_classifier": {
+      "archetype": "Message Text Classification",
+      "capabilities_validated": true,
+      "gpu_validation": null,
+      "pattern_compliance": true
+    },
+    "image_classifier_cpu": {
+      "archetype": "Still Image Classification (CPU)",
+      "capabilities_validated": true,
+      "gpu_validation": null,
+      "pattern_compliance": true
+    },
+    "image_classifier_gpu": {
+      "archetype": "Still Image Classification (GPU)",
+      "capabilities_validated": true,
+      "gpu_validation": {
+        "required": true,
+        "available": false
+      },
+      "pattern_compliance": true
+    },
+    "streaming": {
+      "archetype": "Streaming Data Processing",
+      "capabilities_validated": true,
+      "gpu_validation": null,
+      "pattern_compliance": true
+    }
+  },
+  "cross_service_communication": {
+    "platform_to_workers": true,
+    "worker_count": 6,
+    "reachable_workers": [
+      "email_parsing",
+      "image_classification",
+      "image_classification",
+      "document_conversion",
+      "streaming_analytics"
+    ]
+  },
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "warnings": [
+      "Still Image Classification (GPU) GPU not available"
+    ],
+    "critical_failures": [],
+    "archetype_status": {
+      "doc_converter": true,
+      "email_parser": true,
+      "email_classifier": true,
+      "image_classifier_cpu": true,
+      "image_classifier_gpu": true,
+      "streaming": true
+    },
+    "overall_success": true
+  }
+}

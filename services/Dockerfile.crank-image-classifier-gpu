@@ -16,8 +16,8 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy requirements and install Python dependencies
-COPY services/requirements-crank-image-classifier.txt .
-RUN pip install --no-cache-dir -r requirements-crank-image-classifier.txt
+COPY services/requirements-universal-gpu.txt .
+RUN pip install --no-cache-dir -r requirements-universal-gpu.txt
 
 # Copy service files
 COPY services/crank_image_classifier.py ./crank_image_classifier_simple.py

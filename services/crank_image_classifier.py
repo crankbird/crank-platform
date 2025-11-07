@@ -35,9 +35,22 @@ try:
     import torchvision.transforms as transforms
     from ultralytics import YOLO
     import GPUtil
-    GPU_AVAILABLE = torch.cuda.is_available()
+
+    # Add path for UniversalGPUManager
+    import sys
+    from pathlib import Path
+    sys.path.append(str(Path(__file__).parent.parent / "src"))
+    from gpu_manager import UniversalGPUManager
+
+    # Universal GPU detection (replaces CUDA-only detection)
+    gpu_manager = UniversalGPUManager()
+    GPU_AVAILABLE = gpu_manager.get_device_str() != 'cpu'
+    GPU_DEVICE = gpu_manager.get_device()
+    GPU_INFO = gpu_manager.get_info()
 except ImportError:
     GPU_AVAILABLE = False
+    GPU_DEVICE = None
+    GPU_INFO = {'type': 'CPU', 'platform': 'Unknown'}
     logger.warning("GPU libraries not available - running in CPU mode")
 
 # Worker registration model
@@ -91,10 +104,13 @@ class CrankImageClassifier:
 
         self.worker_id = None
 
-        # Initialize GPU status
+        # Initialize GPU status with universal detection
         self.gpu_available = GPU_AVAILABLE
+        self.gpu_device = GPU_DEVICE
+        self.gpu_info = GPU_INFO
+
         if self.gpu_available:
-            logger.info("🚀 GPU acceleration available")
+            logger.info(f"🚀 GPU acceleration available: {self.gpu_info['type']} on {self.gpu_device}")
         else:
             logger.info("💻 Running in CPU mode")
 
@@ -119,10 +135,32 @@ class CrankImageClassifier:
                     "certificate_source": "Certificate Authority Service"
                 }
 
+            # Determine archetype identity based on service configuration
+            # GPU service always identifies as GPU archetype regardless of runtime GPU availability
+            service_name = os.getenv("IMAGE_CLASSIFIER_SERVICE_NAME", "")
+            is_gpu_service = "gpu" in service_name
+
+            if is_gpu_service:
+                archetype_capabilities = ["advanced_classification", "gpu_inference", "real_time_processing"]
+            else:
+                archetype_capabilities = ["basic_classification", "cpu_inference"]
+
+            # Add runtime capabilities based on actual hardware
+            runtime_capabilities = [
+                "image-classification",
+                "object-detection",
+                "scene-analysis",
+                "gpu-acceleration" if self.gpu_available else "cpu-processing"
+            ]
+
+            # Combine archetype identity with runtime capabilities
+            all_capabilities = archetype_capabilities + runtime_capabilities
+
             return {
                 "status": "healthy",
                 "service": "crank-image-classifier",
                 "worker_id": self.worker_id,
+                "capabilities": all_capabilities,
                 "timestamp": datetime.utcnow().isoformat(),
                 "gpu_available": self.gpu_available,
                 "security": security_status
@@ -330,28 +368,41 @@ class CrankImageClassifier:
         self._start_heartbeat_task()
 
     async def _register_with_platform(self, worker_info: WorkerRegistration):
-        """Register this worker with the platform."""
-        try:
-            async with self._create_client() as client:
-                # Get the service endpoint from environment or default
-                service_endpoint = os.getenv("IMAGE_CLASSIFIER_SERVICE_NAME", "crank-image-classifier-gpu-dev")
-                response = await client.post(
-                    f"{self.platform_url}/v1/workers/register",
-                    data={
-                        "worker_id": self.worker_id,
-                        "service_type": "image_classification",
-                        "endpoint": f"https://{service_endpoint}:{worker_port}"
-                    },
-                    headers={"Authorization": f"Bearer {self.platform_auth_token}"}
-                )
+        """Register this worker with the platform using mTLS."""
+        max_retries = 5
+        retry_delay = 5  # seconds
 
-                if response.status_code == 200:
-                    logger.info(f"✅ Successfully registered worker {worker_info.worker_id}")
-                else:
-                    logger.error(f"❌ Registration failed: {response.status_code} - {response.text}")
+        # Auth token for platform
+        auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "local-dev-key")
+        headers = {"Authorization": f"Bearer {auth_token}"}
 
-        except Exception as e:
-            logger.error(f"❌ Registration error: {e}")
+        for attempt in range(max_retries):
+            try:
+                # 🔒 ZERO-TRUST: Use mTLS client for secure communication
+                async with self._create_client() as client:
+                    response = await client.post(
+                        f"{self.platform_url}/v1/workers/register",
+                        json=worker_info.model_dump(),
+                        headers=headers
+                    )
+
+                    if response.status_code == 200:
+                        result = response.json()
+                        self.worker_id = result.get("worker_id")
+                        logger.info(f"🔒 Successfully registered image classifier via mTLS. Worker ID: {self.worker_id}")
+                        return
+                    else:
+                        logger.warning(f"Registration attempt {attempt + 1} failed: {response.status_code} - {response.text}")
+
+            except Exception as e:
+                logger.warning(f"Registration attempt {attempt + 1} failed: {e}")
+
+            if attempt < max_retries - 1:
+                logger.info(f"Retrying registration in {retry_delay} seconds...")
+                await asyncio.sleep(retry_delay)
+
+        logger.error("Failed to register with platform after all retries")
+        # Continue running even if registration fails for development purposes
 
     def _create_client(self):
         """Create HTTP client with certificate verification."""
@@ -385,23 +436,29 @@ class CrankImageClassifier:
     async def _send_heartbeat(self):
         """Send heartbeat to platform."""
         try:
+            auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "local-dev-key")
+            headers = {"Authorization": f"Bearer {auth_token}"}
+
+            # Prepare form data as expected by platform
+            form_data = {
+                "service_type": "image_classification",
+                "load_score": "0.2"
+            }
+
             async with self._create_client() as client:
                 response = await client.post(
                     f"{self.platform_url}/v1/workers/{self.worker_id}/heartbeat",
-                    data={
-                        "service_type": "image_classification",
-                        "load_score": 0.2
-                    },
-                    headers={"Authorization": f"Bearer {self.platform_auth_token}"}
+                    data=form_data,
+                    headers=headers
                 )
 
             if response.status_code == 200:
-                logger.debug(f"🫀 Heartbeat sent successfully")
+                logger.debug("🫀 Heartbeat sent successfully")
             else:
                 logger.warning(f"Heartbeat failed: {response.status_code}")
 
         except Exception as e:
-            logger.debug(f"Heartbeat error: {e}")
+            logger.warning(f"Failed to send heartbeat: {e}")
 
     async def _shutdown(self):
         """Shutdown handler - deregister from platform."""

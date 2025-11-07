@@ -110,6 +110,7 @@ JEMM Decision Framework:
 
 - **[Quick Start Guide](QUICK_START.md)** - Get running in 5 minutes
 - **[Azure Setup Guide](AZURE_SETUP_GUIDE.md)** - Cloud deployment walkthrough
+- **[Universal GPU Dependencies](scripts/QUICK_START.md)** - Automated dependency installation for GPU services
 - **[Enhancement Roadmap](ENHANCEMENT_ROADMAP.md)** - Platform development plan
 - **[Legacy Integration Guide](LEGACY_INTEGRATION.md)** - Industrial & enterprise system integration
 - **[Mesh Interface Design](mesh-interface-design.md)** - Universal service architecture
