@@ -96,7 +96,10 @@ The platform includes a comprehensive validation script to check all host requir
 - uv package manager availability
 - GPU container access validation
 
-## Container-First Development Workflow### Development Environment Setup
+## Container-First Development Workflow
+
+### Development Environment Setup
+
 ```bash
 # 1. Validate host environment
 ./scripts/validate-host-environment.sh

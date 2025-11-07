@@ -1121,7 +1121,7 @@ services/
 ### Container-First Development Workflow
 
 ```bash
-# 1. Validate all build manifests
+# 1. Generate development stack (validation runs automatically)
 python3 tools/container-build-system.py development
 
 # 2. Generate Docker Compose for specific environment

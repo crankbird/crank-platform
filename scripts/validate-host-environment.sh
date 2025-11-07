@@ -31,29 +31,28 @@ echo "🎮 GPU Runtime Validation:"
 
 # Apple Silicon Detection
 if [[ "$(uname -m)" == "arm64" ]] && [[ "$(uname)" == "Darwin" ]]; then
-    echo "🍎 Apple Silicon detected - checking Metal/MPS support..."
+    echo "🍎 Apple Silicon detected - checking Docker Desktop..."
 
-    # Use pytorch/pytorch image that actually has PyTorch installed
-    if docker run --rm pytorch/pytorch:latest python -c "
-import torch
-import sys
-print(f'Platform: Apple Silicon')
-print(f'PyTorch: {torch.__version__}')
-if hasattr(torch.backends, 'mps'):
-    print(f'MPS Backend Available: {torch.backends.mps.is_available()}')
-    if torch.backends.mps.is_available():
-        print('✅ Metal Performance Shaders (MPS) ready for GPU acceleration')
-    else:
-        print('ℹ️  MPS detected but not available (may need macOS 12.3+)')
-else:
-    print('⚠️  MPS Backend: Not available in this PyTorch version')
-" 2>/dev/null; then
-        echo "✅ Apple Silicon GPU runtime ready"
+    # Check Docker Desktop is installed (required for Apple Silicon)
+    if docker info | grep -q "Operating System.*Docker Desktop"; then
+        echo "✅ Docker Desktop detected"
+
+        # Quick platform test (skip heavy MPS testing - can't access Metal from Linux container)
+        if docker run --rm --platform linux/arm64 hello-world >/dev/null 2>&1; then
+            echo "✅ ARM64 container support working"
+        else
+            echo "⚠️  ARM64 container support may have issues"
+        fi
+
+        echo "ℹ️  Note: MPS/Metal GPU testing will happen in application containers"
+        echo "   (Docker containers can't access macOS Metal directly)"
     else
-        echo "⚠️  Apple Silicon detected but PyTorch MPS testing failed"
-        echo "   This is expected if Docker doesn't have PyTorch image cached"
-        echo "   GPU support will be tested in application containers"
-    fi# NVIDIA GPU Detection
+        echo "❌ Docker Desktop not detected"
+        echo "📋 Install Docker Desktop for macOS with Apple Silicon support"
+        exit 1
+    fi
+
+# NVIDIA GPU Detection
 elif command -v nvidia-smi &> /dev/null; then
     echo "🎮 NVIDIA GPU detected - checking container runtime..."
 
