@@ -18,11 +18,14 @@ Tests validate:
 ✅ Service capabilities and configuration
 ✅ Cross-service communication patterns
 ✅ Archetype-specific functionality
+
+Platform Support: Auto-detects macOS (Apple Silicon), Linux (x86_64/CUDA), Windows (WSL2)
 """
 
 import asyncio
 import json
 import logging
+import platform
 import subprocess
 import sys
 import time
@@ -64,9 +67,23 @@ class ArchetypeConfig:
 class EnhancedSmokeTest:
     """Enhanced smoke test suite for all archetype patterns"""
 
-    def __init__(self, compose_file: str = "docker-compose.development.yml"):
-        self.compose_file = compose_file
-        self.base_path = Path.cwd()
+    def __init__(self, compose_file: Optional[str] = None):
+        self.base_path = Path(__file__).parent.parent
+
+        # Auto-detect platform for appropriate testing
+        self.platform_info = self._detect_platform()
+
+        # Default compose file selection
+        if compose_file:
+            self.compose_file = compose_file
+        else:
+            # Auto-select compose file based on platform
+            self.compose_file = str(self.base_path / "docker-compose.development.yml")
+
+        # Display platform information at startup
+        logger.info(f"🖥️  Platform: {self.platform_info['description']}")
+        logger.info(f"🏗️  Architecture: {self.platform_info['architecture']}")
+        logger.info(f"🐳  Docker Environment: {self.platform_info['docker_env']}")
 
         # 6 Core Worker Archetypes
         self.archetypes = {
@@ -141,6 +158,48 @@ class EnhancedSmokeTest:
             capabilities=["certificate_generation", "ca_services", "mtls_support"]
         )
 
+    def _detect_platform(self) -> Dict[str, str]:
+        """Detect the current platform and Docker environment."""
+        system = platform.system()
+        machine = platform.machine()
+
+        if system == "Darwin":
+            if machine in ["arm64", "aarch64"]:
+                return {
+                    "os": "macOS",
+                    "architecture": "Apple Silicon",
+                    "docker_env": "Docker Desktop",
+                    "description": "macOS Apple Silicon (M1/M2/M3)"
+                }
+            else:
+                return {
+                    "os": "macOS",
+                    "architecture": "Intel x86_64",
+                    "docker_env": "Docker Desktop",
+                    "description": "macOS Intel"
+                }
+        elif system == "Linux":
+            return {
+                "os": "Linux",
+                "architecture": machine,
+                "docker_env": "Native Docker",
+                "description": f"Linux {machine}"
+            }
+        elif system == "Windows":
+            return {
+                "os": "Windows",
+                "architecture": machine,
+                "docker_env": "Docker Desktop (WSL2)",
+                "description": f"Windows {machine}"
+            }
+        else:
+            return {
+                "os": system,
+                "architecture": machine,
+                "docker_env": "Unknown",
+                "description": f"{system} {machine}"
+            }
+
     async def _rebuild_and_restart_environment(self) -> bool:
         """
         Rebuild and restart all containers to ensure fresh environment.
@@ -194,26 +253,35 @@ class EnhancedSmokeTest:
             logger.error(f"  ❌ Error during environment rebuild: {e}")
             return False
 
-    async def run_comprehensive_test(self) -> Dict[str, Any]:
-        """Run all enhanced smoke tests"""
+    async def run_comprehensive_test(self, rebuild_environment: bool = False) -> Dict[str, Any]:
+        """Run all enhanced smoke tests
+
+        Args:
+            rebuild_environment: If True, rebuild and restart containers before testing.
+                               If False (default), test existing environment state.
+        """
         logger.info("🚀 Starting Enhanced Crank Platform Smoke Tests")
         logger.info("=" * 80)
 
-        # Phase 0: Rebuild and restart environment to ensure fresh state
-        rebuild_success = await self._rebuild_and_restart_environment()
-        if not rebuild_success:
-            return {
-                "timestamp": datetime.now().isoformat(),
-                "test_suite": "Enhanced Smoke Test",
-                "error": "Failed to rebuild and restart environment",
-                "summary": {
-                    "passed": 0,
-                    "failed": 1,
-                    "warnings": [],
-                    "critical_failures": ["Environment rebuild failed"],
-                    "overall_success": False
+        # Phase 0: Optionally rebuild and restart environment
+        if rebuild_environment:
+            logger.info("🔄 Rebuild requested: rebuilding environment before testing")
+            rebuild_success = await self._rebuild_and_restart_environment()
+            if not rebuild_success:
+                return {
+                    "timestamp": datetime.now().isoformat(),
+                    "test_suite": "Enhanced Smoke Test",
+                    "error": "Failed to rebuild and restart environment",
+                    "summary": {
+                        "passed": 0,
+                        "failed": 1,
+                        "warnings": [],
+                        "critical_failures": ["Environment rebuild failed"],
+                        "overall_success": False
+                    }
                 }
-            }
+        else:
+            logger.info("🎯 Testing existing environment (use --rebuild to force container restart)")
 
         results = {
             "timestamp": datetime.now().isoformat(),
@@ -740,12 +808,14 @@ async def main():
     parser.add_argument("--json", action="store_true", help="Output results as JSON")
     parser.add_argument("--compose-file", default="docker-compose.development.yml",
                        help="Docker compose file to use")
+    parser.add_argument("--rebuild", action="store_true",
+                       help="Rebuild and restart containers before testing (default: test existing environment)")
 
     args = parser.parse_args()
 
     # Create and run tests
     tester = EnhancedSmokeTest(compose_file=args.compose_file)
-    results = await tester.run_comprehensive_test()
+    results = await tester.run_comprehensive_test(rebuild_environment=args.rebuild)
 
     if args.json:
         json_output = tester.format_json_output(results)
