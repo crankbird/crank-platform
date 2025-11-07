@@ -4,7 +4,7 @@ This directory contains the implementation of the Crank Platform mesh interface 
 
 ## 🏗️ Architecture
 
-```
+```text
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Gateway       │───▶│   CrankDoc      │    │   CrankEmail    │
 │   :8080         │    │   :8000         │    │   :8001         │
@@ -20,23 +20,27 @@ This directory contains the implementation of the Crank Platform mesh interface 
 ## 📋 Services
 
 ### Gateway (`gateway.py`)
+
 - **Port**: 8080
 - **Purpose**: Unified entry point for all mesh services
 - **Features**: Request routing, service discovery, health aggregation
 
 ### CrankDoc Mesh Service (`crankdoc_mesh.py`)
+
 - **Port**: 8000
 - **Purpose**: Document conversion and processing
 - **Operations**: `convert`, `validate`, `analyze`
 - **Formats**: Markdown, DOCX, PDF, HTML, LaTeX, TXT
 
 ### CrankEmail Mesh Service (`crankemail_mesh.py`)
+
 - **Port**: 8001
 - **Purpose**: Email parsing and classification
 - **Operations**: `parse`, `classify`, `analyze`, `extract`
 - **Formats**: MBOX, EML, MSG, TXT
 
 ### Mesh Interface (`mesh_interface.py`)
+
 - **Purpose**: Universal base class for all mesh services
 - **Features**: Authentication, policy enforcement, receipts, health checks
 
@@ -80,9 +84,11 @@ docker-compose up --build
 All services implement the same interface:
 
 #### POST `/v1/process`
+
 Process a request through the mesh service.
 
 **Form Parameters:**
+
 - `service_type`: Service to use (`document`, `email`)
 - `operation`: Operation to perform (`convert`, `parse`, `classify`, etc.)
 - `job_id`: Optional job identifier
@@ -91,6 +97,7 @@ Process a request through the mesh service.
 - `file`: File to process (multipart upload)
 
 **Response:**
+
 ```json
 {
   "job_id": "uuid",
@@ -105,15 +112,19 @@ Process a request through the mesh service.
 ```
 
 #### GET `/v1/capabilities`
+
 Get service capabilities and supported operations.
 
 #### GET `/v1/receipts/{job_id}`
+
 Get verifiable processing receipt for a job.
 
 #### GET `/health/live`
+
 Basic liveness check.
 
 #### GET `/health/ready`
+
 Detailed readiness check including dependencies.
 
 ## 🔧 Configuration
@@ -222,16 +233,19 @@ class MyMeshService(MeshInterface):
 ## 🚀 Deployment
 
 ### Local Development
+
 ```bash
 docker-compose up
 ```
 
 ### Production (Azure Container Apps)
+
 ```bash
 # TODO: Add Azure deployment instructions
 ```
 
 ### Kubernetes
+
 ```bash
 # TODO: Add Kubernetes manifests
 ```

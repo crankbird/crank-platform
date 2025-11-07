@@ -24,49 +24,103 @@ During **Issue #20** (UniversalGPUManager integration), we encountered several d
 ## Automation Components
 
 ### 1. Installation Script
+
 **File**: `scripts/install-gpu-dependencies.sh`
+
 - ✅ **Platform Detection**: Automatically installs correct PyTorch for your hardware
-- ✅ **Fast Installation**: Uses `uv` when available (10-50x faster than pip)
-- ✅ **Comprehensive**: Installs all ML libraries needed for UniversalGPUManager
-- ✅ **Validation**: Tests imports and GPU detection after installation
+- ✅ **Comprehensive**: Handles CUDA, CPU, and Apple Silicon MPS
+- ✅ **Fast**: Uses `uv` for 10-100x faster dependency installation than pip
 
 ### 2. Dependency Checker
+
 **File**: `scripts/check-service-dependencies.py`
+
 - ✅ **Pre-Development**: Validate dependencies before starting work
-- ✅ **Service-Specific**: Checks exactly what each service needs
-- ✅ **Clear Feedback**: Shows what's missing and how to install it
-- ✅ **Automation Ready**: Can be used in CI/CD or service startup
+- ✅ **CI Integration**: Use in build pipelines to catch missing dependencies
+- ✅ **Clear Output**: Shows exactly what's missing and how to install it
 
 ### 3. Unified Requirements
-**File**: `services/requirements-universal-gpu.txt`
+
+**File**: `requirements-*.txt` files with automatic service detection
+
 - ✅ **Comprehensive**: All dependencies for universal GPU services
-- ✅ **Version Pinned**: Tested versions that work together
-- ✅ **Cross-Platform**: Works with both MPS (Apple) and CUDA (NVIDIA)
+- ✅ **Modular**: Separate requirements for different service types
+- ✅ **Maintained**: Automatically updated when services change
 
 ## Real-World Usage
 
 ### Before Service Integration
+
 ```bash
 # Ensure environment is ready
 ./scripts/install-gpu-dependencies.sh
 ```
 
 ### During Development
+
 ```bash
-# Check what's needed for your service
+# Check dependencies before coding
 python scripts/check-service-dependencies.py crank_image_classifier
 
-# If something is missing, install just what you need
-uv pip install ultralytics GPUtil opencv-python
+# Your development here...
 
-# Validate the fix
+# Validate again before commit
 python scripts/check-service-dependencies.py crank_image_classifier
 ```
 
 ### In Service Startup Scripts
+
 ```bash
-# Fail fast if dependencies aren't ready
+# Pre-flight dependency check
 python scripts/check-service-dependencies.py crank_image_classifier && python services/crank_image_classifier.py
+```
+
+## The Problem This Solves
+
+**Before automation:**
+
+1. Try to import service → Silent failure
+2. Debug missing dependencies → Spend 30 minutes
+3. Install dependencies manually → Hope you got them all
+4. Try again → Different missing dependency
+5. Repeat until it works → Hours of frustration
+
+**After automation:**
+
+1. Run `./scripts/install-gpu-dependencies.sh` → All dependencies installed
+2. Import service → Works immediately
+3. Focus on business logic → Productive development
+
+## Implementation Details
+
+The automation works by:
+
+1. **Platform Detection**: Detects your hardware (CUDA, Apple Silicon, CPU)
+2. **Smart Installation**: Installs only what you need for your platform
+3. **Validation**: Checks that installation actually worked
+4. **Fast Package Management**: Uses `uv` instead of `pip` for speed
+5. **Service Integration**: Each service can validate its own dependencies
+
+## Installation Script Details
+
+```text
+./scripts/install-gpu-dependencies.sh
+
+1. Detect Platform:
+   ├─ Apple Silicon → Install PyTorch with MPS support
+   ├─ NVIDIA GPU → Install PyTorch with CUDA support
+   └─ CPU Only → Install CPU-optimized PyTorch
+
+2. Install Base Dependencies:
+   ├─ FastAPI, uvicorn (web framework)
+   ├─ httpx, requests (HTTP clients)
+   ├─ Pillow, pandas (data processing)
+   └─ Platform-specific ML libraries
+
+3. Validate Installation:
+   ├─ Test PyTorch import
+   ├─ Test GPU/MPS availability (if applicable)
+   └─ Report success/failure with next steps
 ```
 
 ## Success Metrics
@@ -74,6 +128,7 @@ python scripts/check-service-dependencies.py crank_image_classifier && python se
 With this automation, the **Issue #20 integration process** changes from:
 
 **❌ Before (Manual & Error-Prone)**:
+
 1. Try to import service → Silent failure
 2. Debug import issues → Missing ultralytics
 3. Install manually → uv pip install ultralytics
@@ -82,6 +137,7 @@ With this automation, the **Issue #20 integration process** changes from:
 6. Try again → Finally works!
 
 **✅ After (Automated & Reliable)**:
+
 1. Run `./scripts/install-gpu-dependencies.sh` → All dependencies installed
 2. Validate with checker → All green ✅
 3. Integrate UniversalGPUManager → Works immediately! 🚀
@@ -115,7 +171,8 @@ except ImportError:
 ## Validation Results
 
 ✅ **Tested on M4 Mac Mini**:
-```
+
+```text
 🎯 SUCCESS: UniversalGPUManager Integration Complete!
    ✅ M4 Mac Mini MPS GPU properly detected
    ✅ Service upgraded from CUDA-only to universal GPU support

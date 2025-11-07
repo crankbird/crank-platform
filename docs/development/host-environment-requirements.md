@@ -6,7 +6,8 @@
 
 ## Philosophy: Minimal Host, Maximum Container
 
-The Crank Platform follows a **container-first development philosophy** where:
+The platform follows a **container-first development philosophy** where:
+
 - **Host environment**: Only essential tooling for container orchestration
 - **Development environment**: Lives entirely within containers
 - **GPU abstraction**: Runtime detection within containers, not host configuration
@@ -14,6 +15,7 @@ The Crank Platform follows a **container-first development philosophy** where:
 ## Required Host Dependencies
 
 ### 1. Container Runtime
+
 **Requirement**: Docker or Podman with compose support
 **Rationale**: Universal container orchestration
 
@@ -26,6 +28,7 @@ docker compose version
 ### 2. GPU Runtime Support (Platform-Specific)
 
 #### Apple Silicon (M4 Mac Mini)
+
 **Requirement**: Docker Desktop with Apple Silicon GPU passthrough
 **Configuration**: None required - Metal/MPS handled by container runtime
 
@@ -35,6 +38,7 @@ docker run --rm pytorch/pytorch:latest python -c "import torch; print(f'MPS: {to
 ```
 
 #### NVIDIA GPU Systems
+
 **Requirement**: NVIDIA Container Toolkit
 **Configuration**: GPU device passthrough for Docker
 
@@ -55,10 +59,12 @@ docker run --rm --gpus all nvidia/cuda:12.1-runtime-ubuntu22.04 nvidia-smi
 ```
 
 #### CPU-Only Systems
+
 **Requirement**: Standard Docker installation
 **Configuration**: None required
 
 ### 3. Package Manager
+
 **Requirement**: uv (for any host-level tooling)
 **Rationale**: Consistency with container tooling
 
@@ -77,6 +83,7 @@ The platform includes a comprehensive validation script to check all host requir
 **Script**: [`scripts/validate-host-environment.sh`](../../scripts/validate-host-environment.sh)
 
 **Usage**:
+
 ```bash
 # Run validation
 ./scripts/validate-host-environment.sh
@@ -91,6 +98,7 @@ The platform includes a comprehensive validation script to check all host requir
 ```
 
 **What it validates**:
+
 - Docker and Docker Compose installation
 - Platform-specific GPU runtime (NVIDIA Container Toolkit, Apple Silicon Metal)
 - uv package manager availability
@@ -112,6 +120,7 @@ docker compose up gpu-classifier
 ```
 
 ### No Host Python Environment Required
+
 - **❌ No conda/pip on host**
 - **❌ No CUDA toolkit installation**
 - **❌ No PyTorch host dependencies**
@@ -123,11 +132,13 @@ docker compose up gpu-classifier
 When migrating this to the `crank-infrastructure` repository:
 
 ### 1. Files to Extract
+
 - `scripts/validate-host-environment.sh` → `crank-infrastructure/scripts/`
 - This documentation → `crank-infrastructure/docs/host-requirements.md`
 - Platform-specific setup scripts → `crank-infrastructure/setup/`
 
 ### 2. Interface Design
+
 ```bash
 # Future crank-infrastructure interface
 cd ../crank-infrastructure
@@ -140,7 +151,8 @@ cd ../crank-infrastructure
 ```
 
 ### 3. Platform-Specific Modules
-```
+
+```text
 crank-infrastructure/
 ├── setup/
 │   ├── macos-apple-silicon.sh      # M4 Mac Mini setup
@@ -154,11 +166,13 @@ crank-infrastructure/
 ## Why This is Technical Debt
 
 This host environment complexity violates **JEMM principles**:
+
 - **Monolith-first**: Should be in main platform until extraction is justified
 - **Just enough**: Adding infrastructure complexity before it's needed
 - **Premature optimization**: Separating concerns before constraints are clear
 
 **Resolution**: Track extraction with Issue #26 and extract when:
+
 1. Multiple repositories need the same host setup
 2. Team size justifies infrastructure specialization
 3. Host environment complexity reaches maintainability threshold

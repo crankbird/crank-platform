@@ -40,3 +40,13 @@
 **/*password*
 **/*passphrase*
 **/private-keys/
+
+# Logs and temporary files
+logs/
+*.log
+
+# Test results and outputs
+tests/results/
+test_output.json
+*_test_results.json
+*-test-report.json

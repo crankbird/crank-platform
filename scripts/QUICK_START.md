@@ -1,20 +1,49 @@
-# Dependency Automation Quick Reference
+# Quick Reference - Azure VM Setup
 
-## Install All GPU Dependencies
+## 🚀 **1-Minute Bootstrap**
+
 ```bash
-./scripts/install-gpu-dependencies.sh
+# Clone main repo
+git clone git@github.com:crankbird/crank-platform.git
+cd crank-platform
+
+# Read the full guide
+cat AZURE_SETUP_GUIDE.md
 ```
 
-## Check Service Dependencies
+## ⚡ **Critical Commands**
+
+### Start Local Services
 ```bash
-python scripts/check-service-dependencies.py crank_image_classifier
+cd services
+docker-compose up --build
 ```
 
-## Files Created
-- `scripts/install-gpu-dependencies.sh` - Automated dependency installation
-- `scripts/check-service-dependencies.py` - Dependency validation
-- `services/requirements-universal-gpu.txt` - Unified requirements file
-- `docs/development/universal-gpu-dependencies.md` - Complete documentation
+### Test Mesh Interface
+```bash
+curl -H "Authorization: Bearer dev-mesh-key" http://localhost:8080/v1/capabilities
+```
 
-## Problem Solved
-During Issue #20, missing `ultralytics` and `GPUtil` dependencies caused silent failures in UniversalGPUManager integration. This automation prevents those issues.
+### Graphite Auth
+```bash
+gt auth --token c7l1GB3uOrGp9USp1Y42iG4snP26C9HKS868xBRdJn5GLiX2pbZ0hiiCDB6m
+```
+
+### Run Security Tests
+```bash
+python azure/adversarial-test.py --target http://localhost:8080
+```
+
+## 📁 **Key Files**
+- `AZURE_SETUP_GUIDE.md` - Complete setup guide
+- `services/` - Mesh implementation  
+- `azure/deployment-strategy.md` - Azure deployment plan
+- `ENHANCEMENT_ROADMAP.md` - Development roadmap
+
+## 🎯 **Today's Goal**
+Deploy mesh services to Azure Container Apps and run adversarial testing.
+
+## 👨‍💻 **About the Code**
+Built by **John R** with a focus on efficiency over scale. The gaming laptop constraints aren't bugs - they're features that drive elegant solutions.
+
+**Everything you need is in the repo - no external context required!** 🎉
