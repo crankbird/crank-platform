@@ -20,6 +20,19 @@ docker-compose -f docker-compose.development.yml up -d --scale crank-image-class
 echo "Waiting for platform to be ready..."
 sleep 10
 
+# Detect WSL2 environment for GPU compatibility
+if uname -r | grep -q -i microsoft; then
+    echo "✅ WSL2 detected - using NVIDIA_VISIBLE_DEVICES only"
+    echo "🚨 CRITICAL: CUDA_VISIBLE_DEVICES breaks PyTorch in WSL2!"
+    echo "   See: docs/WSL2-GPU-CUDA-COMPATIBILITY.md"
+    CUDA_ENV_VAR=""  # Empty - WSL2 incompatible
+    NVIDIA_ENV_VAR="-e NVIDIA_VISIBLE_DEVICES=all"
+else
+    echo "ℹ️  Native Linux detected - using both GPU environment variables"
+    CUDA_ENV_VAR="-e CUDA_VISIBLE_DEVICES=all"
+    NVIDIA_ENV_VAR="-e NVIDIA_VISIBLE_DEVICES=all"
+fi
+
 # Start GPU service with proper GPU access
 echo "Starting GPU service with proper GPU access..."
 docker run -d \
@@ -33,8 +46,8 @@ docker run -d \
   -e LOG_LEVEL=DEBUG \
   -e IMAGE_CLASSIFIER_HTTPS_PORT=8400 \
   -e IMAGE_CLASSIFIER_SERVICE_NAME=crank-image-classifier-gpu-dev \
-  -e CUDA_VISIBLE_DEVICES=all \
-  -e NVIDIA_VISIBLE_DEVICES=all \
+  $CUDA_ENV_VAR \
+  $NVIDIA_ENV_VAR \
   -e NVIDIA_DRIVER_CAPABILITIES=compute,utility \
   -e CA_SERVICE_URL=https://crank-cert-authority-dev:9090 \
   -e HTTPS_ONLY=true \

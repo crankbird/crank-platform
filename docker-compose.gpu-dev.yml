@@ -5,14 +5,24 @@
 services:
   crank-image-classifier-gpu-dev:
     # Override GPU service with working GPU access for WSL2
-    command: sh -c "
-      echo 'Starting GPU service with WSL2 GPU support...' &&
-      python run_worker.py"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     environment:
-      # WSL2-specific GPU environment
+      - CRANK_ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - IMAGE_CLASSIFIER_HTTPS_PORT=8400
+      - IMAGE_CLASSIFIER_SERVICE_NAME=crank-image-classifier-gpu-dev
+      - CA_SERVICE_URL=https://crank-cert-authority-dev:9090
+      - HTTPS_ONLY=true
+      - PLATFORM_URL=https://crank-platform-dev:8443
+      - PLATFORM_AUTH_TOKEN=${PLATFORM_AUTH_TOKEN:-local-dev-key}
+      # WSL2-compatible GPU environment variables
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
-      - CUDA_LAUNCH_BLOCKING=0
-    # Use external_links to reference containers started with --gpus all
-    external_links:
-      - crank-image-classifier-gpu-wsl2:crank-image-classifier-gpu-dev
+      # NOTE: CUDA_VISIBLE_DEVICES intentionally omitted for WSL2 compatibility
+      # See: docs/WSL2-GPU-CUDA-COMPATIBILITY.md

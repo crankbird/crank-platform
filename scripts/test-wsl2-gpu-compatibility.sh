@@ -82,16 +82,22 @@ else
     echo "   ❌ GPU access failed - check Docker GPU setup"
 fi
 
-# Test nvidia-smi (should work in both cases)
+# Test nvidia-smi (using NVIDIA base image since our app image is python:3.11-slim)
 echo ""
-echo "🔧 Testing nvidia-smi availability (should work regardless):"
+echo "🔧 Testing nvidia-smi availability (using nvidia/cuda base image):"
 
+# Use nvidia/cuda image which includes nvidia-smi binary
 SMI_RESULT=$(docker run --rm --gpus all \
     -e CUDA_VISIBLE_DEVICES=all \
-    crank-crank-image-classifier-gpu-dev \
+    nvidia/cuda:12.1-base-ubuntu22.04 \
     nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1 || echo "FAILED")
 
-echo "   nvidia-smi GPU: $SMI_RESULT"
+if [ "$SMI_RESULT" = "FAILED" ]; then
+    echo "   ⚠️  nvidia-smi test failed - this is expected with CUDA_VISIBLE_DEVICES in WSL2"
+    echo "   (App containers use python:3.11-slim which doesn't include nvidia-smi)"
+else
+    echo "   ✅ nvidia-smi GPU: $SMI_RESULT"
+fi
 
 # Summary
 echo ""

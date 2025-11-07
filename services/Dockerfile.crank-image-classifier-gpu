@@ -26,9 +26,12 @@ RUN pip install --no-cache-dir --timeout=300 \
     || (echo "❌ CUDA PyTorch installation failed - falling back to CPU version" && \
         pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu)
 
-# Then install other ML dependencies
-RUN pip install --no-cache-dir ultralytics opencv-python GPUtil psutil pillow numpy \
-    fastapi uvicorn httpx aiohttp pydantic python-multipart PyYAML structlog
+# Install all other dependencies from requirements file
+# This includes dev/test tools (pytest, black, isort) and ML libraries
+RUN pip install --no-cache-dir -r requirements-universal-gpu.txt
+
+# Install additional ML dependencies that may not be in requirements
+RUN pip install --no-cache-dir ultralytics opencv-python GPUtil psutil
 
 # Copy service files
 COPY services/crank_image_classifier.py ./crank_image_classifier_simple.py
