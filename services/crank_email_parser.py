@@ -102,6 +102,35 @@ class CrankEmailParserService:
                 "capabilities": ["mbox_parsing", "eml_parsing", "attachment_extraction", "bulk_processing"]
             }
 
+        @self.app.get("/parse")
+        async def parse_info():
+            """Get information about available parsing endpoints."""
+            return {
+                "service": "crank-email-parser",
+                "available_endpoints": {
+                    "/parse/mbox": {
+                        "method": "POST",
+                        "description": "Parse mbox email archive files",
+                        "accepts": ["multipart/form-data"],
+                        "file_types": [".mbox"]
+                    },
+                    "/parse/eml": {
+                        "method": "POST",
+                        "description": "Parse single EML email files",
+                        "accepts": ["multipart/form-data"],
+                        "file_types": [".eml"]
+                    }
+                },
+                "analysis_endpoints": {
+                    "/analyze/archive": {
+                        "method": "POST",
+                        "description": "Analyze email archive patterns and statistics",
+                        "accepts": ["multipart/form-data"]
+                    }
+                },
+                "capabilities": ["mbox_parsing", "eml_parsing", "attachment_extraction", "bulk_processing"]
+            }
+
         @self.app.post("/parse/mbox", response_model=EmailParseResponse)
         async def parse_mbox_file(
             file: UploadFile = File(...),
