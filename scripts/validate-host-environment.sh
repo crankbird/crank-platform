@@ -2,7 +2,29 @@
 # validate-host-environment.sh
 # Validates minimal host requirements for universal GPU containers
 
-set -e
+set -euo pipefail
+
+FULL_TEST=false
+
+# Simple args: --full to run heavier platform checks (may pull large images)
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --full)
+            FULL_TEST=true
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: $0 [--full]"
+            echo "  --full   Run full platform checks (may pull large Docker images)"
+            exit 0
+            ;;
+        *)
+            echo "Unknown arg: $1"
+            echo "Usage: $0 [--full]"
+            exit 2
+            ;;
+    esac
+done
 
 echo "🔍 Validating Host Environment for Universal GPU Containers"
 echo "=========================================================="
@@ -37,15 +59,29 @@ if [[ "$(uname -m)" == "arm64" ]] && [[ "$(uname)" == "Darwin" ]]; then
     if docker info | grep -q "Operating System.*Docker Desktop"; then
         echo "✅ Docker Desktop detected"
 
-        # Quick platform test (skip heavy MPS testing - can't access Metal from Linux container)
+        # Quick platform test (skip heavy MPS testing by default)
         if docker run --rm --platform linux/arm64 hello-world >/dev/null 2>&1; then
             echo "✅ ARM64 container support working"
         else
             echo "⚠️  ARM64 container support may have issues"
         fi
 
-        echo "ℹ️  Note: MPS/Metal GPU testing will happen in application containers"
-        echo "   (Docker containers can't access macOS Metal directly)"
+        if [[ "$FULL_TEST" == "true" ]]; then
+            echo "🔎 Running full Apple Silicon GPU runtime check (may pull large images)"
+            echo "ℹ️  This may take a while and consume bandwidth. Press Ctrl+C to cancel."
+            # Attempt to run a PyTorch image that reports MPS availability. This is optional and
+            # may fail on some configurations; it's gated behind --full.
+            if docker run --rm --platform linux/arm64 pytorch/pytorch:latest \
+                python -c "import torch, sys; print('MPS:', getattr(torch.backends, 'mps', None) and torch.backends.mps.is_available())"; then
+                echo "✅ Full MPS check completed (see output above)"
+            else
+                echo "⚠️  Full MPS check failed or timed out"
+                echo "   This does not necessarily indicate a problem; full MPS checks are best run inside dev containers."
+            fi
+        else
+            echo "ℹ️  Note: MPS/Metal GPU testing will happen in application containers"
+            echo "   (Docker containers can't access macOS Metal directly)"
+        fi
     else
         echo "❌ Docker Desktop not detected"
         echo "📋 Install Docker Desktop for macOS with Apple Silicon support"

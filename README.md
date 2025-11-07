@@ -116,6 +116,17 @@ JEMM Decision Framework:
 - **[Legacy Integration Guide](LEGACY_INTEGRATION.md)** - Industrial & enterprise system integration
 - **[Mesh Interface Design](mesh-interface-design.md)** - Universal service architecture
 
+## Quick preflight
+
+Before starting development or running smoke tests, run the dependency preflight for the image classifier service:
+
+```bash
+# quick check for service-level dependencies
+make deps-check
+```
+
+This invokes `scripts/check-service-dependencies.py crank_image_classifier` and prints any missing or mismatched package requirements.
+
 ## 🚀 The Platform Services
 
 ### Current Implementation (October 2025)
@@ -1156,10 +1167,10 @@ CMD ["python", "universal-gpu-runtime.py"]
 
 **Benefits**:
 
-- ✅ **Same container** works on M4 Mac Mini (Metal/MPS) and NVIDIA servers (CUDA)
+- ✅ **Linux/NVIDIA containers** auto-detect CUDA vs CPU without rebuilds
 - ✅ **uv pip speed** - 10-50x faster package installation than pip
-- ✅ **Host agnostic** - Only requires Docker, no GPU toolkit installation
-- ✅ **Existing infrastructure** - Leverages current UniversalGPUManager
+- ✅ **Container workflow** stays host agnostic on Linux/cloud; only Docker + NVIDIA toolkit required
+- ℹ️ **Apple Silicon note**: Docker Desktop cannot expose Metal/MPS to containers yet. Run the universal classifier natively on macOS using the same UniversalGPUManager.
 
 ### Host Environment Requirements
 
