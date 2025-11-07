@@ -33,30 +33,27 @@ echo "🎮 GPU Runtime Validation:"
 if [[ "$(uname -m)" == "arm64" ]] && [[ "$(uname)" == "Darwin" ]]; then
     echo "🍎 Apple Silicon detected - checking Metal/MPS support..."
 
-    if docker run --rm python:3.11-slim python -c "
-import platform
-import subprocess
+    # Use pytorch/pytorch image that actually has PyTorch installed
+    if docker run --rm pytorch/pytorch:latest python -c "
+import torch
 import sys
-print(f'Platform: {platform.machine()}')
-print(f'Python: {sys.version}')
-try:
-    # Test PyTorch MPS availability (will fail on CPU-only PyTorch)
-    import torch
-    print(f'PyTorch: {torch.__version__}')
-    if hasattr(torch.backends, 'mps'):
-        print(f'MPS Backend Available: {torch.backends.mps.is_available()}')
+print(f'Platform: Apple Silicon')
+print(f'PyTorch: {torch.__version__}')
+if hasattr(torch.backends, 'mps'):
+    print(f'MPS Backend Available: {torch.backends.mps.is_available()}')
+    if torch.backends.mps.is_available():
+        print('✅ Metal Performance Shaders (MPS) ready for GPU acceleration')
     else:
-        print('MPS Backend: Not available (CPU-only PyTorch)')
-except ImportError:
-    print('PyTorch: Not installed in base image')
+        print('ℹ️  MPS detected but not available (may need macOS 12.3+)')
+else:
+    print('⚠️  MPS Backend: Not available in this PyTorch version')
 " 2>/dev/null; then
         echo "✅ Apple Silicon GPU runtime ready"
     else
-        echo "⚠️  Apple Silicon detected but GPU testing failed"
-        echo "   This is normal - GPU support tested in application containers"
-    fi
-
-# NVIDIA GPU Detection
+        echo "⚠️  Apple Silicon detected but PyTorch MPS testing failed"
+        echo "   This is expected if Docker doesn't have PyTorch image cached"
+        echo "   GPU support will be tested in application containers"
+    fi# NVIDIA GPU Detection
 elif command -v nvidia-smi &> /dev/null; then
     echo "🎮 NVIDIA GPU detected - checking container runtime..."
 

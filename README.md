@@ -1095,7 +1095,7 @@ class ContainerBuildSystem:
         """Load all build.json manifests from services directory"""
         # Reads .build.json files for each service
         # 14 services currently configured with manifests
-        
+
     def generate_compose_config(self, environment="development"):
         """Generate validated Docker Compose configuration"""
         # Auto-generates docker-compose configs from manifests
@@ -1122,10 +1122,10 @@ services/
 
 ```bash
 # 1. Validate all build manifests
-python3 tools/container-build-system.py --validate-all
+python3 tools/container-build-system.py development
 
-# 2. Generate Docker Compose for environment
-python3 tools/container-build-system.py --environment development
+# 2. Generate Docker Compose for specific environment
+python3 tools/container-build-system.py production
 
 # 3. Start container-based development
 ./dev-universal.sh
@@ -1141,7 +1141,7 @@ python3 tools/container-build-system.py --environment development
 # Install uv for fast package management
 RUN pip install uv
 
-# Install PyTorch with runtime detection support  
+# Install PyTorch with runtime detection support
 RUN uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 # Copy universal GPU manager (already exists!)
@@ -1166,7 +1166,7 @@ CMD ["python", "universal-gpu-runtime.py"]
 ./scripts/validate-host-environment.sh
 
 # Required: Docker + GPU runtime
-# - Apple Silicon: Docker Desktop (Metal/MPS passthrough)  
+# - Apple Silicon: Docker Desktop (Metal/MPS passthrough)
 # - NVIDIA GPU: NVIDIA Container Toolkit
 # - CPU-only: Standard Docker installation
 # - Package Manager: uv (for any host-level tooling)
