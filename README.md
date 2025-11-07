@@ -1076,6 +1076,106 @@ This platform runs on top of the [crank-infrastructure](https://github.com/crank
 └─────────────────────────────────────────────────┘
 ```
 
+## 🏗️ Container-First Build System
+
+The Crank Platform uses a **container-first development philosophy** with automated build manifests and validation. This ensures consistent, reproducible builds across all environments.
+
+### Build Manifest Architecture
+
+Each service includes a `.build.json` manifest that defines:
+- **Dependencies**: Requirements files, configuration files, runtime dependencies
+- **Container Configuration**: Ports, environment variables, GPU requirements
+- **Health Checks**: Service validation and monitoring endpoints
+- **Build Validation**: Dependency checking and file existence validation
+
+```python
+# tools/container-build-system.py - Already implemented!
+class ContainerBuildSystem:
+    def load_manifests(self):
+        """Load all build.json manifests from services directory"""
+        # Reads .build.json files for each service
+        # 14 services currently configured with manifests
+        
+    def generate_compose_config(self, environment="development"):
+        """Generate validated Docker Compose configuration"""
+        # Auto-generates docker-compose configs from manifests
+        # Handles GPU configuration automatically
+        # Validates all dependencies exist
+```
+
+### Existing Build Manifests
+
+The platform already has **14 services** configured with build manifests:
+
+```bash
+services/
+├── crank-cert-authority.build.json     # Certificate management
+├── crank-doc-converter.build.json      # Document processing
+├── crank-email-classifier.build.json   # Email classification
+├── crank-email-parser.build.json       # Email parsing
+├── crank-image-classifier.build.json   # Image classification
+├── crank-platform.build.json           # Platform core
+└── crank-streaming.build.json          # Real-time processing
+```
+
+### Container-First Development Workflow
+
+```bash
+# 1. Validate all build manifests
+python3 tools/container-build-system.py --validate-all
+
+# 2. Generate Docker Compose for environment
+python3 tools/container-build-system.py --environment development
+
+# 3. Start container-based development
+./dev-universal.sh
+```
+
+### Universal GPU Container Strategy
+
+**Problem**: Current GPU containers are CUDA-only, blocking Apple Silicon (M4 Mac Mini) development.
+
+**Solution**: Universal containers with runtime GPU detection:
+
+```dockerfile
+# Install uv for fast package management
+RUN pip install uv
+
+# Install PyTorch with runtime detection support  
+RUN uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+# Copy universal GPU manager (already exists!)
+COPY src/gpu_manager.py ./
+
+# Runtime GPU optimization at container startup
+CMD ["python", "universal-gpu-runtime.py"]
+```
+
+**Benefits**:
+- ✅ **Same container** works on M4 Mac Mini (Metal/MPS) and NVIDIA servers (CUDA)
+- ✅ **uv pip speed** - 10-50x faster package installation than pip
+- ✅ **Host agnostic** - Only requires Docker, no GPU toolkit installation
+- ✅ **Existing infrastructure** - Leverages current UniversalGPUManager
+
+### Host Environment Requirements
+
+**Minimal host dependencies** (designed for easy extraction to `crank-infrastructure` repo):
+
+```bash
+# Validate minimal host environment
+./scripts/validate-host-environment.sh
+
+# Required: Docker + GPU runtime
+# - Apple Silicon: Docker Desktop (Metal/MPS passthrough)  
+# - NVIDIA GPU: NVIDIA Container Toolkit
+# - CPU-only: Standard Docker installation
+# - Package Manager: uv (for any host-level tooling)
+```
+
+**Documentation**: [`docs/development/host-environment-requirements.md`](docs/development/host-environment-requirements.md)
+
+**Infrastructure Extraction**: Issue #26 tracks moving host environment setup to `crank-infrastructure` repository when JEMM extraction criteria are met.
+
 ## 🐳 Cross-Platform Container Development
 
 ### Architecture: Control Plane + Host Execution
