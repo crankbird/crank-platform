@@ -67,16 +67,22 @@ if [[ "$(uname -m)" == "arm64" ]] && [[ "$(uname)" == "Darwin" ]]; then
         fi
 
         if [[ "$FULL_TEST" == "true" ]]; then
-            echo "🔎 Running full Apple Silicon GPU runtime check (may pull large images)"
-            echo "ℹ️  This may take a while and consume bandwidth. Press Ctrl+C to cancel."
-            # Attempt to run a PyTorch image that reports MPS availability. This is optional and
-            # may fail on some configurations; it's gated behind --full.
-            if docker run --rm --platform linux/arm64 pytorch/pytorch:latest \
-                python -c "import torch, sys; print('MPS:', getattr(torch.backends, 'mps', None) and torch.backends.mps.is_available())"; then
-                echo "✅ Full MPS check completed (see output above)"
+            echo "🔎 Running full Apple Silicon GPU runtime check"
+            echo "⚠️  WARNING: This will download a ~2GB PyTorch Docker image"
+            echo "   Continue? [y/N]: "
+            read -r response
+            if [[ ! "$response" =~ ^[Yy]$ ]]; then
+                echo "   Skipped full MPS check (use lighter validation instead)"
             else
-                echo "⚠️  Full MPS check failed or timed out"
-                echo "   This does not necessarily indicate a problem; full MPS checks are best run inside dev containers."
+                echo "📥 Downloading PyTorch image for MPS validation..."
+                # Use a smaller, specific tag instead of :latest to be more predictable
+                if timeout 120 docker run --rm --platform linux/arm64 pytorch/pytorch:1.13.1-cpu \
+                    python -c "import torch; print('PyTorch version:', torch.__version__); print('MPS available:', torch.backends.mps.is_available() if hasattr(torch.backends, 'mps') else 'N/A')"; then
+                    echo "✅ Full PyTorch/MPS check completed"
+                else
+                    echo "⚠️  Full MPS check failed or timed out (120s)"
+                    echo "   This is normal - containers can't access macOS Metal directly"
+                fi
             fi
         else
             echo "ℹ️  Note: MPS/Metal GPU testing will happen in application containers"

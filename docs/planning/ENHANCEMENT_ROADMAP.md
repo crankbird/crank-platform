@@ -29,6 +29,10 @@ Following the **JEMM principle** - we use the simplest architecture that solves 
 - **Service Discovery**: Dynamic registration and health checks
 - **Economic Layer**: Usage tracking and chargeback mechanisms
 
+### ⏸️ Deferred (Waiting on Platform Support)
+- **Metal-in-Docker GPU parity**: Containers on macOS cannot access Apple Silicon GPUs yet; provide native instructions and revisit when Docker exposes Metal/MPS.
+- **WSL GPU auto-configuration**: Current workflow requires manual toolkit setup. Track upstream improvements before automating.
+
 ## 🔮 Short Term (Q1 2026)
 
 ### Production Readiness

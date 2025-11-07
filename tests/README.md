@@ -1,33 +1,60 @@
-# Container Test Suite
+# Test Suite Organization
 
-This directory contains comprehensive tests to validate the container-first architecture and ensure all services work correctly in both development and production environments.
+This directory contains the **authoritative test suite** for the Crank Platform. All functional tests, validation tests, and integration tests belong here.
+
+## Directory Structure Philosophy
+
+- **`tests/`** ← **All test code belongs here**
+- **`scripts/`** ← Operational utilities only (setup, deployment, maintenance)
 
 ## Test Categories
 
-### 1. Build Validation Tests
+### 1. Core Integration Tests
+- **`enhanced_smoke_test.py`** - **Primary test suite** - Universal smoke test with platform detection
+- **`integration_test_suite.py`** - Service mesh integration validation  
+- **`confidence_test_suite.py`** - Full platform confidence validation
+
+### 2. Service-Specific Tests
+- **`test-hello-world.py`** - Basic mesh connectivity validation
+- **`test_streaming_basic.py`** - Streaming service functionality
+- **`test_email_pipeline.py`** - Email processing pipeline
+- **`test_kevin_runtime.py`** - Container runtime abstraction
+
+### 3. Build Validation Tests
 - **`test_container_builds.py`** - Validates all containers build successfully from manifests
 - **`test_manifest_validation.py`** - Ensures build manifests are consistent and complete
 
-### 2. Service Health Tests  
-- **`test_service_health.py`** - Validates all service health endpoints respond correctly
-- **`test_service_startup.py`** - Tests service startup sequence and dependency ordering
+### 4. Performance & GPU Tests
+- **`test_cuda_regression.py`** - CUDA/GPU functionality validation
+- **`test_gpu_cpu_performance.py`** - Performance benchmarks
+- **`intensive_benchmark.py`** - Resource-intensive performance tests
 
-### 3. Integration Tests
-- **`test_service_communication.py`** - Validates inter-service communication works correctly
-- **`test_platform_workers.py`** - Tests platform → worker API communication
+### 5. Security & Certificate Tests  
+- **`test-certificate-architecture.sh`** - Certificate authority validation
+- **`test_certificate_fix.py`** - Certificate functionality tests
 
-### 4. Environment Tests
-- **`test_development_environment.py`** - Validates development environment works correctly
-- **`test_production_simulation.py`** - Tests local production simulation environment
+## Primary Test Entry Points
 
-### 5. Confidence Tests
-- **`confidence_test_suite.py`** - Main test runner that executes full validation
-
-## Running Tests
-
-### Quick Confidence Check
+### Development Workflow
 ```bash
-python3 tests/confidence_test_suite.py
+# Quick smoke test (recommended for development)
+python tests/enhanced_smoke_test.py
+
+# With optional container rebuild
+python tests/enhanced_smoke_test.py --rebuild
+
+# Platform-specific JSON output
+python tests/enhanced_smoke_test.py --json
+```
+
+### Full Validation
+```bash
+# Complete confidence validation
+python tests/confidence_test_suite.py
+
+# Integration test suite
+python tests/integration_test_suite.py
+```
 ```
 
 ### Individual Test Categories
