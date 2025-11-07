@@ -223,7 +223,7 @@ class EnhancedSmokeTest:
             logger.info("  🔨 Building all services with latest code...")
             result = subprocess.run([
                 "docker", "compose", "-f", self.compose_file, "build"
-            ], cwd=self.base_path, capture_output=True, text=True, timeout=300)
+            ], cwd=self.base_path, capture_output=True, text=True, timeout=600)  # Increased to 10 minutes for GPU builds
 
             if result.returncode != 0:
                 logger.error(f"  ❌ Failed to build services: {result.stderr}")

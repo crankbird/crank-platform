@@ -7,7 +7,7 @@ name: 🧪 Smoke Tests with Issue Creation
 #   workflow_dispatch:
 
 on:
-  workflow_dispatch:  # Only manual trigger for now
+  workflow_dispatch: # Only manual trigger for now
 
 jobs:
   smoke-test:

@@ -7,7 +7,7 @@ name: 🔍 PR Smoke Test & Auto-Issue Creation
 #     types: [opened, synchronize, reopened]
 
 on:
-  workflow_dispatch:  # Only manual trigger for now
+  workflow_dispatch: # Only manual trigger for now
 
 jobs:
   smoke-test-pr:

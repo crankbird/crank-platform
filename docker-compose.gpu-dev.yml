@@ -1,0 +1,18 @@
+# GPU Development Override for WSL2/Docker Desktop
+# This file provides proper GPU access for development on gaming laptops
+# Usage: docker-compose -f docker-compose.development.yml -f docker-compose.gpu-dev.yml up
+
+services:
+  crank-image-classifier-gpu-dev:
+    # Override GPU service with working GPU access for WSL2
+    command: sh -c "
+      echo 'Starting GPU service with WSL2 GPU support...' &&
+      python run_worker.py"
+    environment:
+      # WSL2-specific GPU environment
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - CUDA_LAUNCH_BLOCKING=0
+    # Use external_links to reference containers started with --gpus all
+    external_links:
+      - crank-image-classifier-gpu-wsl2:crank-image-classifier-gpu-dev

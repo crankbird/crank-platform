@@ -36,13 +36,39 @@ try:
     from ultralytics import YOLO
     import GPUtil
 
-    # Add path for UniversalGPUManager
+    # Add path for UniversalGPUManager (flexible import for host and container)
     import sys
     from pathlib import Path
-    sys.path.append(str(Path(__file__).parent.parent / "src"))
+
+    # Try multiple possible paths for gpu_manager
+    possible_paths = [
+        str(Path(__file__).parent.parent / "src"),  # Host environment
+        str(Path(__file__).parent),                 # Container environment
+        "/app"                                      # Container fallback
+    ]
+
+    for path in possible_paths:
+        if path not in sys.path:
+            sys.path.insert(0, path)
+
     from gpu_manager import UniversalGPUManager
 
-    # Universal GPU detection (replaces CUDA-only detection)
+    # 🚨 WSL2 GPU COMPATIBILITY CRITICAL ISSUE - See docs/WSL2-GPU-CUDA-COMPATIBILITY.md
+    #
+    # IMPORTANT: Universal GPU Manager may work correctly, but Docker container environment
+    # variables can still break PyTorch CUDA detection in WSL2 environments.
+    #
+    # Specifically: CUDA_VISIBLE_DEVICES=all breaks torch.cuda.is_available() in WSL2
+    # even when this GPU manager correctly detects hardware.
+    #
+    # Resolution: Container must use NVIDIA_VISIBLE_DEVICES=all instead
+    # See docker-compose.development.yml for environment variable configuration
+    #
+    # AI Assistant Context: If GPU_AVAILABLE=False but hardware exists, check:
+    # 1. WSL2 environment detection (uname -r | grep microsoft)
+    # 2. Container environment variables (avoid CUDA_VISIBLE_DEVICES in WSL2)
+    # 3. torch.cuda.is_available() vs nvidia-smi output discrepancies
+    #
     gpu_manager = UniversalGPUManager()
     GPU_AVAILABLE = gpu_manager.get_device_str() != 'cpu'
     GPU_DEVICE = gpu_manager.get_device()

@@ -106,6 +106,18 @@ JEMM Decision Framework:
 
 *Architecture serves business value, not resume building.*
 
+## 📚 Documentation
+
+- **[Quick Start Guide](QUICK_START.md)** - Get running in 5 minutes
+- **[Azure Setup Guide](AZURE_SETUP_GUIDE.md)** - Cloud deployment walkthrough
+- **[Universal GPU Dependencies](scripts/QUICK_START.md)** - Automated dependency installation for GPU services
+- **[WSL2 GPU Compatibility](docs/WSL2-GPU-CUDA-COMPATIBILITY.md)** - 🚨 Critical gaming laptop GPU setup for WSL2
+- **[Enhancement Roadmap](ENHANCEMENT_ROADMAP.md)** - Platform development plan
+- **[Legacy Integration Guide](LEGACY_INTEGRATION.md)** - Industrial & enterprise system integration
+- **[Mesh Interface Design](mesh-interface-design.md)** - Universal service architecture
+
+## 🚀 The Platform Services
+
 ## � Documentation
 
 - **[Quick Start Guide](QUICK_START.md)** - Get running in 5 minutes
@@ -1084,6 +1096,7 @@ The Crank Platform uses a **container-first development philosophy** with automa
 ### Build Manifest Architecture
 
 Each service includes a `.build.json` manifest that defines:
+
 - **Dependencies**: Requirements files, configuration files, runtime dependencies
 - **Container Configuration**: Ports, environment variables, GPU requirements
 - **Health Checks**: Service validation and monitoring endpoints
@@ -1153,6 +1166,7 @@ CMD ["python", "universal-gpu-runtime.py"]
 ```
 
 **Benefits**:
+
 - ✅ **Same container** works on M4 Mac Mini (Metal/MPS) and NVIDIA servers (CUDA)
 - ✅ **uv pip speed** - 10-50x faster package installation than pip
 - ✅ **Host agnostic** - Only requires Docker, no GPU toolkit installation

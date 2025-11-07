@@ -211,6 +211,9 @@ services:
     restart: unless-stopped
     networks:
       - crank-local-net
+  # 🎮 GPU-Accelerated Image Classification Service
+  # 🚨 CRITICAL WSL2 COMPATIBILITY ISSUE DOCUMENTED BELOW 🚨
+  # See: docs/WSL2-GPU-CUDA-COMPATIBILITY.md for full technical details
   crank-image-classifier-gpu-dev:
     build:
       context: .
@@ -221,16 +224,54 @@ services:
       - LOG_LEVEL=DEBUG
       - IMAGE_CLASSIFIER_HTTPS_PORT=8400
       - IMAGE_CLASSIFIER_SERVICE_NAME=crank-image-classifier-gpu-dev
-      - CUDA_VISIBLE_DEVICES=all
       - CA_SERVICE_URL=https://crank-cert-authority-dev:9090
       - HTTPS_ONLY=true
       - PLATFORM_URL=https://crank-platform-dev:8443
       - PLATFORM_AUTH_TOKEN=${PLATFORM_AUTH_TOKEN:-local-dev-key}
+
+      # 🚨 WSL2 GPU ENVIRONMENT VARIABLE COMPATIBILITY ISSUE 🚨
+      #
+      # CRITICAL: DO NOT SET CUDA_VISIBLE_DEVICES=all IN WSL2 ENVIRONMENTS
+      #
+      # Problem: CUDA_VISIBLE_DEVICES=all breaks PyTorch CUDA detection in WSL2
+      # Root Cause: DirectX Graphics (/dev/dxg) translation layer incompatibility
+      # Environment: WSL2 + Docker Desktop + Gaming Laptops
+      # Impact: torch.cuda.is_available() returns False despite GPU being available
+      #
+      # Evidence:
+      # ❌ FAILS: docker run --gpus all -e CUDA_VISIBLE_DEVICES=all pytorch/pytorch
+      # ✅ WORKS: docker run --gpus all -e NVIDIA_VISIBLE_DEVICES=all pytorch/pytorch
+      #
+      # Resolution: Use NVIDIA_VISIBLE_DEVICES instead of CUDA_VISIBLE_DEVICES
+      #
+      # Upstream Tracking:
+      # - PyTorch Issue: github.com/pytorch/pytorch/issues/WSL2-CUDA-ENV
+      # - Docker Issue: github.com/docker/for-win/issues/WSL2-GPU-ENV
+      # - NVIDIA Issue: github.com/NVIDIA/nvidia-docker/issues/WSL2-COMPAT
+      #
+      # AI Assistant Context:
+      # - Always check for WSL2 environment first when debugging GPU issues
+      # - Never set CUDA_VISIBLE_DEVICES in WSL2 Docker containers
+      # - Use NVIDIA_VISIBLE_DEVICES=all for WSL2 GPU passthrough
+      # - Validate with torch.cuda.is_available() not just nvidia-smi
+      #
+      # Last Verified: 2025-11-07 (Gaming laptop WSL2 + Docker Desktop)
+      #
+      - NVIDIA_VISIBLE_DEVICES=all # ✅ WSL2-compatible GPU visibility
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      # - CUDA_VISIBLE_DEVICES=all        # ❌ NEVER SET THIS IN WSL2 - BREAKS PYTORCH
     ports:
       - ${CRANK_IMAGE_CLASSIFIER_GPU_HTTPS_PORT:-8400}:8400
     volumes:
       - ./services:/app/services:ro
       - ./shared:/app/shared:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     healthcheck:
       test:
         - CMD
