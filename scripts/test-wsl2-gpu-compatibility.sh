@@ -88,15 +88,32 @@ echo "🔧 Testing nvidia-smi availability (using nvidia/cuda base image):"
 
 # Use nvidia/cuda image which includes nvidia-smi binary
 SMI_RESULT=$(docker run --rm --gpus all \
+    nvidia/cuda:12.1-base-ubuntu22.04 \
+    nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1)
+
+# Check if we got a meaningful result
+if [ -z "$SMI_RESULT" ]; then
+    echo "   ❌ nvidia-smi failed to detect GPU name"
+    SMI_STATUS="FAILED"
+elif [ "$SMI_RESULT" = "FAILED" ]; then
+    echo "   ❌ nvidia-smi command failed"
+    SMI_STATUS="FAILED"
+else
+    echo "   ✅ nvidia-smi GPU detected: $SMI_RESULT"
+    SMI_STATUS="$SMI_RESULT"
+fi
+
+# Also test with the problematic CUDA_VISIBLE_DEVICES to show the difference
+echo "   🔍 Testing nvidia-smi with CUDA_VISIBLE_DEVICES (problematic in WSL2):"
+SMI_CUDA_RESULT=$(docker run --rm --gpus all \
     -e CUDA_VISIBLE_DEVICES=all \
     nvidia/cuda:12.1-base-ubuntu22.04 \
-    nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1 || echo "FAILED")
+    nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1)
 
-if [ "$SMI_RESULT" = "FAILED" ]; then
-    echo "   ⚠️  nvidia-smi test failed - this is expected with CUDA_VISIBLE_DEVICES in WSL2"
-    echo "   (App containers use python:3.11-slim which doesn't include nvidia-smi)"
+if [ -z "$SMI_CUDA_RESULT" ]; then
+    echo "   ⚠️  With CUDA_VISIBLE_DEVICES=all: No GPU name returned (WSL2 compatibility issue)"
 else
-    echo "   ✅ nvidia-smi GPU: $SMI_RESULT"
+    echo "   ℹ️  With CUDA_VISIBLE_DEVICES=all: $SMI_CUDA_RESULT"
 fi
 
 # Summary
@@ -106,7 +123,7 @@ echo "=========="
 echo "Environment: $(if [ "$WSL2" = true ]; then echo "WSL2"; else echo "Native Linux"; fi)"
 echo "CUDA_VISIBLE_DEVICES=all:    PyTorch CUDA = $CUDA_RESULT"
 echo "NVIDIA_VISIBLE_DEVICES=all:  PyTorch CUDA = $NVIDIA_RESULT"
-echo "nvidia-smi:                  $SMI_RESULT"
+echo "nvidia-smi GPU detection:    $SMI_STATUS"
 
 if [ "$WSL2" = true ] && [ "$CUDA_RESULT" = "False" ] && [ "$NVIDIA_RESULT" = "True" ]; then
     echo ""
