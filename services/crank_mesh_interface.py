@@ -283,7 +283,7 @@ class CrankMeshInterface(ABC):
             # Skip auth for health checks and docs
             if request.url.path in [
                 "/health/live",
-                "/health/ready", 
+                "/health/ready",
                 "/docs",
                 "/redoc",
                 "/openapi.json",
