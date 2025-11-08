@@ -1,17 +1,19 @@
 # Crank Mesh Interface Design
 
-## 🎯 Universal Service Pattern
+## 🎯 Universal Service Pattern & Brand Differentiation
+
+**STRATEGIC UPDATE (2025-11-08)**: Renamed to **"CrankMesh*"** to clearly establish this as Crank platform's unique technology for universal service abstraction, avoiding confusion with generic mesh networking libraries (Kubernetes Service Mesh, Istio, Linkerd, etc.).
 
 Every Crank service follows the same mesh interface pattern, regardless of the underlying processing (document conversion, email parsing, classification, etc.).
 
-## 🏗️ The Mesh Interface Architecture
+## 🏗️ The Crank Mesh Interface Architecture
 
 ```python
 from typing import Any, Dict, Optional
 from fastapi import FastAPI, UploadFile
 from pydantic import BaseModel
 
-class MeshRequest(BaseModel):
+class CrankMeshRequest(BaseModel):
     """Universal request format for any mesh service."""
     job_id: Optional[str] = None
     service_type: str  # "document", "email", "classify", etc.
@@ -19,7 +21,7 @@ class MeshRequest(BaseModel):
     parameters: Dict[str, Any] = {}
     policy_profile: str = "default"
 
-class MeshResponse(BaseModel):
+class CrankMeshResponse(BaseModel):
     """Universal response format for any mesh service."""
     job_id: str
     service_type: str
@@ -29,56 +31,56 @@ class MeshResponse(BaseModel):
     receipt_hash: Optional[str] = None
     processing_time_ms: Optional[int] = None
 
-class MeshInterface:
+class CrankMeshInterface:
     """Universal interface that every Crank service implements."""
-    
+
     def __init__(self, service_type: str):
         self.service_type = service_type
         self.app = FastAPI(title=f"Crank{service_type.title()}")
         self._setup_routes()
         self._setup_middleware()
-    
+
     def _setup_routes(self):
         """Standard routes every mesh service provides."""
-        
+
         @self.app.post("/v1/process", response_model=MeshResponse)
         async def process_request(
             request: MeshRequest,
             file: Optional[UploadFile] = None
         ) -> MeshResponse:
             return await self.handle_request(request, file)
-        
+
         @self.app.get("/v1/capabilities")
         async def get_capabilities():
             return await self.get_service_capabilities()
-        
+
         @self.app.get("/v1/receipts/{job_id}")
         async def get_receipt(job_id: str):
             return await self.get_processing_receipt(job_id)
-        
+
         @self.app.get("/health/live")
         async def health_live():
             return {"status": "alive", "service": self.service_type}
-        
+
         @self.app.get("/health/ready")
         async def health_ready():
             return await self.check_readiness()
-    
+
     def _setup_middleware(self):
         """Standard middleware every mesh service uses."""
         # Authentication, CORS, logging, etc.
         pass
-    
+
     # Abstract methods each service implements
     async def handle_request(self, request: MeshRequest, file: Optional[UploadFile]) -> MeshResponse:
         raise NotImplementedError
-    
+
     async def get_service_capabilities(self) -> Dict[str, Any]:
         raise NotImplementedError
-    
+
     async def get_processing_receipt(self, job_id: str) -> Dict[str, Any]:
         raise NotImplementedError
-    
+
     async def check_readiness(self) -> Dict[str, Any]:
         raise NotImplementedError
 ```
@@ -90,22 +92,22 @@ class MeshInterface:
 ```python
 class CrankDocService(MeshInterface):
     """Document conversion service implementing mesh interface."""
-    
+
     def __init__(self):
         super().__init__("document")
         self.orchestrator = DocumentOrchestrator()
-    
+
     async def handle_request(self, request: MeshRequest, file: UploadFile) -> MeshResponse:
         if request.operation == "convert":
             return await self._handle_conversion(request, file)
         else:
             raise ValueError(f"Unknown operation: {request.operation}")
-    
+
     async def _handle_conversion(self, request: MeshRequest, file: UploadFile) -> MeshResponse:
         # Extract conversion parameters
         source_format = request.parameters.get("source_format")
         target_format = request.parameters.get("target_format")
-        
+
         # Use existing CrankDoc orchestrator
         job_id = request.job_id or str(uuid4())
         conversion_request = ConversionRequest(
@@ -113,20 +115,20 @@ class CrankDocService(MeshInterface):
             target_format=target_format,
             policy_profile=request.policy_profile
         )
-        
+
         job_meta = self.orchestrator.submit_job(
-            job_id=job_id, 
-            request=conversion_request, 
+            job_id=job_id,
+            request=conversion_request,
             upload=file
         )
-        
+
         return MeshResponse(
             job_id=job_id,
             service_type="document",
             operation="convert",
             status="accepted"
         )
-    
+
     async def get_service_capabilities(self) -> Dict[str, Any]:
         return {
             "service_type": "document",
@@ -145,11 +147,11 @@ class CrankDocService(MeshInterface):
 ```python
 class CrankEmailService(MeshInterface):
     """Email parsing and classification service implementing mesh interface."""
-    
+
     def __init__(self):
         super().__init__("email")
         self.classifier = EmailClassifier.load("models/email_classifier.joblib")
-    
+
     async def handle_request(self, request: MeshRequest, file: UploadFile) -> MeshResponse:
         if request.operation == "parse":
             return await self._handle_parsing(request, file)
@@ -157,20 +159,20 @@ class CrankEmailService(MeshInterface):
             return await self._handle_classification(request, file)
         else:
             raise ValueError(f"Unknown operation: {request.operation}")
-    
+
     async def _handle_parsing(self, request: MeshRequest, file: UploadFile) -> MeshResponse:
         # Parse mbox file using existing parser
         mbox_content = await file.read()
-        
+
         # Use existing streaming parser
         parsed_messages = list(iter_parsed_messages(
             BytesIO(mbox_content),
             keywords=request.parameters.get("keywords"),
             body_snippet_chars=request.parameters.get("snippet_length", 200)
         ))
-        
+
         job_id = request.job_id or str(uuid4())
-        
+
         return MeshResponse(
             job_id=job_id,
             service_type="email",
@@ -182,23 +184,23 @@ class CrankEmailService(MeshInterface):
                 "has_more": len(parsed_messages) > 100
             }
         )
-    
+
     async def _handle_classification(self, request: MeshRequest, file: UploadFile) -> MeshResponse:
         # Single email classification
         email_data = await file.read()
         email_text = email_data.decode('utf-8')
-        
+
         # Extract subject and body (simplified)
         lines = email_text.split('\n')
         subject = next((line[8:] for line in lines if line.startswith('Subject:')), "")
         body = '\n'.join(lines[10:])[:500]  # First 500 chars
-        
+
         # Use existing AI classifier
         is_receipt = self.classifier.predict(subject, body)
         confidence = self.classifier.predict_proba(subject, body)
-        
+
         job_id = request.job_id or str(uuid4())
-        
+
         return MeshResponse(
             job_id=job_id,
             service_type="email",
@@ -211,7 +213,7 @@ class CrankEmailService(MeshInterface):
                 "body_snippet": body[:100]
             }
         )
-    
+
     async def get_service_capabilities(self) -> Dict[str, Any]:
         return {
             "service_type": "email",
@@ -233,17 +235,17 @@ class CrankEmailService(MeshInterface):
 ```python
 class MeshAuthMiddleware(BaseHTTPMiddleware):
     """Shared authentication for all mesh services."""
-    
+
     async def dispatch(self, request: Request, call_next):
         # Check for API key or mesh token
         auth_header = request.headers.get("Authorization")
-        
+
         if not auth_header or not self.validate_mesh_token(auth_header):
             return JSONResponse(
                 status_code=401,
                 content={"error": "Invalid mesh authentication"}
             )
-        
+
         response = await call_next(request)
         return response
 ```
@@ -253,10 +255,10 @@ class MeshAuthMiddleware(BaseHTTPMiddleware):
 ```python
 class MeshPolicyEngine:
     """Shared policy enforcement for all mesh services."""
-    
+
     def __init__(self, opa_url: str = "http://opa:8181"):
         self.opa_url = opa_url
-    
+
     async def evaluate_request(self, request: MeshRequest, user_context: dict) -> bool:
         """Evaluate if request is allowed by policy."""
         policy_data = {
@@ -266,14 +268,14 @@ class MeshPolicyEngine:
             "user": user_context,
             "policy_profile": request.policy_profile
         }
-        
+
         # Query OPA for decision
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{self.opa_url}/v1/data/mesh/allow",
                 json={"input": policy_data}
             )
-            
+
         result = response.json()
         return result.get("result", False)
 ```
@@ -283,8 +285,8 @@ class MeshPolicyEngine:
 ```python
 class MeshReceiptSystem:
     """Shared receipt generation for all mesh services."""
-    
-    def generate_receipt(self, request: MeshRequest, response: MeshResponse, 
+
+    def generate_receipt(self, request: MeshRequest, response: MeshResponse,
                         processing_details: dict) -> dict:
         """Generate verifiable receipt for any mesh operation."""
         receipt = {
@@ -299,7 +301,7 @@ class MeshReceiptSystem:
             "mesh_node_id": self.get_node_id(),
             "version": "1.0"
         }
-        
+
         # Sign receipt
         receipt["signature"] = self._sign_receipt(receipt)
         return receipt
@@ -330,7 +332,7 @@ FROM mesh-base as crank-doc
 COPY --chown=mesh:mesh ./crankdoc/ /mesh/
 CMD ["uvicorn", "mesh_service:app", "--host", "0.0.0.0", "--port", "8000"]
 
-FROM mesh-base as crank-email  
+FROM mesh-base as crank-email
 COPY --chown=mesh:mesh ./email-parser/ /mesh/
 CMD ["uvicorn", "mesh_service:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
@@ -373,7 +375,7 @@ spec:
             memory: "256Mi"
             cpu: "100m"
           limits:
-            memory: "1Gi" 
+            memory: "1Gi"
             cpu: "500m"
         securityContext:
           runAsNonRoot: true
