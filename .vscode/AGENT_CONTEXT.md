@@ -39,6 +39,23 @@ uv pip freeze > requirements.txt
 - Graduated type checking for different service complexity levels
 - Real functionality over perfect type checking
 
+## Critical Issues Identified (2025-11-08 Code Review)
+
+### 🚨 BLOCKING ISSUES - Fix First
+- **Issue #18 - MeshInterface Receipt System**: Two conflicting MeshReceipt classes, MeshReceiptSystem.generate_receipt() reads fields that MeshResponse doesn't expose. NO service can emit receipts currently.
+- **Issue #22 - Fragile Import Paths**: sys.path mutations in multiple services will break on any reorganization
+- **Issue #14 - Package Structure**: Need to move services under src/ to eliminate sys.path hacking
+
+### 🔧 ARCHITECTURAL CLEANUP
+- **Issue #19 - Security Config**: Only GPU classifier uses initialize_security properly, others use ad-hoc patterns
+- **Issue #17 - Demo Tests**: Many tests only assert built-ins, need real service tests via MeshInterface  
+- **Issue #16 - Docker/Compose**: Legacy configs reference non-existent files
+
+### 🏗️ INFRASTRUCTURE IMPROVEMENTS  
+- **Issue #25/24 - Universal GPU**: Runtime detection unimplemented, CUDA-only containers exclude Apple Silicon
+- **Issue #13 - .gitignore**: Missing standard Python artifacts
+- **Issue #12 - Azure Deployment**: Manual process, needs proper CI/CD automation
+
 ## Testing Infrastructure (Updated 2025-11-08)
 ### Unified Test Runner
 **PRIMARY TOOL**: `uv run python test_runner.py`
