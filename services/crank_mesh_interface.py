@@ -92,11 +92,11 @@ class CrankMeshReceipt(BaseModel):
 class CrankMeshAuthMiddleware(BaseHTTPMiddleware):
     """Universal authentication middleware for Crank mesh services."""
 
-    def __init__(self, app: FastAPI, api_key: str = "dev-mesh-key"):
+    def __init__(self, app: Any, api_key: str = "dev-mesh-key"):
         super().__init__(app)
         self.api_key = api_key
 
-    async def dispatch(self, request: Request, call_next: Any):
+    async def dispatch(self, request: Request, call_next: Any) -> Any:
         # Skip auth for health checks and docs
         if request.url.path in [
             "/health/live",
@@ -277,8 +277,34 @@ class CrankMeshInterface(ABC):
             version="1.0.0",
         )
 
-        # Add security middleware
-        app.add_middleware(CrankMeshAuthMiddleware, api_key=api_key)
+        # Add security middleware (using app.middleware decorator approach)
+        @app.middleware("http")
+        async def auth_middleware(request: Request, call_next: Any) -> Any:
+            # Skip auth for health checks and docs
+            if request.url.path in [
+                "/health/live",
+                "/health/ready", 
+                "/docs",
+                "/redoc",
+                "/openapi.json",
+            ]:
+                return await call_next(request)
+
+            # Check for API key
+            auth_header = request.headers.get("Authorization")
+            if not auth_header or not auth_header.startswith("Bearer "):
+                return JSONResponse(
+                    status_code=401,
+                    content={"error": "Missing or invalid Authorization header"},
+                )
+
+            token = auth_header.split(" ", 1)[1]
+            if token != api_key:
+                return JSONResponse(
+                    status_code=401, content={"error": "Invalid API key"},
+                )
+
+            return await call_next(request)
 
         # Add CORS (restrictive by default)
         app.add_middleware(
@@ -312,12 +338,16 @@ class CrankMeshInterface(ABC):
 
         # Main processing endpoint
         @app.post("/v1/process", response_model=CrankMeshResponse)
-        async def process_request_endpoint(request: CrankMeshRequest):
+        async def process_request_endpoint(request: CrankMeshRequest, http_request: Optional[Request] = None):
             """Process request through Crank Mesh Interface."""
             start_time = time.time()
 
-            # Extract auth context from request
-            auth_context = await self._extract_auth_context(app.state.request)
+            # Extract auth context from HTTP request
+            auth_context = {
+                "user_id": "authenticated_user",  # Would extract from JWT in production
+                "permissions": ["read", "write"],  # Would come from auth system
+                "request_ip": http_request.client.host if http_request and http_request.client else "unknown",
+            }
 
             # Validate request
             violations = CrankMeshValidator.validate_request(request)
