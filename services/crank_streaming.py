@@ -9,11 +9,15 @@ import asyncio
 import json
 import logging
 import os
+import sys
 import uuid
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from datetime import datetime
+from typing import Any, Optional
 
 import httpx
+import uvicorn
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from sse_starlette import EventSourceResponse
@@ -70,10 +74,11 @@ class StreamingStatus(BaseModel):
 class CrankStreamingService:
     """Streaming service with WebSocket and SSE capabilities."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.worker_id = f"streaming-{uuid.uuid4().hex[:8]}"
         self.active_connections: list[WebSocket] = []
-        self.active_streams: dict[str, dict] = {}
+        self.active_streams: dict[str, dict[str, Any]] = {}
+        self.heartbeat_task: Optional[asyncio.Task[None]] = None
 
     async def text_stream_generator(
         self, content: str, chunk_size: int = 100,
@@ -84,7 +89,7 @@ class CrankStreamingService:
 
         for i, chunk in enumerate(chunks):
             chunk_text = " ".join(chunk)
-            result = {
+            result: dict[str, Any] = {
                 "chunk_id": i,
                 "content": chunk_text,
                 "is_last": i == len(chunks) - 1,
@@ -93,35 +98,35 @@ class CrankStreamingService:
             yield f"data: {json.dumps(result)}\n\n"
             await asyncio.sleep(0.1)  # Simulate processing time
 
-    async def connect_websocket(self, websocket: WebSocket):
+    async def connect_websocket(self, websocket: WebSocket) -> None:
         """Accept WebSocket connection."""
         await websocket.accept()
         self.active_connections.append(websocket)
         logger.info("WebSocket connected. Active connections: {len(self.active_connections)}")
 
-    async def disconnect_websocket(self, websocket: WebSocket):
+    async def disconnect_websocket(self, websocket: WebSocket) -> None:
         """Remove WebSocket connection."""
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
         logger.info("WebSocket disconnected. Active connections: {len(self.active_connections)}")
 
-    async def broadcast_to_websockets(self, message: dict):
+    async def broadcast_to_websockets(self, message: dict[str, Any]) -> None:
         """Broadcast message to all connected WebSockets."""
         if not self.active_connections:
             return
 
-        disconnected = []
+        disconnected: list[WebSocket] = []
         for connection in self.active_connections:
             try:
                 await connection.send_text(json.dumps(message))
-            except:
+            except Exception:
                 disconnected.append(connection)
 
         # Clean up disconnected websockets
         for conn in disconnected:
             await self.disconnect_websocket(conn)
 
-    async def initialize_and_register(self):
+    async def initialize_and_register(self) -> None:
         """Initialize service and register with platform - follows email classifier pattern."""
         logger.info("🚀 Starting streaming service initialization...")
 
@@ -162,11 +167,11 @@ class CrankStreamingService:
             limits=httpx.Limits(max_keepalive_connections=5, max_connections=10),
         )
 
-    def _start_heartbeat_task(self):
+    def _start_heartbeat_task(self) -> None:
         """Start the background heartbeat task."""
         import asyncio
 
-        async def heartbeat_loop():
+        async def heartbeat_loop() -> None:
             await asyncio.sleep(5)  # Initial delay
             while True:
                 try:
@@ -176,10 +181,10 @@ class CrankStreamingService:
                     logger.exception("💔 Heartbeat failed: {e}")
                     await asyncio.sleep(5)  # Shorter retry interval on failure
 
-        # Start heartbeat task
-        asyncio.create_task(heartbeat_loop())
+        # Start heartbeat task and store reference to prevent garbage collection
+        self.heartbeat_task = asyncio.create_task(heartbeat_loop())
 
-    async def _register_with_platform(self, worker_info: WorkerRegistration):
+    async def _register_with_platform(self, worker_info: WorkerRegistration) -> None:
         """Register this worker with the platform - follows email classifier pattern."""
         platform_url = os.getenv("PLATFORM_URL", "https://crank-platform-dev:8443")
         auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "local-dev-key")
@@ -221,7 +226,7 @@ class CrankStreamingService:
 
         logger.error("❌ Failed to register with platform after {max_retries} attempts")
 
-    async def _send_heartbeat(self):
+    async def _send_heartbeat(self) -> None:
         """Send heartbeat to platform - follows email classifier pattern."""
         platform_url = os.getenv("PLATFORM_URL", "https://crank-platform-dev:8443")
         auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "local-dev-key")
@@ -255,28 +260,30 @@ class CrankStreamingService:
 # Create service instance
 streaming_service = CrankStreamingService()
 
-# Create FastAPI app
-app = FastAPI(
-    title="Crank Streaming Service",
-    description="HTTPS-only streaming service with WebSocket and SSE capabilities",
-    version="2.0.0",
-)
 
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize service on startup."""
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """Manage application lifespan events."""
+    # Startup
     logger.info(
         f"🌊 Crank Streaming Service starting up - Worker ID: {streaming_service.worker_id}",
     )
     # Initialize and register with platform
     await streaming_service.initialize_and_register()
 
+    yield
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Clean up on shutdown."""
+    # Shutdown
     logger.info("🌊 Crank Streaming Service shutting down")
+
+
+# Create FastAPI app
+app = FastAPI(
+    title="Crank Streaming Service",
+    description="HTTPS-only streaming service with WebSocket and SSE capabilities",
+    version="2.0.0",
+    lifespan=lifespan,
+)
 
 
 # ============================================================================
@@ -285,7 +292,7 @@ async def shutdown_event():
 
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> dict[str, Any]:
     """Health check endpoint."""
     return {
         "status": "healthy",
@@ -309,7 +316,7 @@ async def health_check():
 
 
 @app.get("/")
-async def root():
+async def root() -> dict[str, Any]:
     """Root endpoint."""
     return {
         "service": "crank-streaming",
@@ -330,8 +337,8 @@ async def root():
 # ============================================================================
 
 
-@app.get("/stream")
-async def get_stream_info():
+@app.get("/capabilities")
+async def get_stream_info() -> dict[str, Any]:
     """Get streaming endpoint information - expected by smoke test."""
     return {
         "status": "ready",
@@ -347,7 +354,7 @@ async def get_stream_info():
 
 
 @app.post("/stream/text")
-async def stream_text(request: StreamingRequest):
+async def stream_text(request: StreamingRequest) -> EventSourceResponse:
     """Stream text content using Server-Sent Events."""
     stream_id = f"stream-{uuid.uuid4().hex[:8]}"
 
@@ -369,7 +376,7 @@ async def stream_text(request: StreamingRequest):
 
 
 @app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket) -> None:
     """WebSocket endpoint for bidirectional streaming."""
     await streaming_service.connect_websocket(websocket)
 
@@ -394,7 +401,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 logger.info("WebSocket received: {message.get('type', 'unknown')}")
 
                 # Echo back with processing info
-                response = {
+                response: dict[str, Any] = {
                     "type": "response",
                     "original": message,
                     "processed_at": datetime.now().isoformat(),
@@ -427,10 +434,10 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 @app.get("/events")
-async def server_sent_events(request: Request):
+async def server_sent_events(request: Request) -> EventSourceResponse:
     """Server-Sent Events endpoint for real-time updates."""
 
-    async def event_generator():
+    async def event_generator() -> AsyncGenerator[str, None]:
         """Generate periodic events."""
         event_count = 0
         while True:
@@ -439,7 +446,7 @@ async def server_sent_events(request: Request):
                 break
 
             event_count += 1
-            event_data = {
+            event_data: dict[str, Any] = {
                 "event_id": event_count,
                 "timestamp": datetime.now().isoformat(),
                 "worker_id": streaming_service.worker_id,
@@ -454,7 +461,7 @@ async def server_sent_events(request: Request):
 
 
 @app.get("/status")
-async def get_status():
+async def get_status() -> dict[str, Any]:
     """Get streaming service status."""
     return {
         "worker_id": streaming_service.worker_id,
@@ -470,17 +477,13 @@ async def get_status():
 # ============================================================================
 
 
-def main():
+def main() -> None:
     """Main function following proven certificate initialization pattern."""
-    import uvicorn
-
     try:
         # SYNCHRONOUS certificate initialization - PROVEN PATTERN
         logger.info("🔐 Initializing certificates using SECURE CSR pattern...")
-        import sys
 
         sys.path.append("/app/scripts")
-        import asyncio
 
         from crank_cert_initialize import main as init_certificates
 
@@ -516,7 +519,7 @@ def main():
 
     except Exception as e:
         logger.exception("🚫 Failed to initialize certificates with CA service: {e}")
-        raise RuntimeError(f"🚫 Failed to initialize certificates with CA service: {e}")
+        raise RuntimeError(f"🚫 Failed to initialize certificates with CA service: {e}") from e
 
 
 if __name__ == "__main__":

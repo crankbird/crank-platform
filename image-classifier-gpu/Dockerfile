@@ -2,8 +2,8 @@
 # Multi-stage build for optimization
 # Requires NVIDIA Docker runtime and CUDA-capable GPU
 
-# Stage 1: Base with Python and system dependencies
-FROM python:3.11-bullseye as base
+# Stage 1: Base with Python and system dependencies - using slim variant for security
+FROM python:3.12-slim-bookworm as base
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -91,29 +91,25 @@ RUN pip install \
 FROM dependencies as final
 
 # Copy the application code
-COPY ./services/crank_image_classifier_gpu.py .
+COPY ./services/crank_image_classifier_advanced.py .
 COPY ./services/security_config.py .
 
-# Create plugin metadata
-RUN cat > plugin.yaml << 'EOF'
-name: crank-image-classifier-gpu
-version: 1.0.0
-description: GPU-accelerated computer vision ML classification with YOLOv8, CLIP, and modern deep learning
-author: Crank Platform Team
-capabilities:
-  - yolo_object_detection
-  - clip_image_understanding
-  - advanced_scene_analysis
-  - image_embeddings
-  - batch_processing
-requirements:
-  gpu: required
-  vram_min: 4GB
-health_endpoint: /health
-separation_ready: true
-EOF
-
-# Create certificate directory
+# Create plugin metadata file
+RUN echo "name: crank-image-classifier-gpu" > plugin.yaml && \
+    echo "version: 1.0.0" >> plugin.yaml && \
+    echo "description: GPU-accelerated computer vision ML classification with YOLOv8, CLIP, and modern deep learning" >> plugin.yaml && \
+    echo "author: Crank Platform Team" >> plugin.yaml && \
+    echo "capabilities:" >> plugin.yaml && \
+    echo "  - yolo_object_detection" >> plugin.yaml && \
+    echo "  - clip_image_understanding" >> plugin.yaml && \
+    echo "  - advanced_scene_analysis" >> plugin.yaml && \
+    echo "  - image_embeddings" >> plugin.yaml && \
+    echo "  - batch_processing" >> plugin.yaml && \
+    echo "requirements:" >> plugin.yaml && \
+    echo "  gpu: required" >> plugin.yaml && \
+    echo "  vram_min: 4GB" >> plugin.yaml && \
+    echo "health_endpoint: /health" >> plugin.yaml && \
+    echo "separation_ready: true" >> plugin.yaml# Create certificate directory
 RUN mkdir -p /etc/certs
 
 # Pre-download essential models (optional - models will download on first use)
@@ -131,7 +127,7 @@ EXPOSE 8007 8443
 
 # Health check with longer timeout for GPU initialization
 HEALTHCHECK --interval=60s --timeout=30s --start-period=180s --retries=3 \
-  CMD curl -f http://localhost:8007/health || exit 1
+    CMD curl -f http://localhost:8007/health || exit 1
 
 # Set GPU-optimized environment variables
 ENV CUDA_VISIBLE_DEVICES=0
@@ -139,4 +135,4 @@ ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
 # Start the service
-CMD ["python", "crank_image_classifier_gpu.py"]
+CMD ["python", "crank_image_classifier_advanced.py"]

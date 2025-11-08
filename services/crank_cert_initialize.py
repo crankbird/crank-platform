@@ -21,6 +21,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from typing import Optional
 
 import aiohttp
 
@@ -32,40 +33,38 @@ logger = logging.getLogger(__name__)
 class SecureCertificateStore:
     """In-memory certificate store for secure certificate management."""
 
-    def __init__(self):
-        self.ca_cert = None
-        self.platform_cert = None
-        self.platform_key = None
+    def __init__(self) -> None:
+        self.ca_cert: Optional[str] = None
+        self.platform_cert: Optional[str] = None
+        self.platform_key: Optional[str] = None
 
-    def store_certificates(self, ca_cert: str, platform_cert: str, platform_key: str):
+    def store_certificates(self, ca_cert: str, platform_cert: str, platform_key: str) -> None:
         """Store certificates in memory."""
         self.ca_cert = ca_cert
         self.platform_cert = platform_cert
         self.platform_key = platform_key
         logger.info("🔐 Certificates stored securely in memory")
 
-    def get_ssl_context(self):
+    def get_ssl_context(self) -> ssl.SSLContext:
         """Create SSL context from in-memory certificates."""
-        import os
-        import ssl
-        import tempfile
-
         # Create temporary SSL context with in-memory certs
         context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
 
         # Create temporary files for SSL context (must persist during server lifetime)
         temp_dir = tempfile.mkdtemp()
-        cert_file = os.path.join(temp_dir, "cert.pem")
-        key_file = os.path.join(temp_dir, "key.pem")
+        cert_file = Path(temp_dir) / "cert.pem"
+        key_file = Path(temp_dir) / "key.pem"
 
         # Write certificates to temporary files
-        with open(cert_file, "w") as f:
-            f.write(self.platform_cert)
-        with open(key_file, "w") as f:
-            f.write(self.platform_key)
+        with cert_file.open("w") as f:
+            if self.platform_cert is not None:
+                f.write(self.platform_cert)
+        with key_file.open("w") as f:
+            if self.platform_key is not None:
+                f.write(self.platform_key)
 
         # Load certificate chain
-        context.load_cert_chain(cert_file, key_file)
+        context.load_cert_chain(str(cert_file), str(key_file))
 
         # Store temp file paths for cleanup later if needed
         self._temp_cert_file = cert_file
@@ -73,6 +72,16 @@ class SecureCertificateStore:
         self._temp_dir = temp_dir
 
         return context
+
+    @property
+    def temp_cert_file(self) -> str:
+        """Get the temporary certificate file path."""
+        return str(self._temp_cert_file)
+
+    @property
+    def temp_key_file(self) -> str:
+        """Get the temporary key file path."""
+        return str(self._temp_key_file)
 
 
 # Global certificate store
@@ -90,17 +99,16 @@ class CertificateAuthorityClient:
 
     def _create_ssl_context(self) -> ssl.SSLContext:
         """Create SSL context that trusts the Root CA certificate."""
-        import ssl
-
         # Check if Root CA certificate is available
         if Path(self.ca_cert_path).exists():
             # Create SSL context that trusts our Root CA
             ssl_context = ssl.create_default_context(cafile=self.ca_cert_path)
-            logger.info("🔒 Using Root CA certificate for verification: {self.ca_cert_path}")
+            logger.info("🔒 Using Root CA certificate for verification: %s", self.ca_cert_path)
             return ssl_context
         # Fallback to insecure for development (but warn)
         logger.warning(
-            f"⚠️ Root CA certificate not found at {self.ca_cert_path}, using insecure connection",
+            "⚠️ Root CA certificate not found at %s, using insecure connection",
+            self.ca_cert_path,
         )
         ssl_context = ssl.create_default_context()
         ssl_context.check_hostname = False
@@ -142,7 +150,8 @@ class CertificateAuthorityClient:
             async with session.get(f"{self.ca_service_url}/ca/certificate") as response:
                 if response.status == 200:
                     ca_data = await response.json()
-                    return ca_data["ca_certificate"]
+                    ca_certificate: str = ca_data["ca_certificate"]
+                    return ca_certificate
                 error_text = await response.text()
                 raise Exception(f"Failed to get CA certificate: {response.status} - {error_text}")
 
@@ -161,7 +170,8 @@ class CertificateAuthorityClient:
             ) as response:
                 if response.status == 200:
                     cert_response = await response.json()
-                    return cert_response["certificate"]
+                    certificate: str = cert_response["certificate"]
+                    return certificate
                 error_text = await response.text()
                 raise Exception(f"CA service rejected CSR: {response.status} - {error_text}")
 
@@ -171,8 +181,9 @@ async def generate_key_pair_and_csr(service_name: str = "platform") -> tuple[str
     logger.info("🔑 Generating local RSA key pair...")
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        private_key_path = os.path.join(temp_dir, "service.key")
-        csr_path = os.path.join(temp_dir, "service.csr")
+        temp_path = Path(temp_dir)
+        private_key_path = temp_path / "service.key"
+        csr_path = temp_path / "service.csr"
 
         # Generate 4096-bit RSA private key locally
         subprocess.run(
@@ -180,7 +191,7 @@ async def generate_key_pair_and_csr(service_name: str = "platform") -> tuple[str
                 "openssl",
                 "genrsa",
                 "-out",
-                private_key_path,
+                str(private_key_path),
                 "4096",
             ],
             check=True,
@@ -188,7 +199,7 @@ async def generate_key_pair_and_csr(service_name: str = "platform") -> tuple[str
         logger.info("✅ Private key generated locally (never transmitted)")
 
         # Generate CSR with Subject Alternative Names (SAN) for hostname verification
-        config_path = os.path.join(temp_dir, "csr.conf")
+        config_path = temp_path / "csr.conf"
 
         # Create OpenSSL config with Subject Alternative Names
         san_names = [service_name, "localhost"]
@@ -213,7 +224,7 @@ keyUsage = nonRepudiation, digitalSignature, keyEncipherment
 subjectAltName = {san_list}
 """
 
-        with open(config_path, "w") as f:
+        with config_path.open("w") as f:
             f.write(config_content)
 
         subprocess.run(
@@ -222,11 +233,11 @@ subjectAltName = {san_list}
                 "req",
                 "-new",
                 "-key",
-                private_key_path,
+                str(private_key_path),
                 "-out",
-                csr_path,
+                str(csr_path),
                 "-config",
-                config_path,
+                str(config_path),
             ],
             check=True,
         )
@@ -251,20 +262,20 @@ subjectAltName = {san_list}
                 logger.info("🔍 Step C Debug: CSR contains Subject Alternative Names extension")
             else:
                 logger.warning("⚠️ Step C Debug: CSR missing Subject Alternative Names extension")
-                logger.debug(f"CSR content: {result.stdout}")
-        except Exception:
-            logger.warning("⚠️ Could not verify CSR extensions: {e}")
+                logger.debug("CSR content: %s", result.stdout)
+        except Exception as e:
+            logger.warning("⚠️ Could not verify CSR extensions: %s", str(e))
 
         # Read the generated private key and CSR
-        with open(private_key_path) as f:
+        with private_key_path.open() as f:
             private_key_pem = f.read()
-        with open(csr_path) as f:
+        with csr_path.open() as f:
             csr_pem = f.read()
 
     return private_key_pem, csr_pem
 
 
-async def main():
+async def main() -> None:
     """Secure certificate initialization using CSR pattern - NO PRIVATE KEY TRANSMISSION."""
     # Get configuration from environment
     ca_service_url = os.getenv("CA_SERVICE_URL", "https://cert-authority:9090")

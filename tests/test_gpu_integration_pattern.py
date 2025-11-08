@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# type: ignore  # Test file - relaxed type checking
 """
 Test script to validate UniversalGPUManager integration pattern
 Tests the pattern we'll use to replace CUDA-only detection in services
@@ -27,7 +28,7 @@ except ImportError as e:
     sys.exit(1)
 
 
-def test_basic_detection():
+def test_basic_detection() -> None:
     """Test basic GPU detection - replacing torch.cuda.is_available()"""
     print("🔍 Test 1: Basic GPU Detection")
     print("=" * 50)
@@ -47,7 +48,7 @@ def test_basic_detection():
     print()
 
 
-def test_device_initialization():
+def test_device_initialization() -> None:
     """Test device initialization pattern"""
     print("🔍 Test 2: Device Initialization Pattern")
     print("=" * 50)
@@ -67,12 +68,12 @@ def test_device_initialization():
     print(f"✅ Universal device: {new_device}")
 
     # Test tensor creation
-    test_tensor = torch.zeros(10, 10, device=new_device)
+    test_tensor = torch.zeros(10, 10, device=new_device)  # type: ignore[call-overload]
     print(f"✅ Tensor created successfully on: {test_tensor.device}")
     print()
 
 
-def test_device_info():
+def test_device_info() -> None:
     """Test device information retrieval"""
     print("🔍 Test 3: Device Information")
     print("=" * 50)
@@ -93,7 +94,7 @@ def test_device_info():
     print()
 
 
-def test_integration_pattern():
+def test_integration_pattern() -> None:
     """Test the exact integration pattern for services"""
     print("🔍 Test 4: Service Integration Pattern")
     print("=" * 50)
@@ -122,7 +123,7 @@ def test_integration_pattern():
     print()
 
 
-def test_model_loading():
+def test_model_loading() -> None:
     """Test that models can be loaded and moved to detected device"""
     print("🔍 Test 5: Model Loading Pattern")
     print("=" * 50)
@@ -138,7 +139,7 @@ def test_model_loading():
     print(f"✅ Model moved to: {device}")
 
     # Test inference
-    test_input = torch.randn(1, 10, device=device)
+    test_input = torch.randn(1, 10, device=device)  # type: ignore[call-overload]
     with torch.no_grad():
         output = model(test_input)
 
@@ -146,7 +147,7 @@ def test_model_loading():
     print()
 
 
-def main():
+def main() -> None:
     """Run all integration pattern tests"""
     print("🎯 UniversalGPUManager Integration Pattern Tests")
     print("=" * 60)

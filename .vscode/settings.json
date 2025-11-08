@@ -5,6 +5,7 @@
     "python.linting.pylintEnabled": false,
     "python.linting.ruffEnabled": true,
     "python.formatting.provider": "black",
+    // Strict Type Checking for Security & Platform Code
     "python.analysis.typeCheckingMode": "strict",
     "python.analysis.autoImportCompletions": true,
     "python.analysis.autoSearchPaths": true,
@@ -12,6 +13,30 @@
         "./src",
         "./services",
         "./tests"
+    ],
+    // Markdown: Suppress formatting noise to focus on code quality
+    // Rationale: 300+ cosmetic markdown issues hide real problems
+    // Review: Quarterly check if team wants to enable formatting
+    "markdownlint.config": {
+        "MD022": false, // Headings surrounded by blank lines
+        "MD032": false, // Lists surrounded by blank lines
+        "MD031": false, // Fenced code blocks surrounded by blank lines
+        "MD040": false // Fenced code blocks language specification
+    },
+    // ML Package Indexing Configuration
+    "python.analysis.packageIndexDepths": [
+        {
+            "name": "sklearn",
+            "depth": 2
+        },
+        {
+            "name": "nltk",
+            "depth": 2
+        },
+        {
+            "name": "torch",
+            "depth": 2
+        }
     ],
     "[python]": {
         "editor.formatOnSave": true,

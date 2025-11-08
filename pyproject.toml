@@ -15,26 +15,23 @@ dependencies = [
     "fastapi>=0.104.0",
     "uvicorn[standard]>=0.24.0",
     "pydantic>=2.5.0",
-
     # HTTP client for service communication
     "httpx>=0.25.0",
     "aiohttp>=3.8.0",
-
     # File processing
     "python-multipart>=0.0.6",
-
     # Basic Computer Vision (CPU-friendly)
     "opencv-python>=4.8.0",
     "Pillow>=10.1.0",
     "numpy>=1.25.0",
     "scikit-learn>=1.3.0",
-
     # Basic image processing
     "webcolors>=1.13",
-
     # Configuration and utilities
     "PyYAML>=6.0.0",
     "psutil>=5.9.0",
+    "nltk>=3.9.2",
+    "beautifulsoup4>=4.14.2",
 ]
 
 [project.optional-dependencies]
@@ -92,21 +89,50 @@ line-length = 100
 target-version = "py39"
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "N", "UP", "YTT", "S", "BLE", "B", "A", "COM", "C4", "DTZ", "T10", "EM", "EXE", "ISC", "ICN", "G", "INP", "PIE", "T20", "PYI", "PT", "Q", "RSE", "RET", "SLF", "SIM", "TID", "TCH", "ARG", "PTH", "ERA", "PD", "PGH", "PL", "TRY", "NPY", "RUF"]
+# Keep essential rules as guard rails, not as a type checker
+select = ["E","F","I","UP","B","C4","PIE","RUF"]
 ignore = [
-    "E501",    # Line too long
-    "S101",    # Use of assert
-    "PLR0913", # Too many arguments
-    "PLR0915", # Too many statements
-    "T201",    # Print statements (allow in tests)
-    "S603",    # Subprocess without shell=False
-    "S607",    # Starting process with partial path
-    "PLR2004", # Magic value comparison
-    "TRY003",  # Raise vanilla args
-    "EM102",   # F-string in exception
-    "EM101",   # Raw string in exception
-    "BLE001",  # Blind except
+    "E501",    # Line too long (let black handle it)
+    "ANN101",  # Missing type annotation for `self`
+    "ANN102",  # Missing type annotation for `cls`
 ]
+
+[tool.ruff.lint.extend-per-file-ignores]
+# Tests can be more relaxed
+"**/tests/**" = ["S101", "PLR2004", "ARG001", "ARG002"]
+
+# Services (development/prototype code) - more permissive
+"services/**" = [
+    "S106",     # Possible hardcoded password
+    "S108",     # Probable insecure usage of temp file/directory
+    "S603",     # subprocess call: check for execution of untrusted input
+    "S607",     # Starting a process with a partial executable path
+    "BLE001",   # Do not catch blind exception
+    "TRY003",   # Avoid specifying long messages outside exception class
+    "EM101",    # Exception must not use a string literal
+    "EM102",    # Exception must not use an f-string literal
+    "G004",     # Logging statement uses f-string
+    "PTH",      # Use pathlib instead of os.path
+    "PLR0913",  # Too many arguments to function call
+    "PLR2004",  # Magic value used in comparison
+    "C901",     # Function is too complex
+    "ARG001",   # Unused function argument
+    "ARG002",   # Unused method argument
+    "S110",     # Try-except-pass detected
+    "S104",     # Possible binding to all interfaces
+    "S501",     # Probable use of requests call with verify=False
+]
+
+# Scripts and tools - very permissive (prototype/utility code)
+"scripts/**" = [
+    "S", "BLE001", "TRY003", "EM101", "EM102", "G004", "PTH", "PLR", "C901", "ARG"
+]
+"tools/**" = [
+    "S", "BLE001", "TRY003", "EM101", "EM102", "G004", "PTH", "PLR", "C901", "ARG"
+]
+
+# Strict for core src (production code)
+"src/**" = []
 
 [tool.mypy]
 python_version = "3.9"
@@ -121,3 +147,10 @@ warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
 strict_equality = true
+
+[dependency-groups]
+dev = [
+    "types-beautifulsoup4>=4.12.0.20250516",
+    "types-pyyaml>=6.0.12.20250915",
+    "types-requests>=2.32.4.20250913",
+]

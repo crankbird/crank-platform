@@ -13,6 +13,7 @@ Features:
 import logging
 import os
 import ssl
+import subprocess
 from pathlib import Path
 from typing import Any, Optional
 
@@ -58,7 +59,7 @@ class SecurityConfig:
 
         return context
 
-    def get_client_cert(self) -> Optional[tuple]:
+    def get_client_cert(self) -> Optional[tuple[str, str]]:
         """Get client certificate for mTLS."""
         if self.require_mtls:
             if self.platform_cert_path.exists() and self.platform_key_path.exists():
@@ -69,8 +70,8 @@ class SecurityConfig:
     def create_secure_http_client(self, timeout: int = 30) -> httpx.AsyncClient:
         """Create HTTPS client with proper security configuration."""
 
-        # Build client configuration
-        client_config = {
+        # Build client configuration with proper typing
+        client_config: dict[str, Any] = {
             "timeout": httpx.Timeout(timeout),
             "follow_redirects": False,  # Security: no automatic redirects
             "limits": httpx.Limits(
@@ -114,7 +115,7 @@ class SecurePlatformService:
         self.environment = environment
 
     async def secure_worker_call(
-        self, worker_endpoint: str, endpoint: str, **request_kwargs,
+        self, worker_endpoint: str, endpoint: str, **request_kwargs: Any,
     ) -> httpx.Response:
         """Make secure HTTPS call to worker with mTLS."""
 
@@ -141,15 +142,15 @@ class SecurePlatformService:
                 response.raise_for_status()
                 return response
 
-        except httpx.ConnectError:
-            logger.exception("Failed to connect to worker {worker_endpoint}: {e}")
-            raise HTTPException(status_code=503, detail=f"Worker unavailable: {worker_endpoint}")
-        except httpx.TimeoutException:
-            logger.exception("Timeout calling worker {worker_endpoint}")
-            raise HTTPException(status_code=504, detail=f"Worker timeout: {worker_endpoint}")
+        except httpx.ConnectError as e:
+            logger.exception("Failed to connect to worker %s", worker_endpoint)
+            raise HTTPException(status_code=503, detail=f"Worker unavailable: {worker_endpoint}") from e
+        except httpx.TimeoutException as e:
+            logger.exception("Timeout calling worker %s", worker_endpoint)
+            raise HTTPException(status_code=504, detail=f"Worker timeout: {worker_endpoint}") from e
         except httpx.HTTPStatusError as e:
-            logger.exception("Worker returned error {e.response.status_code}: {e.response.text}")
-            raise HTTPException(status_code=502, detail=f"Worker error: {e.response.status_code}")
+            logger.exception("Worker returned error %s: %s", e.response.status_code, e.response.text)
+            raise HTTPException(status_code=502, detail=f"Worker error: {e.response.status_code}") from e
 
 
 # Certificate generation utilities for development
@@ -157,10 +158,8 @@ class ResilientCertificateManager:
     """Anti-fragile certificate management for zero-trust architecture."""
 
     @staticmethod
-    def generate_complete_dev_certificates(cert_dir: Path):
+    def generate_complete_dev_certificates(cert_dir: Path) -> None:
         """Generate complete certificate chain: CA + server + client certificates."""
-        import subprocess
-
         cert_dir.mkdir(parents=True, exist_ok=True)
         logger.info("🔐 Generating complete certificate infrastructure in {cert_dir}")
 
@@ -272,14 +271,14 @@ class ResilientCertificateManager:
         )
 
         # Set proper permissions - readable by all for Docker development containers
-        os.chmod(str(cert_dir / "ca.key"), 0o644)  # Private keys readable by all (dev only)
-        os.chmod(str(cert_dir / "platform.key"), 0o644)
-        os.chmod(str(cert_dir / "client.key"), 0o644)
+        (cert_dir / "ca.key").chmod(0o644)  # Private keys readable by all (dev only)
+        (cert_dir / "platform.key").chmod(0o644)
+        (cert_dir / "client.key").chmod(0o644)
 
         # Public certificates readable by all
-        os.chmod(str(cert_dir / "ca.crt"), 0o644)
-        os.chmod(str(cert_dir / "platform.crt"), 0o644)
-        os.chmod(str(cert_dir / "client.crt"), 0o644)
+        (cert_dir / "ca.crt").chmod(0o644)
+        (cert_dir / "platform.crt").chmod(0o644)
+        (cert_dir / "client.crt").chmod(0o644)
 
         logger.info("✅ Complete certificate infrastructure generated successfully")
         logger.warning("🚨 Private keys are world-readable - DEVELOPMENT ONLY!")
@@ -291,7 +290,7 @@ class ResilientCertificateManager:
         platform_cert = cert_dir / "platform.crt"
         client_cert = cert_dir / "client.crt"
 
-        health_status = {
+        health_status: dict[str, Any] = {
             "ca_cert_exists": ca_cert.exists(),
             "platform_cert_exists": platform_cert.exists(),
             "client_cert_exists": client_cert.exists(),
@@ -321,9 +320,11 @@ class AdaptiveSecurityConfig(SecurityConfig):
     def get_security_level(self) -> str:
         """Determine current security level based on available certificates."""
         health = ResilientCertificateManager.verify_certificate_health(self.cert_dir)
-        return health["security_level"]
+        security_level = health["security_level"]
+        # Ensure we return a string type
+        return str(security_level)
 
-    def get_client_cert_for_mtls(self) -> Optional[tuple]:
+    def get_client_cert_for_mtls(self) -> Optional[tuple[str, str]]:
         """Get client certificate tuple for mTLS connections."""
         if self.client_cert_path.exists() and self.client_key_path.exists():
             return (str(self.client_cert_path), str(self.client_key_path))
@@ -333,10 +334,10 @@ class AdaptiveSecurityConfig(SecurityConfig):
         """Create HTTP client that adapts to available security infrastructure."""
 
         security_level = self.get_security_level()
-        logger.info("🔒 Creating HTTP client with security level: {security_level}")
+        logger.info("🔒 Creating HTTP client with security level: %s", security_level)
 
-        # Build base client configuration
-        client_config = {
+        # Build base client configuration with proper typing
+        client_config: dict[str, Any] = {
             "timeout": httpx.Timeout(timeout),
             "follow_redirects": False,
             "limits": httpx.Limits(
@@ -387,7 +388,9 @@ def initialize_security(environment: Optional[str] = None) -> AdaptiveSecurityCo
         # Verify certificate health
         health = ResilientCertificateManager.verify_certificate_health(security_config.cert_dir)
         logger.info(
-            f"🔍 Certificate health: {health['security_level']} (complete: {health['certificate_chain_complete']})",
+            "🔍 Certificate health: %s (complete: %s)",
+            health["security_level"],
+            health["certificate_chain_complete"],
         )
 
     elif environment == "production":

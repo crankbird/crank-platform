@@ -6,7 +6,7 @@
     "dockerfile": "services/Dockerfile.crank-image-classifier-gpu",
     "dependencies": {
         "runtime_files": [
-            "services/crank_image_classifier.py",
+            "services/crank_image_classifier_advanced.py",
             "services/crank_cert_initialize.py"
         ],
         "requirements_file": "services/requirements-crank-image-classifier.txt",

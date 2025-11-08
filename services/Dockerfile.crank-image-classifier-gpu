@@ -24,7 +24,7 @@ RUN pip install --no-cache-dir --timeout=300 \
     torch==2.5.1+cu121 torchvision==0.20.1+cu121 torchaudio==2.5.1+cu121 \
     --index-url https://download.pytorch.org/whl/cu121 \
     || (echo "❌ CUDA PyTorch installation failed - falling back to CPU version" && \
-        pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu)
+    pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu)
 
 # Install all other dependencies from requirements file
 # This includes dev/test tools (pytest, black, isort) and ML libraries
@@ -34,7 +34,7 @@ RUN pip install --no-cache-dir -r requirements-universal-gpu.txt
 RUN pip install --no-cache-dir ultralytics opencv-python GPUtil psutil
 
 # Copy service files
-COPY services/crank_image_classifier.py ./crank_image_classifier_simple.py
+COPY services/crank_image_classifier_advanced.py ./crank_image_classifier_simple.py
 
 # Copy GPU manager dependency (required for UniversalGPUManager)
 COPY src/gpu_manager.py ./

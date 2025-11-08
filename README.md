@@ -115,4 +115,3 @@ Every time ChatGPT says "I can't do X, but here's some Python code to run in you
 ---
 
 **Next**: Read [Architecture](docs/ARCHITECTURE.md) to understand the platform design, or [Quick Start](QUICK_START.md) to get running immediately.
-

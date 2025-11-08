@@ -15,6 +15,10 @@ import sys
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable
 
 # Configure logging
 logging.basicConfig(
@@ -104,15 +108,16 @@ class MascotTestOrchestrator:
         }
         return emoji_map[mascot]
 
-    def load_mascot_config(self, mascot: MascotType) -> dict:
+    def load_mascot_config(self, mascot: MascotType) -> dict[str, Any]:
         """Load configuration for specific mascot"""
         config_file = self.mascots_dir / mascot.value / f"{mascot.value}_config.json"
         if config_file.exists():
-            with open(config_file) as f:
-                return json.load(f)
+            with config_file.open() as f:
+                config_data: dict[str, Any] = json.load(f)
+                return config_data
 
         # Default configurations
-        default_configs = {
+        default_configs: dict[MascotType, dict[str, Any]] = {
             MascotType.WENDY: {
                 "test_categories": [
                     "input_sanitization",
@@ -154,13 +159,22 @@ class MascotTestOrchestrator:
     async def run_single_mascot_test(self, mascot: MascotType, target: str) -> TestResult:
         """Run tests for a single mascot"""
         emoji = self.get_mascot_emoji(mascot)
-        logger.info("{emoji} {mascot.value.title()} starting analysis of {target}")
+        logger.info(
+            "%s %s starting analysis of %s",
+            emoji,
+            mascot.value.title(),
+            target,
+        )
 
         config = self.load_mascot_config(mascot)
         test_script = self.mascots_dir / mascot.value / f"{mascot.value}_tests.py"
 
         if not test_script.exists():
-            logger.warning("Test script not found for {mascot.value}: {test_script}")
+            logger.warning(
+                "Test script not found for %s: %s",
+                mascot.value,
+                test_script,
+            )
             return TestResult(
                 mascot=mascot,
                 target=target,
@@ -191,11 +205,15 @@ class MascotTestOrchestrator:
         )
 
         logger.info(
-            f"{emoji} {mascot.value.title()} completed: {score:.1f}/5.0 ({'PASS' if passed else 'FAIL'})",
+            "%s %s completed: %.1f/5.0 (%s)",
+            emoji,
+            mascot.value.title(),
+            score,
+            "PASS" if passed else "FAIL",
         )
         return result
 
-    async def _execute_mascot_tests(self, mascot: MascotType, target: str, config: dict) -> tuple:
+    async def _execute_mascot_tests(self, mascot: MascotType, _target: str, _config: dict[str, Any]) -> tuple[list[str], list[str], list[str], float]:
         """Execute specific mascot test suite"""
         # This would integrate with actual test execution
         # For now, return mock results based on mascot type
@@ -266,25 +284,34 @@ class MascotTestOrchestrator:
             raise ValueError(f"Unknown collaboration pattern: {pattern_name}")
 
         pattern = self.collaboration_patterns[pattern_name]
-        logger.info("🤝 Running {pattern.name} collaboration on {target}")
+        logger.info(
+            "🤝 Running %s collaboration on %s",
+            pattern.name,
+            target,
+        )
 
         # Run individual mascot tests
-        tasks = []
+        tasks: list[Awaitable[TestResult]] = []
         for mascot in pattern.mascots:
             tasks.append(self.run_single_mascot_test(mascot, target))
 
-        results = await asyncio.gather(*tasks)
+        results: list[TestResult] = await asyncio.gather(*tasks)
 
         # Analyze collaboration points
-        collaboration_results = {}
+        collaboration_results: dict[MascotType, TestResult] = {}
         for result in results:
             collaboration_results[result.mascot] = result
 
         # Log collaboration summary
-        logger.info("🤝 {pattern.name} collaboration completed")
+        logger.info("🤝 %s collaboration completed", pattern.name)
         for mascot, result in collaboration_results.items():
-            self.get_mascot_emoji(mascot)
-            logger.info("  {emoji} {mascot.value.title()}: {result.score:.1f}/5.0")
+            emoji = self.get_mascot_emoji(mascot)
+            logger.info(
+                "  %s %s: %.1f/5.0",
+                emoji,
+                mascot.value.title(),
+                result.score,
+            )
 
         return collaboration_results
 
@@ -293,7 +320,7 @@ class MascotTestOrchestrator:
         prompt_file = self.mascots_dir / mascot.value / f"{mascot.value}_agent_prompt.txt"
 
         if prompt_file.exists():
-            with open(prompt_file) as f:
+            with prompt_file.open() as f:
                 base_prompt = f.read()
         else:
             # Fallback to default prompts from README
@@ -314,7 +341,7 @@ class MascotTestOrchestrator:
         }
         return prompts[mascot]
 
-    def print_results_summary(self, results: dict[MascotType, TestResult]):
+    def print_results_summary(self, results: dict[MascotType, TestResult]) -> None:
         """Print formatted results summary"""
         print("\n" + "=" * 80)
         print("🎭 MASCOT TEST RESULTS SUMMARY")
@@ -354,7 +381,8 @@ class MascotTestOrchestrator:
         print("=" * 80)
 
 
-async def main():
+async def main() -> None:
+    """Main entry point for mascot testing framework"""
     parser = argparse.ArgumentParser(description="🎭 Mascot-Driven Testing Framework")
     parser.add_argument("--target", help="Target file/directory to test")
     parser.add_argument(

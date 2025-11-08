@@ -10,5 +10,5 @@ pydantic==2.5.0
 python-multipart==0.0.6
 
 # Streaming-specific libraries
-sse-starlette==2.1.0
+sse-starlette==3.0.3
 websockets==12.0

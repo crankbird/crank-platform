@@ -67,13 +67,13 @@ try:
     # 3. torch.cuda.is_available() vs nvidia-smi output discrepancies
     #
     gpu_manager = UniversalGPUManager()
-    GPU_AVAILABLE = gpu_manager.get_device_str() != "cpu"
-    GPU_DEVICE = gpu_manager.get_device()
-    GPU_INFO = gpu_manager.get_info()
+    gpu_available = gpu_manager.get_device_str() != "cpu"
+    gpu_device = gpu_manager.get_device()
+    gpu_info = gpu_manager.get_info()
 except ImportError:
-    GPU_AVAILABLE = False
-    GPU_DEVICE = None
-    GPU_INFO = {"type": "CPU", "platform": "Unknown"}
+    gpu_available = False
+    gpu_device = None
+    gpu_info = {"type": "CPU", "platform": "Unknown"}
     logger.warning("GPU libraries not available - running in CPU mode")
 
 
@@ -109,7 +109,7 @@ class ImageClassificationResponse(BaseModel):
 class CrankImageClassifier:
     """Crank Image Classifier Service following the working pattern."""
 
-    def __init__(self, platform_url: Optional[str] = None, cert_store=None):
+    def __init__(self, platform_url: Optional[str] = None, cert_store: Any = None) -> None:
         self.app = FastAPI(title="Crank Image Classifier", version="1.0.0")
 
         # 🔐 ZERO-TRUST: Use pre-loaded certificates from synchronous initialization
@@ -137,9 +137,9 @@ class CrankImageClassifier:
         self.worker_id = None
 
         # Initialize GPU status with universal detection
-        self.gpu_available = GPU_AVAILABLE
-        self.gpu_device = GPU_DEVICE
-        self.gpu_info = GPU_INFO
+        self.gpu_available = gpu_available
+        self.gpu_device = gpu_device
+        self.gpu_info = gpu_info
 
         if self.gpu_available:
             logger.info(
@@ -155,11 +155,11 @@ class CrankImageClassifier:
         self.app.add_event_handler("startup", self._startup)
         self.app.add_event_handler("shutdown", self._shutdown)
 
-    def _setup_routes(self):
+    def _setup_routes(self) -> None:
         """Setup FastAPI routes."""
 
         @self.app.get("/health")
-        async def health_check():
+        async def health_check() -> dict[str, Any]:
             """Health check endpoint with security status."""
             security_status = {}
             if hasattr(self, "cert_store"):
@@ -205,7 +205,7 @@ class CrankImageClassifier:
             }
 
         @self.app.get("/")
-        async def root():
+        async def root() -> dict[str, Any]:
             """Root endpoint with service information."""
             return {
                 "service": "Crank Image Classifier",
@@ -224,8 +224,8 @@ class CrankImageClassifier:
         async def classify_image_endpoint(
             file: UploadFile = File(...),
             classification_types: str = Form("object_detection,scene_classification"),
-            confidence_threshold: float = Form(0.6),
-        ):
+            confidence_threshold: float = Form(0.5),
+        ) -> ImageClassificationResponse:
             """Classify uploaded image."""
             try:
                 # Read image content
@@ -256,7 +256,7 @@ class CrankImageClassifier:
                 raise HTTPException(status_code=HTTP_STATUS_SERVER_ERROR, detail=str(e)) from e
 
         @self.app.get("/capabilities")
-        async def get_capabilities():
+        async def get_capabilities() -> dict[str, Any]:
             """Get classification capabilities."""
             return {
                 "classification_types": [
@@ -396,7 +396,7 @@ class CrankImageClassifier:
             else "low",
         }
 
-    async def _startup(self):
+    async def _startup(self) -> None:
         """Startup handler - register with platform."""
         logger.info("🖼️ Starting Crank Image Classifier...")
 
@@ -425,7 +425,7 @@ class CrankImageClassifier:
         # Start heartbeat background task
         self._start_heartbeat_task()
 
-    async def _register_with_platform(self, worker_info: WorkerRegistration):
+    async def _register_with_platform(self, worker_info: WorkerRegistration) -> None:
         """Register this worker with the platform using mTLS."""
         max_retries = 5
         retry_delay = 5  # seconds
@@ -469,18 +469,18 @@ class CrankImageClassifier:
         logger.error("Failed to register with platform after all retries")
         # Continue running even if registration fails for development purposes
 
-    def _create_client(self):
+    def _create_client(self) -> httpx.AsyncClient:
         """Create HTTP client with certificate verification."""
         if hasattr(self.cert_store, "ca_cert") and self.cert_store.ca_cert:
             # Use CA certificate for verification
             return httpx.AsyncClient(verify=False)  # Simplified for now
         return httpx.AsyncClient(verify=False)
 
-    def _start_heartbeat_task(self):
+    def _start_heartbeat_task(self) -> None:
         """Start the background heartbeat task."""
         heartbeat_interval = int(os.getenv("WORKER_HEARTBEAT_INTERVAL", "20"))
 
-        async def heartbeat_loop():
+        async def heartbeat_loop() -> None:
             """Background task to send periodic heartbeats."""
             while True:
                 try:
@@ -498,7 +498,7 @@ class CrankImageClassifier:
         self.heartbeat_task = asyncio.create_task(heartbeat_loop())
         logger.info("🫀 Started heartbeat task with %ds interval", heartbeat_interval)
 
-    async def _send_heartbeat(self):
+    async def _send_heartbeat(self) -> None:
         """Send heartbeat to platform."""
         try:
             auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "local-dev-key")
@@ -525,7 +525,7 @@ class CrankImageClassifier:
         except Exception as e:
             logger.warning("Failed to send heartbeat: %s", e)
 
-    async def _shutdown(self):
+    async def _shutdown(self) -> None:
         """Shutdown handler - deregister from platform."""
         if self.worker_id:
             logger.info("🔒 Deregistering image classifier from platform...")
@@ -537,13 +537,13 @@ class CrankImageClassifier:
                 logger.warning("Failed to deregister from platform: %s", e)
 
 
-def create_crank_image_classifier(platform_url: Optional[str] = None, cert_store=None) -> FastAPI:
+def create_crank_image_classifier(platform_url: Optional[str] = None, cert_store: Any = None) -> FastAPI:
     """Create Crank Image Classifier application."""
     classifier = CrankImageClassifier(platform_url, cert_store)
     return classifier.app
 
 
-def main():
+def main() -> None:
     """Main entry point with HTTPS enforcement and Certificate Authority Service integration."""
     import uvicorn
 

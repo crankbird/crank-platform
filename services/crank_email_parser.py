@@ -11,14 +11,19 @@ import email
 import logging
 import mailbox
 import os
+import ssl
+import sys
 import tempfile
-from collections.abc import Iterator
-from datetime import datetime
+from collections.abc import AsyncIterator, Iterator
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from email import policy
+from types import TracebackType
 from typing import Any, Optional
 from uuid import uuid4
 
 import httpx
+import uvicorn
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 
@@ -28,6 +33,8 @@ from pydantic import BaseModel
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# FastAPI dependency defaults - create at module level to avoid evaluation in defaults
+_DEFAULT_FILE_UPLOAD = File(...)
 
 # Worker registration model
 class WorkerRegistration(BaseModel):
@@ -79,8 +86,26 @@ class EmailParseResponse(BaseModel):
 class CrankEmailParserService:
     """Email parser service implementing crank-platform mesh interface."""
 
-    def __init__(self):
-        self.app = FastAPI(title="Crank Email Parser", version="1.0.0")
+    def __init__(self) -> None:
+        # Create lifespan context manager
+        @asynccontextmanager
+        async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+            # Startup
+            logger.info("📧 Starting Crank Email Parser Service...")
+            await self._register_with_platform()
+            logger.info("✅ Crank Email Parser Service startup complete!")
+
+            yield
+
+            # Shutdown
+            if self.heartbeat_task:
+                self.heartbeat_task.cancel()
+                try:
+                    await self.heartbeat_task
+                except asyncio.CancelledError:
+                    logger.info("Heartbeat task cancelled")
+
+        self.app = FastAPI(title="Crank Email Parser", version="1.0.0", lifespan=lifespan)
 
         # Worker registration configuration
         self.worker_id = f"email-parser-{uuid4().hex[:8]}"
@@ -89,19 +114,18 @@ class CrankEmailParserService:
             f"https://crank-email-parser:{os.getenv('EMAIL_PARSER_HTTPS_PORT', '8301')}"
         )
         self.platform_auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "dev-mesh-key")
-        self.heartbeat_task = None
+        self.heartbeat_task: Optional[asyncio.Task[None]] = None
 
         # Legacy service_id for compatibility
         self.service_id = self.worker_id
 
         self.setup_routes()
-        self.setup_startup()
 
-    def setup_routes(self):
+    def setup_routes(self) -> None:
         """Setup FastAPI routes for the service."""
 
         @self.app.get("/health")
-        async def health_check():
+        async def health_check() -> dict[str, Any]:
             return {
                 "status": "healthy",
                 "service": "crank-email-parser",
@@ -115,7 +139,7 @@ class CrankEmailParserService:
             }
 
         @self.app.get("/parse")
-        async def parse_info():
+        async def parse_info() -> dict[str, Any]:
             """Get information about available parsing endpoints."""
             return {
                 "service": "crank-email-parser",
@@ -150,46 +174,54 @@ class CrankEmailParserService:
 
         @self.app.post("/parse/mbox", response_model=EmailParseResponse)
         async def parse_mbox_file(
-            file: UploadFile = File(...),
+            file: UploadFile = _DEFAULT_FILE_UPLOAD,
             request_data: str = Form(...),
-        ):
+        ) -> EmailParseResponse:
             """Parse mbox email archive."""
             try:
-                parse_request = EmailParseRequest.parse_raw(request_data)
+                parse_request = EmailParseRequest.model_validate_json(request_data)
                 return await self._parse_mbox(file, parse_request)
             except Exception as e:
                 logger.exception("Error parsing mbox: {e!s}")
-                raise HTTPException(status_code=500, detail=str(e))
+                raise HTTPException(status_code=500, detail=str(e)) from e
 
         @self.app.post("/parse/eml", response_model=EmailParseResponse)
         async def parse_eml_file(
-            file: UploadFile = File(...),
+            file: UploadFile = _DEFAULT_FILE_UPLOAD,
             request_data: str = Form(...),
-        ):
+        ) -> EmailParseResponse:
             """Parse single EML file."""
             try:
-                parse_request = EmailParseRequest.parse_raw(request_data)
+                parse_request = EmailParseRequest.model_validate_json(request_data)
                 return await self._parse_eml(file, parse_request)
             except Exception as e:
                 logger.exception("Error parsing EML: {e!s}")
-                raise HTTPException(status_code=500, detail=str(e))
+                raise HTTPException(status_code=500, detail=str(e)) from e
 
         @self.app.post("/analyze/archive")
         async def analyze_email_archive(
-            file: UploadFile = File(...),
+            file: UploadFile = _DEFAULT_FILE_UPLOAD,
             request_data: str = Form(...),
-        ):
+        ) -> dict[str, Any]:
             """Analyze email archive patterns and statistics."""
             try:
-                parse_request = EmailParseRequest.parse_raw(request_data)
+                parse_request = EmailParseRequest.model_validate_json(request_data)
                 return await self._analyze_archive(file, parse_request)
             except Exception as e:
                 logger.exception("Error analyzing archive: {e!s}")
-                raise HTTPException(status_code=500, detail=str(e))
+                raise HTTPException(status_code=500, detail=str(e)) from e
+
+        # Store function references to prevent "unused function" warnings from type checkers
+        # These functions are actually used by FastAPI through decorators
+        self._health_check_func = health_check
+        self._parse_info_func = parse_info
+        self._parse_mbox_file_func = parse_mbox_file
+        self._parse_eml_file_func = parse_eml_file
+        self._analyze_email_archive_func = analyze_email_archive
 
     async def _parse_mbox(self, file: UploadFile, request: EmailParseRequest) -> EmailParseResponse:
         """Parse mbox file using streaming parser."""
-        start_time = datetime.now()
+        start_time = datetime.now(timezone.utc)
         job_id = f"mbox-{uuid4().hex[:8]}"
 
         # Read file content
@@ -212,7 +244,7 @@ class CrankEmailParserService:
 
         # Calculate metrics
         receipt_count = sum(1 for msg in messages if msg.get("is_receipt", False))
-        processing_time_ms = (datetime.now() - start_time).total_seconds() * 1000
+        processing_time_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
 
         # Generate summary
         summary = self._generate_summary(messages)
@@ -229,12 +261,12 @@ class CrankEmailParserService:
 
     async def _parse_eml(self, file: UploadFile, request: EmailParseRequest) -> EmailParseResponse:
         """Parse single EML file."""
-        start_time = datetime.now()
+        start_time = datetime.now(timezone.utc)
         job_id = f"eml-{uuid4().hex[:8]}"
 
         # Read and parse EML
         content = await file.read()
-        message = email.message_from_bytes(content, policy=policy.default)
+        message = email.message_from_bytes(content, policy=policy.default)  # type: ignore[arg-type]
 
         # Convert to our format
         parsed_message = self._message_to_record(
@@ -246,7 +278,7 @@ class CrankEmailParserService:
 
         messages = [parsed_message]
         receipt_count = 1 if parsed_message.get("is_receipt", False) else 0
-        processing_time_ms = (datetime.now() - start_time).total_seconds() * 1000
+        processing_time_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
 
         return EmailParseResponse(
             job_id=job_id,
@@ -267,7 +299,7 @@ class CrankEmailParserService:
         messages = parse_response.messages
 
         # Perform analysis
-        analysis = {
+        analysis: dict[str, Any] = {
             "total_messages": len(messages),
             "receipt_ratio": parse_response.receipt_count / len(messages) if messages else 0,
             "date_range": self._get_date_range(messages),
@@ -291,7 +323,7 @@ class CrankEmailParserService:
         keywords: list[str],
         body_snippet_chars: int = 200,
         max_messages: Optional[int] = None,
-    ) -> Iterator[dict]:
+    ) -> Iterator[dict[str, Any]]:
         """Yield parsed message records from an mbox file."""
         keyword_list = list(keywords)
         lowered_keywords = [kw.lower() for kw in keyword_list]
@@ -313,12 +345,12 @@ class CrankEmailParserService:
 
     def _message_to_record(
         self,
-        message,
+        message: Any,  # Can be EmailMessage or mboxMessage
         *,
         keyword_list: list[str],
         lowered_keywords: list[str],
         body_snippet_chars: int,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Convert email message to structured record."""
         header_from = str(message.get("From") or "").strip()
         header_subject = str(message.get("Subject") or "").strip()
@@ -345,10 +377,10 @@ class CrankEmailParserService:
             "is_receipt": bool(matched_keywords),
             "matched_keywords": matched_keywords,
             "body_length": len(body_text),
-            "parsed_at": datetime.now().isoformat(),
+            "parsed_at": datetime.now(timezone.utc).isoformat(),
         }
 
-    def _get_body_text(self, message) -> str:
+    def _get_body_text(self, message: Any) -> str:
         """Extract plaintext body from message."""
         if message.is_multipart():
             parts = []
@@ -361,13 +393,13 @@ class CrankEmailParserService:
                 if isinstance(payload, (bytes, bytearray)):
                     charset = part.get_content_charset() or "utf-8"
                     try:
-                        parts.append(bytes(payload).decode(charset, errors="replace"))
+                        parts.append(bytes(payload).decode(charset, errors="replace"))  # pyright: ignore[reportUnknownMemberType]
                     except LookupError:
-                        parts.append(bytes(payload).decode("utf-8", errors="replace"))
+                        parts.append(bytes(payload).decode("utf-8", errors="replace"))  # pyright: ignore[reportUnknownMemberType]
                     continue
                 if isinstance(payload, str):
-                    parts.append(payload)
-            return "\n".join(parts).strip()
+                    parts.append(payload)  # pyright: ignore[reportUnknownMemberType]
+            return "\n".join(parts).strip()  # pyright: ignore[reportUnknownArgumentType]
 
         payload = message.get_payload(decode=True)
         if payload is None:
@@ -407,7 +439,7 @@ class CrankEmailParserService:
             "most_common_keywords": self._get_common_keywords(messages),
         }
 
-    def _get_date_range(self, messages: list[dict[str, Any]]) -> dict[str, str]:
+    def _get_date_range(self, messages: list[dict[str, Any]]) -> dict[str, Optional[str]]:
         """Get date range from messages."""
         dates = [m.get("date", "") for m in messages if m.get("date")]
         if not dates:
@@ -424,7 +456,7 @@ class CrankEmailParserService:
         self, messages: list[dict[str, Any]], limit: int = 5,
     ) -> list[dict[str, Any]]:
         """Get top senders by message count."""
-        sender_counts = {}
+        sender_counts: dict[str, int] = {}
         for msg in messages:
             sender = msg.get("from", "Unknown")
             sender_counts[sender] = sender_counts.get(sender, 0) + 1
@@ -434,7 +466,7 @@ class CrankEmailParserService:
 
     def _get_common_keywords(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Get most common matched keywords."""
-        keyword_counts = {}
+        keyword_counts: dict[str, int] = {}
         for msg in messages:
             for keyword in msg.get("matched_keywords", []):
                 keyword_counts[keyword] = keyword_counts.get(keyword, 0) + 1
@@ -444,7 +476,7 @@ class CrankEmailParserService:
 
     def _analyze_subject_keywords(self, messages: list[dict[str, Any]]) -> dict[str, int]:
         """Analyze common words in email subjects."""
-        word_counts = {}
+        word_counts: dict[str, int] = {}
         for msg in messages:
             subject = msg.get("subject", "").lower()
             words = subject.split()
@@ -479,18 +511,14 @@ class CrankEmailParserService:
     class _SecureHTTPClientManager:
         """Context manager for creating HTTP client with CA certificate verification."""
 
-        def __init__(self, ca_service_url="https://cert-authority:9090"):
+        def __init__(self, ca_service_url: str = "https://cert-authority:9090") -> None:
             self.ca_service_url = ca_service_url
-            self.ca_cert_file = None
-            self.client = None
+            self.ca_cert_file: Optional[str] = None
+            self.client: Optional[httpx.AsyncClient] = None
 
-        async def __aenter__(self):
-            import ssl
-
+        async def __aenter__(self) -> httpx.AsyncClient:
             try:
                 # Import the CA client to get fresh CA certificate
-                import sys
-
                 sys.path.append("/app/scripts")
                 from crank_cert_initialize import CertificateAuthorityClient
 
@@ -523,38 +551,20 @@ class CrankEmailParserService:
                 self.client = httpx.AsyncClient(verify=False, timeout=10.0)
                 return self.client
 
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
+        async def __aexit__(
+            self,
+            exc_type: Optional[type[BaseException]],
+            exc_val: Optional[BaseException],
+            exc_tb: Optional[TracebackType],
+        ) -> None:
             if self.client:
                 await self.client.aclose()
 
-    def _create_adaptive_client(self):
+    def _create_adaptive_client(self) -> "_SecureHTTPClientManager":
         """Create HTTP client context manager with CA certificate verification."""
         return self._SecureHTTPClientManager()
 
-    def setup_startup(self):
-        """Setup startup and shutdown events."""
-
-        @self.app.on_event("startup")
-        async def startup_event():
-            """Initialize security and register with platform."""
-            logger.info("📧 Starting Crank Email Parser Service...")
-
-            # Certificate initialization handled in main() - just register
-            await self._register_with_platform()
-
-            logger.info("✅ Crank Email Parser Service startup complete!")
-
-        @self.app.on_event("shutdown")
-        async def shutdown_event():
-            """Cleanup on shutdown."""
-            if self.heartbeat_task:
-                self.heartbeat_task.cancel()
-                try:
-                    await self.heartbeat_task
-                except asyncio.CancelledError:
-                    logger.info("Heartbeat task cancelled")
-
-    async def _register_with_platform(self):
+    async def _register_with_platform(self) -> None:
         """Register this worker with the platform using mTLS."""
         worker_info = WorkerRegistration(
             worker_id=self.worker_id,
@@ -577,7 +587,7 @@ class CrankEmailParserService:
                 async with self._create_adaptive_client() as client:
                     response = await client.post(
                         f"{self.platform_url}/v1/workers/register",
-                        json=worker_info.dict(),
+                        json=worker_info.model_dump(),
                         headers={"Authorization": f"Bearer {self.platform_auth_token}"},
                     )
                     response.raise_for_status()
@@ -595,10 +605,10 @@ class CrankEmailParserService:
 
         logger.error("Failed to register with platform after all retries")
 
-    def _start_heartbeat_task(self):
+    def _start_heartbeat_task(self) -> None:
         """Start the background heartbeat task."""
 
-        async def heartbeat_loop():
+        async def heartbeat_loop() -> None:
             while True:
                 try:
                     await asyncio.sleep(int(os.getenv("WORKER_HEARTBEAT_INTERVAL", "20")))
@@ -613,7 +623,7 @@ class CrankEmailParserService:
         os.getenv("WORKER_HEARTBEAT_INTERVAL", "20")
         logger.info("🫀 Started heartbeat task with {heartbeat_interval}s interval")
 
-    async def _send_heartbeat(self):
+    async def _send_heartbeat(self) -> None:
         """Send heartbeat to platform."""
         try:
             async with self._create_adaptive_client() as client:
@@ -635,10 +645,8 @@ email_parser_service = CrankEmailParserService()
 app = email_parser_service.app
 
 
-def main():
+def main() -> None:
     """Main entry point with clean certificate initialization."""
-    import uvicorn
-
     # Initialize certificates using SECURE CSR pattern
     https_only = os.getenv("HTTPS_ONLY", "true").lower() == "true"
     ca_service_url = os.getenv("CA_SERVICE_URL")
@@ -647,11 +655,7 @@ def main():
         logger.info("🔐 Initializing certificates using SECURE CSR pattern...")
         try:
             # Run secure certificate initialization in the same process
-            import sys
-
             sys.path.append("/app/scripts")
-            import asyncio
-
             from crank_cert_initialize import cert_store
             from crank_cert_initialize import main as init_certificates
 
@@ -688,8 +692,8 @@ def main():
         logger.info("🔒 Using certificates obtained via SECURE CSR pattern")
 
         # Get the temporary certificate file paths for uvicorn
-        cert_file = cert_store._temp_cert_file
-        key_file = cert_store._temp_key_file
+        cert_file = cert_store._temp_cert_file  # pyright: ignore[reportPrivateUsage]
+        key_file = cert_store._temp_key_file  # pyright: ignore[reportPrivateUsage]
 
         uvicorn.run(
             app,

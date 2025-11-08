@@ -20,7 +20,7 @@ COPY services/requirements-crank-image-classifier.txt .
 RUN pip install --no-cache-dir -r requirements-crank-image-classifier.txt
 
 # Copy service files
-COPY services/crank_image_classifier.py ./crank_image_classifier_simple.py
+COPY services/relaxed-checking/crank_image_classifier.py ./crank_image_classifier_simple.py
 
 # Copy certificate initialization script (needed for in-process initialization)
 COPY services/crank_cert_initialize.py ./scripts/

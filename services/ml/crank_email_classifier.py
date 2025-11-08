@@ -26,29 +26,22 @@ import yaml
 from bs4 import BeautifulSoup
 from fastapi import FastAPI, Form, HTTPException
 from pydantic import BaseModel
-
 # Import security configuration
-from sklearn.feature_extraction.text import TfidfVectorizer  # type: ignore[import-untyped]
+from sklearn.feature_extraction.text import \
+    TfidfVectorizer  # type: ignore[import-untyped]
 from sklearn.naive_bayes import MultinomialNB  # type: ignore[import-untyped]
 from sklearn.pipeline import Pipeline  # type: ignore[import-untyped]
 
 # Conditional imports for certificate management
-_SecureCertificateStore: Optional[type[Any]] = None
-_init_certificates: Optional[Any] = None
-
 try:
     sys.path.append("/app/scripts")
-    from crank_cert_initialize import SecureCertificateStore as _SecureCertificateStore
-    from crank_cert_initialize import main as _init_certificates
-
-    # Note: cert_store from crank_cert_initialize is not used directly in this file
+    from crank_cert_initialize import SecureCertificateStore, cert_store
+    from crank_cert_initialize import main as init_certificates
 except ImportError:
-    # Fallback when running outside container - keep as None
-    pass
-
-# Use the imported values or fallback to None
-SecureCertificateStore = _SecureCertificateStore
-init_certificates = _init_certificates
+    # Fallback when running outside container
+    SecureCertificateStore = None
+    cert_store = None
+    init_certificates = None
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -56,16 +49,16 @@ logger = logging.getLogger(__name__)
 
 # Download required NLTK data
 try:
-    nltk.data.find("tokenizers/punkt")  # pyright: ignore[reportUnknownMemberType]
+    nltk.data.find("tokenizers/punkt")
 except LookupError:
     logger.info("Downloading NLTK punkt tokenizer...")
-    nltk.download("punkt", quiet=True)  # pyright: ignore[reportUnknownMemberType]
+    nltk.download("punkt", quiet=True)
 
 try:
-    nltk.data.find("corpora/stopwords")  # pyright: ignore[reportUnknownMemberType]
+    nltk.data.find("corpora/stopwords")
 except LookupError:
     logger.info("Downloading NLTK stopwords...")
-    nltk.download("stopwords", quiet=True)  # pyright: ignore[reportUnknownMemberType]
+    nltk.download("stopwords", quiet=True)
 
 
 class EmailClassificationRequest(BaseModel):
@@ -114,11 +107,10 @@ class SimpleEmailClassifier:
     """Simple ML-based email classifier with multiple classification types."""
 
     def __init__(self) -> None:
-        # Initialize classifiers - these will be set by _initialize_models
-        self.spam_classifier: Pipeline
-        self.bill_classifier: Pipeline
-        self.receipt_classifier: Pipeline
-        self.category_classifier: Pipeline
+        self.spam_classifier = None
+        self.bill_classifier = None
+        self.receipt_classifier = None
+        self.category_classifier = None
         self._initialize_models()
 
     def _initialize_models(self) -> None:
@@ -195,7 +187,7 @@ class SimpleEmailClassifier:
                 ("classifier", MultinomialNB()),
             ],
         )
-        self.spam_classifier.fit(spam_texts, spam_labels)  # pyright: ignore[reportUnknownMemberType]
+        self.spam_classifier.fit(spam_texts, spam_labels)
 
         # Train bill classifier
         bill_texts, bill_labels = zip(*bill_data)
@@ -205,7 +197,7 @@ class SimpleEmailClassifier:
                 ("classifier", MultinomialNB()),
             ],
         )
-        self.bill_classifier.fit(bill_texts, bill_labels)  # pyright: ignore[reportUnknownMemberType]
+        self.bill_classifier.fit(bill_texts, bill_labels)
 
         # Train receipt classifier
         receipt_texts, receipt_labels = zip(*receipt_data)
@@ -215,7 +207,7 @@ class SimpleEmailClassifier:
                 ("classifier", MultinomialNB()),
             ],
         )
-        self.receipt_classifier.fit(receipt_texts, receipt_labels)  # pyright: ignore[reportUnknownMemberType]
+        self.receipt_classifier.fit(receipt_texts, receipt_labels)
 
         # Train category classifier
         category_texts, category_labels = zip(*category_data)
@@ -225,7 +217,7 @@ class SimpleEmailClassifier:
                 ("classifier", MultinomialNB()),
             ],
         )
-        self.category_classifier.fit(category_texts, category_labels)  # pyright: ignore[reportUnknownMemberType]
+        self.category_classifier.fit(category_texts, category_labels)
 
         logger.info(
             "✅ ML models initialized successfully (spam, bill, receipt, category detection)",
@@ -250,11 +242,11 @@ class SimpleEmailClassifier:
         processed_text = self._preprocess_email(email_content)
 
         # Get prediction probabilities
-        probabilities = self.spam_classifier.predict_proba([processed_text])[0]  # pyright: ignore[reportUnknownMemberType]
-        classes = self.spam_classifier.classes_  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
+        probabilities = self.spam_classifier.predict_proba([processed_text])[0]
+        classes = self.spam_classifier.classes_
 
         # Find spam probability
-        spam_idx = list(classes).index("spam") if "spam" in classes else 0  # pyright: ignore[reportUnknownArgumentType]
+        spam_idx = list(classes).index("spam") if "spam" in classes else 0
         spam_confidence = probabilities[spam_idx]
 
         prediction = "spam" if spam_confidence > threshold else "not_spam"
@@ -285,8 +277,8 @@ class SimpleEmailClassifier:
         processed_text = self._preprocess_email(email_content)
 
         # Get prediction probabilities
-        probabilities = self.category_classifier.predict_proba([processed_text])[0]  # pyright: ignore[reportUnknownMemberType]
-        classes = self.category_classifier.classes_  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
+        probabilities = self.category_classifier.predict_proba([processed_text])[0]
+        classes = self.category_classifier.classes_
 
         # Find best prediction
         best_idx = np.argmax(probabilities)
@@ -300,8 +292,8 @@ class SimpleEmailClassifier:
         processed_text = self._preprocess_email(email_content)
 
         # Get prediction probabilities
-        probabilities = self.bill_classifier.predict_proba([processed_text])[0]  # pyright: ignore[reportUnknownMemberType]
-        classes = self.bill_classifier.classes_  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
+        probabilities = self.bill_classifier.predict_proba([processed_text])[0]
+        classes = self.bill_classifier.classes_
 
         # Find best prediction
         best_idx = np.argmax(probabilities)
@@ -315,8 +307,8 @@ class SimpleEmailClassifier:
         processed_text = self._preprocess_email(email_content)
 
         # Get prediction probabilities
-        probabilities = self.receipt_classifier.predict_proba([processed_text])[0]  # pyright: ignore[reportUnknownMemberType]
-        classes = self.receipt_classifier.classes_  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
+        probabilities = self.receipt_classifier.predict_proba([processed_text])[0]
+        classes = self.receipt_classifier.classes_
 
         # Find best prediction
         best_idx = np.argmax(probabilities)
@@ -379,7 +371,7 @@ class CrankEmailClassifier:
             except (ImportError, NameError):
                 # Fallback for local development - create minimal mock store
                 logger.warning("🚨 Using minimal certificate store for local development")
-
+                
                 class MockCertStore:
                     """Minimal certificate store for local development."""
                     def __init__(self) -> None:
@@ -387,10 +379,10 @@ class CrankEmailClassifier:
                         self.ca_cert: Optional[str] = None
                         self.temp_cert_file: Optional[str] = None
                         self.temp_key_file: Optional[str] = None
-
+                    
                     def get_ssl_context(self) -> None:
                         return None
-
+                
                 self.cert_store = MockCertStore()
 
         # Always use HTTPS with Certificate Authority Service certificates
@@ -411,9 +403,8 @@ class CrankEmailClassifier:
         self._setup_routes()
 
         # Register startup/shutdown handlers
-        self.app.add_event_handler("startup", self._startup)  # pyright: ignore[reportUnknownMemberType]
-        self.app.add_event_handler("shutdown", self._shutdown)  # pyright: ignore[reportUnknownMemberType]
-        # FastAPI's add_event_handler has complex typing that Pylance can't fully infer
+        self.app.add_event_handler("startup", self._startup)
+        self.app.add_event_handler("shutdown", self._shutdown)
 
     def _setup_routes(self) -> None:
         """Setup FastAPI routes."""
@@ -421,11 +412,14 @@ class CrankEmailClassifier:
         @self.app.get("/health")
         async def health_check() -> dict[str, Any]:
             """Health check endpoint with security status."""
-            security_status: dict[str, Any] = {
-                "ssl_enabled": self.cert_store.platform_cert is not None,
-                "ca_cert_available": self.cert_store.ca_cert is not None,
-                "certificate_source": "Certificate Authority Service",
-            }
+            security_status = {}
+            if hasattr(self, "security_config"):
+                security_status = {
+                    "security_level": self.security_config.get_security_level(),
+                    "ssl_enabled": self.cert_store.platform_cert is not None,
+                    "ca_cert_available": self.cert_store.ca_cert is not None,
+                    "certificate_source": "Certificate Authority Service",
+                }
 
             return {
                 "status": "healthy",
@@ -462,7 +456,7 @@ class CrankEmailClassifier:
                 email_id = f"email-{uuid4().hex[:8]}"
 
                 # Perform classifications
-                results: list[EmailClassificationResult] = []
+                results = []
 
                 for class_type in types:
                     if class_type == "spam_detection":
@@ -566,10 +560,9 @@ class CrankEmailClassifier:
             if plugin_file.exists():
                 try:
                     with plugin_file.open() as f:
-                        loaded_data: Any = yaml.safe_load(f)
+                        loaded_data = yaml.safe_load(f)
                         if isinstance(loaded_data, dict):
-                            # Cast to proper type for return
-                            return loaded_data  # pyright: ignore[reportUnknownVariableType]
+                            return loaded_data
                         return {}
                 except Exception as exc:
                     logger.warning("Failed to read plugin metadata: %s", exc)
@@ -591,12 +584,6 @@ class CrankEmailClassifier:
                 "health_endpoint": "/health",
                 "separation_ready": True,  # Indicates this worker is ready for repo separation
             }
-
-        # Store function references to prevent "unused function" warnings from type checkers
-        # These functions are actually used by FastAPI through decorators
-        self._health_check_func = health_check
-        self._classify_email_func = classify_email
-        self._get_plugin_metadata_func = get_plugin_metadata
 
     def _create_adaptive_client(self, timeout: float = 10.0) -> httpx.AsyncClient:
         """Create HTTP client using in-memory certificates from Certificate Authority Service."""
@@ -620,7 +607,7 @@ class CrankEmailClassifier:
             # Development fallback: For local development only, not production
             # TODO: Add proper certificate validation for production deployment
             logger.warning("⚠️ No CA certificate available, using insecure client (development only)")
-            return httpx.AsyncClient(verify=False, timeout=timeout)
+            return httpx.AsyncClient(verify=False, timeout=timeout)  # noqa: S501
 
     async def _startup(self) -> None:
         """Startup handler - register with platform."""
@@ -662,7 +649,7 @@ class CrankEmailClassifier:
                 try:
                     await asyncio.sleep(heartbeat_interval)
                     if self.worker_id:
-                        await self._send_heartbeat()  # type: ignore[unreachable]
+                        await self._send_heartbeat()
                 except asyncio.CancelledError:
                     logger.info("Heartbeat task cancelled")
                     break
@@ -760,7 +747,7 @@ class CrankEmailClassifier:
     async def _shutdown(self) -> None:
         """Shutdown handler - deregister from platform using mTLS."""
         if self.worker_id:
-            try:  # type: ignore[unreachable]
+            try:
                 # 🔒 ZERO-TRUST: Use mTLS client for secure deregistration
                 async with self._create_adaptive_client(timeout=5.0) as client:
                     await client.delete(f"{self.platform_url}/v1/workers/{self.worker_id}")
@@ -799,10 +786,9 @@ def main() -> None:
             # Run secure certificate initialization in the same process
             sys.path.append("/app/scripts")
 
-            # Run secure certificate initialization and create certificate store
-            if init_certificates and SecureCertificateStore:
+            # Run secure certificate initialization
+            if init_certificates:
                 asyncio.run(init_certificates())
-                cert_store = SecureCertificateStore()
 
             # Check if certificates were loaded
             _validate_certificate_initialization(cert_store)
@@ -814,13 +800,13 @@ def main() -> None:
             logger.info("🔐 Using in-memory certificates from secure initialization")
         except Exception as e:
             raise RuntimeError(f"🚫 Failed to initialize certificates with CA service: {e}") from e
-
+    
     elif dev_mode:
         print("🚧 DEVELOPMENT MODE: Starting with minimal security for local testing")
         logger.warning("� DEV_MODE=true - Using fallback configuration for local development")
         use_https = False
         cert_store = None
-
+        
     else:
         print("🚧 FALLBACK MODE: CA service not available, starting with HTTP for development")
         logger.warning("🚨 No CA service configured - using HTTP fallback for development")
@@ -857,12 +843,12 @@ def main() -> None:
             )
         except Exception as e:
             raise RuntimeError(f"🚫 Failed to start HTTPS server: {e}") from e
-
+    
     else:
         # HTTP fallback for development
         logger.info("🚧 Starting Crank Email Classifier with HTTP on port %s", http_port)
         logger.warning("⚠️  HTTP MODE: Not suitable for production use")
-
+        
         uvicorn.run(
             app,
             host=service_host,

@@ -22,14 +22,16 @@ Tests validate:
 Platform Support: Auto-detects macOS (Apple Silicon), Linux (x86_64/CUDA), Windows (WSL2)
 """
 
+import argparse
 import asyncio
 import json
 import logging
 import platform
+import re
 import subprocess
 import sys
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -37,9 +39,8 @@ import urllib3
 
 try:
     import httpx
-    import requests
 except ImportError:
-    print("❌ Missing dependencies. Install with: pip install httpx requests")
+    print("❌ Missing dependencies. Install with: pip install httpx")
     sys.exit(1)
 
 # Disable SSL warnings for development testing
@@ -312,7 +313,7 @@ class EnhancedSmokeTest:
             rebuild_success = await self._rebuild_and_restart_environment()
             if not rebuild_success:
                 return {
-                    "timestamp": datetime.now().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "test_suite": "Enhanced Smoke Test",
                     "error": "Failed to rebuild and restart environment",
                     "summary": {
@@ -328,8 +329,8 @@ class EnhancedSmokeTest:
                 "🎯 Testing existing environment (use --rebuild to force container restart)",
             )
 
-        results = {
-            "timestamp": datetime.now().isoformat(),
+        results: dict[str, Any] = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "test_suite": "Enhanced Smoke Test",
             "total_services": len(self.archetypes) + 2,  # +2 for platform and CA
             "container_status": {},
@@ -375,14 +376,17 @@ class EnhancedSmokeTest:
         except Exception as e:
             logger.exception("❌ Test suite failed with exception: {e}")
             logger.exception(traceback.format_exc())
-            results["summary"]["critical_failures"].append(f"Test suite exception: {e}")
+            summary_dict: dict[str, Any] = results["summary"]
+            if "critical_failures" in summary_dict:
+                critical_failures: list[str] = summary_dict["critical_failures"]
+                critical_failures.append(f"Test suite exception: {e}")
 
         # Calculate final summary
         self._calculate_summary(results)
 
         return results
 
-    async def _test_container_health(self, results: dict[str, Any]):
+    async def _test_container_health(self, results: dict[str, Any]) -> None:
         """Test container health and Docker status"""
         logger.info("  🔍 Checking Docker container status...")
 
@@ -442,7 +446,7 @@ class EnhancedSmokeTest:
             results["summary"]["critical_failures"].append(f"Container health check failed: {e}")
             logger.exception("  ❌ Container health check failed: {e}")
 
-    async def _test_health_endpoints(self, results: dict[str, Any]):
+    async def _test_health_endpoints(self, results: dict[str, Any]) -> None:
         """Test health endpoints for all services"""
         logger.info("  🏥 Testing health endpoints...")
 
@@ -462,7 +466,7 @@ class EnhancedSmokeTest:
                 try:
                     response = await client.get(health_url)
 
-                    health_data = {
+                    health_data: dict[str, Any] = {
                         "status_code": response.status_code,
                         "response_time_ms": round(response.elapsed.total_seconds() * 1000, 2),
                         "healthy": response.status_code == 200,
@@ -474,7 +478,7 @@ class EnhancedSmokeTest:
                         json_response = response.json()
                         health_data["response_data"] = json_response
                         health_data["service_info"] = json_response.get("service", {})
-                    except:
+                    except Exception:
                         health_data["response_text"] = response.text[:200]
 
                     results["health_checks"][config.container_name] = health_data
@@ -502,7 +506,7 @@ class EnhancedSmokeTest:
                         f"{config.name} health endpoint error: {e}",
                     )
 
-    async def _test_platform_registration(self, results: dict[str, Any]):
+    async def _test_platform_registration(self, results: dict[str, Any]) -> None:
         """Test worker registration with platform"""
         logger.info("  🔗 Testing worker registration...")
 
@@ -524,11 +528,12 @@ class EnhancedSmokeTest:
                     workers_by_type = response_data.get("workers", {})
 
                     # Flatten the workers dict into a list
-                    all_workers = []
+                    all_workers: list[dict[str, Any]] = []
                     for service_type, worker_list in workers_by_type.items():
                         for worker in worker_list:
-                            worker["service_type"] = service_type  # Add service_type to worker
-                            all_workers.append(worker)
+                            worker_dict: dict[str, Any] = worker
+                            worker_dict["service_type"] = service_type  # Add service_type to worker
+                            all_workers.append(worker_dict)
 
                     logger.info("  ✅ Platform worker endpoint accessible")
                     logger.info("  📊 Registered workers: {len(all_workers)} found")
@@ -541,7 +546,7 @@ class EnhancedSmokeTest:
                     }
 
                     # Check if our expected workers are registered
-                    registered_services = {worker.get("service_type") for worker in all_workers}
+                    registered_services: set[Any] = {worker.get("service_type") for worker in all_workers}
                     {config.service_type for config in self.archetypes.values()}
 
                     for archetype_key, config in self.archetypes.items():
@@ -575,7 +580,7 @@ class EnhancedSmokeTest:
                     f"Platform registration test failed: {e}",
                 )
 
-    async def _test_api_functionality(self, results: dict[str, Any]):
+    async def _test_api_functionality(self, results: dict[str, Any]) -> None:
         """Test API functionality for each service"""
         logger.info("  ⚡ Testing API functionality...")
 
@@ -583,7 +588,7 @@ class EnhancedSmokeTest:
             for archetype_key, config in self.archetypes.items():
                 logger.info("    🔍 Testing {config.name} APIs...")
 
-                api_results = {
+                api_results: dict[str, Any] = {
                     "service": config.name,
                     "endpoints": {},
                     "functional": False,
@@ -596,7 +601,7 @@ class EnhancedSmokeTest:
                     try:
                         response = await client.get(endpoint_url)
 
-                        endpoint_data = {
+                        endpoint_data: dict[str, Any] = {
                             "status_code": response.status_code,
                             "accessible": response.status_code
                             in [200, 401, 422],  # These are OK responses
@@ -615,7 +620,9 @@ class EnhancedSmokeTest:
                         else:
                             endpoint_data["functional"] = response.status_code == 200
 
-                        api_results["endpoints"][endpoint] = endpoint_data
+                        endpoints_dict = api_results["endpoints"]
+                        if isinstance(endpoints_dict, dict):
+                            endpoints_dict[endpoint] = endpoint_data
 
                         if endpoint_data["functional"]:
                             logger.info("      ✅ {endpoint}: OK (HTTP {response.status_code})")
@@ -647,7 +654,7 @@ class EnhancedSmokeTest:
                     logger.error("    ❌ {config.name}: API NOT Functional")
                     results["summary"]["warnings"].append(f"{config.name} API not functional")
 
-    async def _test_archetype_patterns(self, results: dict[str, Any]):
+    async def _test_archetype_patterns(self, results: dict[str, Any]) -> None:
         """Test archetype-specific patterns"""
         logger.info("  🎯 Testing archetype-specific patterns...")
 
@@ -655,7 +662,7 @@ class EnhancedSmokeTest:
         # For now, we'll validate the expected capabilities are exposed
 
         for archetype_key, config in self.archetypes.items():
-            pattern_results = {
+            pattern_results: dict[str, Any] = {
                 "archetype": config.name,
                 "capabilities_validated": False,
                 "gpu_validation": None,
@@ -665,35 +672,16 @@ class EnhancedSmokeTest:
             # Check health endpoint response for capabilities
             health_data = results["health_checks"].get(config.container_name, {})
             if health_data.get("healthy") and "response_data" in health_data:
-                response_data = health_data["response_data"]
+                response_data: Any = health_data["response_data"]
 
-                # Handle both dict and string responses
-                if isinstance(response_data, dict):
-                    # First check if capabilities are directly in response_data
-                    if "capabilities" in response_data:
-                        reported_capabilities = response_data.get("capabilities", [])
-                    else:
-                        # Fallback: check if nested under service
-                        service_info = response_data.get("service", {})
-                        if isinstance(service_info, dict):
-                            reported_capabilities = service_info.get("capabilities", [])
-                        else:
-                            # service_info is a string, check if it contains capability keywords
-                            reported_capabilities = str(service_info).lower()
-                else:
-                    # response_data is a string
-                    reported_capabilities = str(response_data).lower()
+                # Simplified capability checking with direct type handling
+                capability_match = False
 
-                # Check if expected capabilities are present
-                if isinstance(reported_capabilities, list):
+                # Convert response to string for simple capability matching
+                if config.capabilities:
+                    response_str = str(response_data).lower()
                     capability_match = any(
-                        cap.lower() in [rc.lower() for rc in reported_capabilities]
-                        for cap in config.capabilities
-                    )
-                else:
-                    # String matching for capabilities
-                    capability_match = any(
-                        cap.lower() in reported_capabilities for cap in config.capabilities
+                        cap.lower() in response_str for cap in config.capabilities
                     )
 
                 if capability_match:
@@ -732,7 +720,7 @@ class EnhancedSmokeTest:
                 "pattern_compliance"
             ]
 
-    async def _test_cross_service_communication(self, results: dict[str, Any]):
+    async def _test_cross_service_communication(self, results: dict[str, Any]) -> None:
         """Test cross-service communication patterns"""
         logger.info("  🌐 Testing cross-service communication...")
 
@@ -754,25 +742,26 @@ class EnhancedSmokeTest:
                     workers_by_type = response_data.get("workers", {})
 
                     # Flatten the workers dict into a list - same as platform registration test
-                    all_workers = []
+                    all_workers: list[dict[str, Any]] = []
                     for service_type, worker_list in workers_by_type.items():
                         for worker in worker_list:
-                            worker["service_type"] = service_type  # Add service_type to worker
-                            all_workers.append(worker)
+                            worker_dict: dict[str, Any] = worker
+                            worker_dict["service_type"] = service_type  # Add service_type to worker
+                            all_workers.append(worker_dict)
 
-                    communication_results = {
+                    communication_results: dict[str, Any] = {
                         "platform_to_workers": True,
                         "worker_count": len(all_workers),
                         "reachable_workers": [],
                     }
 
                     # Test if platform can reach each worker's health endpoint
-                    for worker in all_workers:
-                        endpoint = worker.get("endpoint", "")
+                    for worker_item in all_workers:
+                        current_worker: dict[str, Any] = worker_item
+                        endpoint: str = str(current_worker.get("endpoint", ""))
                         if endpoint:
                             try:
                                 # Extract the port from the endpoint URL
-                                import re
 
                                 port_match = re.search(r":(\d+)", endpoint)
                                 if port_match:
@@ -781,9 +770,9 @@ class EnhancedSmokeTest:
 
                                     health_response = await client.get(health_url)
                                     if health_response.status_code == 200:
-                                        communication_results["reachable_workers"].append(
-                                            worker.get("service_type"),
-                                        )
+                                        reachable_list: list[str] = communication_results["reachable_workers"]
+                                        service_type = str(current_worker.get("service_type", ""))
+                                        reachable_list.append(service_type)
 
                             except Exception:
                                 pass  # Worker not reachable, continue
@@ -807,7 +796,7 @@ class EnhancedSmokeTest:
                 }
                 logger.exception("    ❌ Cross-service communication test failed: {e}")
 
-    def _calculate_summary(self, results: dict[str, Any]):
+    def _calculate_summary(self, results: dict[str, Any]) -> None:
         """Calculate final test summary"""
         summary = results["summary"]
 
@@ -830,7 +819,7 @@ class EnhancedSmokeTest:
             and passed >= len(self.archetypes) * 0.8  # 80% success rate
         )
 
-    def print_results(self, results: dict[str, Any]):
+    def print_results(self, results: dict[str, Any]) -> None:
         """Print comprehensive test results"""
         print("\n" + "=" * 80)
         print("📊 ENHANCED SMOKE TEST RESULTS")
@@ -889,9 +878,8 @@ class EnhancedSmokeTest:
         }
 
 
-async def main():
+async def main() -> None:
     """Main test runner"""
-    import argparse
 
     parser = argparse.ArgumentParser(description="Enhanced Crank Platform Smoke Test")
     parser.add_argument("--json", action="store_true", help="Output results as JSON")

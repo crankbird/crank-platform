@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 import aiohttp
+from aiohttp import ClientTimeout
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -29,69 +30,80 @@ class CertificateClient:
 
     async def wait_for_ca_service(self, timeout: int = 60) -> bool:
         """Wait for Certificate Authority Service to be available."""
-        logger.info("⏳ Waiting for Certificate Authority Service at {self.ca_service_url}")
+        logger.info(
+            "⏳ Waiting for Certificate Authority Service at %s",
+            self.ca_service_url,
+        )
 
         for _attempt in range(timeout):
             try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(f"{self.ca_service_url}/health", timeout=2) as response:
-                        if response.status == 200:
-                            health_data = await response.json()
-                            logger.info(
-                                f"✅ Certificate Authority Service ready: {health_data['provider']}",
-                            )
-                            return True
-            except Exception:
-                pass
+                timeout_config = ClientTimeout(total=2)
+                async with aiohttp.ClientSession(timeout=timeout_config) as session, session.get(f"{self.ca_service_url}/health") as response:
+                    if response.status == 200:
+                        health_data = await response.json()
+                        logger.info(
+                            "✅ Certificate Authority Service ready: %s",
+                            health_data["provider"],
+                        )
+                        return True
+            except Exception as exc:
+                logger.debug("Health check failed: %s", exc)
 
             await asyncio.sleep(1)
 
-        logger.error("❌ Certificate Authority Service not available after {timeout}s")
+        logger.error(
+            "❌ Certificate Authority Service not available after %ss",
+            timeout,
+        )
         return False
 
     async def get_ca_certificate(self) -> str:
         """Get the CA root certificate."""
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f"{self.ca_service_url}/ca/certificate") as response:
-                if response.status != 200:
-                    raise Exception(f"Failed to get CA certificate: {response.status}")
+        async with aiohttp.ClientSession() as session, session.get(f"{self.ca_service_url}/ca/certificate") as response:
+            if response.status != 200:
+                raise RuntimeError(f"Failed to get CA certificate: {response.status}")
 
-                data = await response.json()
-                return data["ca_certificate"]
+            data: dict[str, Any] = await response.json()
+            ca_certificate: str = data["ca_certificate"]
+            return ca_certificate
 
     async def provision_platform_certificates(self) -> dict[str, Any]:
         """Request platform certificate bundle from CA service."""
         logger.info("🔐 Requesting platform certificate bundle")
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(f"{self.ca_service_url}/certificates/platform") as response:
-                if response.status != 200:
-                    error_text = await response.text()
-                    raise Exception(
-                        f"Failed to provision certificates: {response.status} - {error_text}",
-                    )
+        async with aiohttp.ClientSession() as session, session.post(f"{self.ca_service_url}/certificates/platform") as response:
+            if response.status != 200:
+                error_text = await response.text()
+                raise RuntimeError(
+                    f"Failed to provision certificates: {response.status} - {error_text}",
+                )
 
-                return await response.json()
+            result: dict[str, Any] = await response.json()
+            return result
 
 
-def write_certificate_file(cert_path: Path, content: str, permissions: int = 0o644):
+def write_certificate_file(cert_path: Path, content: str, permissions: int = 0o644) -> None:
     """Write certificate content to file with appropriate permissions."""
     cert_path.parent.mkdir(parents=True, exist_ok=True)
     cert_path.write_text(content)
     cert_path.chmod(permissions)
-    logger.info("📄 Written certificate: {cert_path} (permissions: {oct(permissions)})")
+    logger.info(
+        "📄 Written certificate: %s (permissions: %s)",
+        cert_path,
+        oct(permissions),
+    )
 
 
-async def main():
+async def main() -> None:
     """Main certificate initialization routine."""
     # Get configuration from environment
     ca_service_url = os.getenv("CA_SERVICE_URL", "https://cert-authority:9090")
     cert_dir = Path(os.getenv("CERT_DIR", "/app/certificates"))
     environment = os.getenv("CRANK_ENVIRONMENT", "development")
 
-    logger.info("🔐 Initializing certificates for environment: {environment}")
-    logger.info("📁 Certificate directory: {cert_dir}")
-    logger.info("🌐 CA Service URL: {ca_service_url}")
+    logger.info("🔐 Initializing certificates for environment: %s", environment)
+    logger.info("📁 Certificate directory: %s", cert_dir)
+    logger.info("🌐 CA Service URL: %s", ca_service_url)
 
     try:
         # Initialize certificate client
@@ -125,7 +137,7 @@ async def main():
         write_certificate_file(cert_dir / "client.key", client_cert["private_key"], key_permissions)
 
         # Write certificate metadata
-        metadata = {
+        metadata: dict[str, Any] = {
             "platform": platform_cert["metadata"],
             "client": client_cert["metadata"],
             "provider": cert_response["provider"],
@@ -138,11 +150,17 @@ async def main():
         metadata_file.chmod(0o644)
 
         logger.info("✅ Certificate initialization complete")
-        logger.info("🏢 Provider: {cert_response['provider']['provider']}")
-        logger.info("🛡️ Security level: {cert_response['provider']['security_level']}")
+        logger.info(
+            "🏢 Provider: %s",
+            cert_response["provider"]["provider"],
+        )
+        logger.info(
+            "🛡️ Security level: %s",
+            cert_response["provider"]["security_level"],
+        )
 
     except Exception:
-        logger.exception("❌ Certificate initialization failed: {e}")
+        logger.exception("❌ Certificate initialization failed")
         sys.exit(1)
 
 

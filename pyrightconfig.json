@@ -1,0 +1,69 @@
+{
+    "include": [
+        "src",
+        "services",
+        "tests"
+    ],
+    "exclude": [
+        "**/.venv",
+        "**/venv",
+        "**/site-packages",
+        "**/__pycache__",
+        "tests/test_gpu_integration_pattern.py"
+    ],
+    "typeCheckingMode": "strict",
+    // Core production code (src/) - strict settings
+    "strict": [
+        "src/**"
+    ],
+    // ML libraries and external dependencies - ignore stubs
+    "reportMissingTypeStubs": "none",
+    "stubPath": "",
+    // For external libraries with unknown types, be permissive
+    "reportUnknownMemberType": "none",
+    "reportUnknownArgumentType": "none",
+    "reportUnknownVariableType": "none",
+    "reportUnknownParameterType": "none",
+    "reportUnknownLambdaType": "none",
+    // Python environment
+    "venvPath": ".",
+    "venv": ".venv",
+    "pythonVersion": "3.11",
+    // Workspace-specific overrides for services (development code)
+    "executionEnvironments": [
+        {
+            "root": "src",
+            "typeCheckingMode": "strict",
+            "reportUnknownMemberType": "error",
+            "reportUnknownArgumentType": "error",
+            "reportUnknownVariableType": "warning"
+        },
+        {
+            "root": "services",
+            "typeCheckingMode": "basic",
+            "reportUnknownMemberType": "none",
+            "reportUnknownArgumentType": "none",
+            "reportUnknownVariableType": "none"
+        },
+        {
+            "root": "tests",
+            "typeCheckingMode": "basic",
+            "reportMissingTypeStubs": "none",
+            "reportUnknownMemberType": "none",
+            "reportUnknownArgumentType": "none",
+            "reportUnknownVariableType": "none",
+            "reportUntypedFunctionDecorator": "none",
+            "reportUntypedClassDecorator": "none",
+            "reportUntypedBaseClass": "none",
+            "reportUntypedNamedTuple": "none"
+        },
+        {
+            "root": "scripts",
+            "typeCheckingMode": "off"
+        },
+        {
+            "root": "tools",
+            "typeCheckingMode": "off"
+        }
+    ]
+}

@@ -11,13 +11,28 @@ Abstract interface for certificate provisioning that can be implemented by:
 
 import logging
 import os
+import shutil
 import subprocess
+import tempfile
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
+
+
+# Custom exceptions for certificate operations
+class CertificateGenerationError(Exception):
+    """Raised when certificate generation fails."""
+
+
+class CertificateNotFoundError(Exception):
+    """Raised when required certificate files are not found."""
+
+
+class CertificateReadError(Exception):
+    """Raised when certificate files cannot be read."""
 
 
 @dataclass
@@ -30,9 +45,9 @@ class CertificateRequest:
     country: str = "US"
     state: str = "CA"
     locality: str = "San Francisco"
-    subject_alt_names: list = None
-    key_usage: list = None
-    extended_key_usage: list = None
+    subject_alt_names: Optional[list[str]] = None
+    key_usage: Optional[list[str]] = None
+    extended_key_usage: Optional[list[str]] = None
     validity_days: int = 365
 
 
@@ -89,14 +104,14 @@ class DevelopmentCertificateProvider(CertificateProvider):
         self.ca_cert_file = self.cert_dir / "ca.crt"
         self._ca_initialized = False
 
-    async def _ensure_ca_certificate(self):
+    async def _ensure_ca_certificate(self) -> None:
         """Ensure CA certificate exists, generate if needed."""
         if not self._ca_initialized:
             if not self.ca_cert_file.exists() or not self.ca_key_file.exists():
                 await self._generate_ca_certificate()
             self._ca_initialized = True
 
-    async def _generate_ca_certificate(self):
+    async def _generate_ca_certificate(self) -> None:
         """Generate a real CA certificate for development."""
 
         logger.info("🔐 Generating development CA certificate...")
@@ -139,8 +154,8 @@ class DevelopmentCertificateProvider(CertificateProvider):
             logger.info("✅ Development CA certificate generated successfully")
 
         except subprocess.CalledProcessError as e:
-            logger.exception("❌ Failed to generate CA certificate: {e}")
-            raise Exception(f"CA certificate generation failed: {e}")
+            logger.exception("❌ Failed to generate CA certificate")
+            raise CertificateGenerationError(f"CA certificate generation failed: {e}") from e
 
     async def provision_server_certificate(self, request: CertificateRequest) -> CertificateBundle:
         """Generate self-signed server certificate for development."""
@@ -210,34 +225,29 @@ MIIDevelopmentClientKey{request.common_name}
 
         # Read and return the real CA certificate
         try:
-            with open(self.ca_cert_file) as f:
-                ca_cert = f.read()
+            ca_cert = self.ca_cert_file.read_text()
             return ca_cert.strip()
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             logger.exception("❌ CA certificate file not found")
-            raise Exception("CA certificate not available")
+            raise CertificateNotFoundError("CA certificate not available") from e
         except Exception as e:
-            logger.exception("❌ Failed to read CA certificate: {e}")
-            raise Exception(f"Failed to read CA certificate: {e}")
+            logger.exception("❌ Failed to read CA certificate")
+            raise CertificateReadError(f"Failed to read CA certificate: {e}") from e
 
     async def sign_certificate_request(self, csr_pem: str, service_name: str) -> str:
         """Sign a Certificate Signing Request (CSR) - SECURE PKI PATTERN."""
-        logger.info("🔐 Signing CSR for service: {service_name}")
+        logger.info("🔐 Signing CSR for service: %s", service_name)
 
         # Ensure CA certificate exists
         await self._ensure_ca_certificate()
 
         # Use the persistent CA certificate to sign CSRs
-        import os
-        import shutil
-        import tempfile
-
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
+                temp_path = Path(temp_dir)
                 # Save CSR to file
-                csr_file = os.path.join(temp_dir, "service.csr")
-                with open(csr_file, "w") as f:
-                    f.write(csr_pem)
+                csr_file = temp_path / "service.csr"
+                csr_file.write_text(csr_pem)
 
                 # Step C Debug: Check what extensions are in the CSR
                 try:
@@ -258,32 +268,32 @@ MIIDevelopmentClientKey{request.common_name}
                         logger.info("🔍 Step C Debug: CSR contains Subject Alternative Names")
                     else:
                         logger.warning("⚠️ Step C Debug: CSR missing Subject Alternative Names")
-                        logger.debug(f"CSR content: {result.stdout}")
+                        logger.debug("CSR content: %s", result.stdout)
                 except Exception:
-                    logger.warning("⚠️ Could not verify CSR extensions: {e}")
+                    logger.warning("⚠️ Could not verify CSR extensions")
 
                 # Copy persistent CA files to temp directory for OpenSSL
-                temp_ca_key = os.path.join(temp_dir, "ca.key")
-                temp_ca_cert = os.path.join(temp_dir, "ca.crt")
-                shutil.copy2(str(self.ca_key_file), temp_ca_key)
-                shutil.copy2(str(self.ca_cert_file), temp_ca_cert)
+                temp_ca_key = temp_path / "ca.key"
+                temp_ca_cert = temp_path / "ca.crt"
+                shutil.copy2(str(self.ca_key_file), str(temp_ca_key))
+                shutil.copy2(str(self.ca_cert_file), str(temp_ca_cert))
 
                 # Sign the CSR with the persistent CA (with extensions support)
-                signed_cert_file = os.path.join(temp_dir, "signed.crt")
+                signed_cert_file = temp_path / "signed.crt"
                 subprocess.run(
                     [
                         "openssl",
                         "x509",
                         "-req",
                         "-in",
-                        csr_file,
+                        str(csr_file),
                         "-CA",
-                        temp_ca_cert,
+                        str(temp_ca_cert),
                         "-CAkey",
-                        temp_ca_key,
+                        str(temp_ca_key),
                         "-CAcreateserial",
                         "-out",
-                        signed_cert_file,
+                        str(signed_cert_file),
                         "-days",
                         "365",
                         "-copy_extensions",
@@ -320,10 +330,9 @@ MIIDevelopmentClientKey{request.common_name}
                     logger.warning("⚠️ Could not verify signed certificate extensions: {e}")
 
                 # Read the signed certificate
-                with open(signed_cert_file) as f:
-                    signed_certificate = f.read()
+                signed_certificate = signed_cert_file.read_text()
 
-                logger.info("✅ Real certificate signed for {service_name}")
+                logger.info("✅ Real certificate signed for service")
                 return signed_certificate
 
         except subprocess.CalledProcessError:
@@ -346,11 +355,13 @@ cqjqFj1CgKM4wKFjr2JYHSbU0zqPq3U+Hjw=
 
     async def revoke_certificate(self, serial_number: str) -> bool:
         """Revoke a development certificate (no-op for development)."""
-        logger.info("🚫 Development certificate revocation requested for {serial_number}")
+        logger.info("🚫 Development certificate revocation requested for %s", serial_number)
         return True
 
     async def validate_certificate(self, certificate: str) -> dict[str, Any]:
         """Validate a development certificate."""
+        # Use parameter to avoid unused warning
+        _ = certificate
         return {
             "valid": True,
             "provider": "development",
@@ -373,14 +384,43 @@ class AzureKeyVaultProvider(CertificateProvider):
         self.vault_url = vault_url
         self.tenant_id = tenant_id
         self.client_id = client_id
+        self.client_secret = client_secret
         # In real implementation, use Azure SDK
 
     async def provision_server_certificate(self, request: CertificateRequest) -> CertificateBundle:
         """Provision certificate from Azure Key Vault."""
         logger.info(
-            f"🔒 Requesting server certificate from Azure Key Vault for {request.common_name}",
+            "🔒 Requesting server certificate from Azure Key Vault for %s",
+            request.common_name,
         )
         # Azure Key Vault API implementation
+        # TODO: Implement Azure Key Vault certificate provisioning
+        raise NotImplementedError("Azure Key Vault integration not yet implemented")
+
+    async def provision_client_certificate(self, request: CertificateRequest) -> CertificateBundle:
+        """Provision client certificate from Azure Key Vault."""
+        # TODO: Implement Azure Key Vault client certificate provisioning
+        raise NotImplementedError("Azure Key Vault integration not yet implemented")
+
+    async def get_ca_certificate(self) -> str:
+        """Get the Certificate Authority root certificate from Azure Key Vault."""
+        # TODO: Implement Azure Key Vault CA certificate retrieval
+        raise NotImplementedError("Azure Key Vault integration not yet implemented")
+
+    async def sign_certificate_request(self, csr_pem: str, service_name: str) -> str:
+        """Sign a Certificate Signing Request using Azure Key Vault."""
+        # TODO: Implement Azure Key Vault CSR signing
+        raise NotImplementedError("Azure Key Vault integration not yet implemented")
+
+    async def revoke_certificate(self, serial_number: str) -> bool:
+        """Revoke a certificate in Azure Key Vault."""
+        # TODO: Implement Azure Key Vault certificate revocation
+        raise NotImplementedError("Azure Key Vault integration not yet implemented")
+
+    async def validate_certificate(self, certificate: str) -> dict[str, Any]:
+        """Validate a certificate against Azure Key Vault CA."""
+        # TODO: Implement Azure Key Vault certificate validation
+        raise NotImplementedError("Azure Key Vault integration not yet implemented")
 
     def get_provider_info(self) -> dict[str, str]:
         return {
@@ -401,8 +441,34 @@ class VaultProvider(CertificateProvider):
 
     async def provision_server_certificate(self, request: CertificateRequest) -> CertificateBundle:
         """Provision certificate from HashiCorp Vault PKI."""
-        logger.info("🏛️ Requesting server certificate from Vault PKI for {request.common_name}")
-        # Vault API implementation
+        logger.info("🏛️ Requesting server certificate from Vault PKI for %s", request.common_name)
+        # TODO: Implement Vault API integration
+        raise NotImplementedError("HashiCorp Vault integration not yet implemented")
+
+    async def provision_client_certificate(self, request: CertificateRequest) -> CertificateBundle:
+        """Provision client certificate from HashiCorp Vault PKI."""
+        # TODO: Implement Vault client certificate provisioning
+        raise NotImplementedError("HashiCorp Vault integration not yet implemented")
+
+    async def get_ca_certificate(self) -> str:
+        """Get the Certificate Authority root certificate from Vault."""
+        # TODO: Implement Vault CA certificate retrieval
+        raise NotImplementedError("HashiCorp Vault integration not yet implemented")
+
+    async def sign_certificate_request(self, csr_pem: str, service_name: str) -> str:
+        """Sign a Certificate Signing Request using Vault PKI."""
+        # TODO: Implement Vault CSR signing
+        raise NotImplementedError("HashiCorp Vault integration not yet implemented")
+
+    async def revoke_certificate(self, serial_number: str) -> bool:
+        """Revoke a certificate in Vault PKI."""
+        # TODO: Implement Vault certificate revocation
+        raise NotImplementedError("HashiCorp Vault integration not yet implemented")
+
+    async def validate_certificate(self, certificate: str) -> dict[str, Any]:
+        """Validate a certificate against Vault CA."""
+        # TODO: Implement Vault certificate validation
+        raise NotImplementedError("HashiCorp Vault integration not yet implemented")
 
     def get_provider_info(self) -> dict[str, str]:
         return {
@@ -424,8 +490,34 @@ class ADCSProvider(CertificateProvider):
 
     async def provision_server_certificate(self, request: CertificateRequest) -> CertificateBundle:
         """Request certificate from Active Directory Certificate Services."""
-        logger.info("🏢 Requesting server certificate from ADCS for {request.common_name}")
-        # ADCS API implementation via certreq/PowerShell
+        logger.info("🏢 Requesting server certificate from ADCS for %s", request.common_name)
+        # TODO: Implement ADCS integration via certreq/PowerShell
+        raise NotImplementedError("Active Directory Certificate Services integration not yet implemented")
+
+    async def provision_client_certificate(self, request: CertificateRequest) -> CertificateBundle:
+        """Request client certificate from Active Directory Certificate Services."""
+        # TODO: Implement ADCS client certificate provisioning
+        raise NotImplementedError("Active Directory Certificate Services integration not yet implemented")
+
+    async def get_ca_certificate(self) -> str:
+        """Get the Certificate Authority root certificate from ADCS."""
+        # TODO: Implement ADCS CA certificate retrieval
+        raise NotImplementedError("Active Directory Certificate Services integration not yet implemented")
+
+    async def sign_certificate_request(self, csr_pem: str, service_name: str) -> str:
+        """Sign a Certificate Signing Request using ADCS."""
+        # TODO: Implement ADCS CSR signing
+        raise NotImplementedError("Active Directory Certificate Services integration not yet implemented")
+
+    async def revoke_certificate(self, serial_number: str) -> bool:
+        """Revoke a certificate in ADCS."""
+        # TODO: Implement ADCS certificate revocation
+        raise NotImplementedError("Active Directory Certificate Services integration not yet implemented")
+
+    async def validate_certificate(self, certificate: str) -> dict[str, Any]:
+        """Validate a certificate against ADCS CA."""
+        # TODO: Implement ADCS certificate validation
+        raise NotImplementedError("Active Directory Certificate Services integration not yet implemented")
 
     def get_provider_info(self) -> dict[str, str]:
         return {
@@ -466,14 +558,29 @@ class CertificateAuthorityService:
         )
 
         # Request certificates from provider
-        certificates = {
+        certificates: dict[str, CertificateBundle] = {
             "platform": await self.provider.provision_server_certificate(platform_req),
             "client": await self.provider.provision_client_certificate(client_req),
-            "ca": await self.provider.get_ca_certificate(),
         }
 
+        # Add CA certificate as string (note: this breaks the type consistency)
+        # TODO: Consider separating CA certificate handling or updating return type
+        ca_cert = await self.provider.get_ca_certificate()
+
+        # For now, create a simple CertificateBundle for CA cert consistency
+        ca_bundle = CertificateBundle(
+            certificate=ca_cert,
+            private_key="",  # CA private key not returned to clients
+            certificate_chain="",
+            ca_certificate=ca_cert,  # CA cert references itself
+            metadata={"type": "ca_certificate"},
+        )
+        certificates["ca"] = ca_bundle
+
+        provider_info = self.provider.get_provider_info()
         logger.info(
-            f"✅ Certificate bundle provisioned via {self.provider.get_provider_info()['provider']}",
+            "✅ Certificate bundle provisioned via %s",
+            provider_info["provider"],
         )
         return certificates
 
@@ -506,24 +613,58 @@ def create_certificate_provider() -> CertificateProvider:
         return DevelopmentCertificateProvider(cert_dir)
 
     if provider_type == "azure-keyvault":
+        vault_url = os.getenv("AZURE_KEYVAULT_URL")
+        tenant_id = os.getenv("AZURE_TENANT_ID")
+        client_id = os.getenv("AZURE_CLIENT_ID")
+        client_secret = os.getenv("AZURE_CLIENT_SECRET")
+
+        if not all([vault_url, tenant_id, client_id, client_secret]):
+            raise ValueError("Azure Key Vault provider requires AZURE_KEYVAULT_URL, AZURE_TENANT_ID, AZURE_CLIENT_ID, and AZURE_CLIENT_SECRET environment variables")
+
+        # Type assertion: we've verified these are not None above
+        assert vault_url is not None
+        assert tenant_id is not None
+        assert client_id is not None
+        assert client_secret is not None
+
         return AzureKeyVaultProvider(
-            vault_url=os.getenv("AZURE_KEYVAULT_URL"),
-            tenant_id=os.getenv("AZURE_TENANT_ID"),
-            client_id=os.getenv("AZURE_CLIENT_ID"),
-            client_secret=os.getenv("AZURE_CLIENT_SECRET"),
+            vault_url=vault_url,
+            tenant_id=tenant_id,
+            client_id=client_id,
+            client_secret=client_secret,
         )
 
     if provider_type == "vault":
+        vault_url = os.getenv("VAULT_URL")
+        vault_token = os.getenv("VAULT_TOKEN")
+
+        if not vault_url or not vault_token:
+            raise ValueError("Vault provider requires VAULT_URL and VAULT_TOKEN environment variables")
+
+        # Type assertion: we've verified these are not None above
+        assert vault_url is not None
+        assert vault_token is not None
+
         return VaultProvider(
-            vault_url=os.getenv("VAULT_URL"),
-            vault_token=os.getenv("VAULT_TOKEN"),
+            vault_url=vault_url,
+            vault_token=vault_token,
             pki_path=os.getenv("VAULT_PKI_PATH", "pki"),
         )
 
     if provider_type == "adcs":
+        ca_server = os.getenv("ADCS_CA_SERVER")
+        ca_name = os.getenv("ADCS_CA_NAME")
+
+        if not ca_server or not ca_name:
+            raise ValueError("ADCS provider requires ADCS_CA_SERVER and ADCS_CA_NAME environment variables")
+
+        # Type assertion: we've verified these are not None above
+        assert ca_server is not None
+        assert ca_name is not None
+
         return ADCSProvider(
-            ca_server=os.getenv("ADCS_CA_SERVER"),
-            ca_name=os.getenv("ADCS_CA_NAME"),
+            ca_server=ca_server,
+            ca_name=ca_name,
             template=os.getenv("ADCS_TEMPLATE", "WebServer"),
         )
 
