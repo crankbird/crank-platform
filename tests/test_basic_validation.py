@@ -4,11 +4,13 @@ Basic framework tests that work with pytest properly.
 import pytest
 
 
+@pytest.mark.unit
 def test_basic_test() -> None:
     """Simple test that always passes."""
     assert True
 
 
+@pytest.mark.unit
 def test_math_operations() -> None:
     """Test basic math to validate test runner."""
     assert 2 + 2 == 4
@@ -53,6 +55,7 @@ def test_performance_baseline() -> None:
     assert result == 49995000  # sum of 0 to 9999
 
 
+@pytest.mark.unit
 class TestFrameworkUtils:
     """Test utilities and helper functions."""
 

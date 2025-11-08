@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 
+@pytest.mark.unit
 class TestMLBoundaryShims:
     """Test the ML boundary shim functions for type safety and error handling."""
 
@@ -149,6 +150,7 @@ class TestMLBoundaryShims:
         assert np.array_equal(result, expected)
 
 
+@pytest.mark.unit
 class TestMLModelProtocols:
     """Test that our Protocol definitions work correctly."""
 
@@ -181,6 +183,7 @@ class TestMLModelProtocols:
         assert outputs.logits_per_image == [[0.1, 0.2, 0.3]]
 
 
+@pytest.mark.unit
 class TestErrorHandling:
     """Test comprehensive error handling in boundary shims."""
 
@@ -208,6 +211,7 @@ class TestErrorHandling:
             assert result["available"] is False
 
 
+@pytest.mark.unit
 class TestTypeAnnotations:
     """Test that type annotations are working correctly."""
 
