@@ -82,7 +82,7 @@ Some existing tests are being gradually migrated to the unified framework:
 
 ## Development Workflow
 
-## Development Workflow
+## Testing Workflows
 
 ### Pre-commit Testing
 ```bash
@@ -177,11 +177,11 @@ Current status (as of 2025-11-08):
 5. **Test both success and failure paths**: Error handling is critical
 6. **Use descriptive test names**: Explain what and why, not just how
 
-# Platform-specific JSON output
+## Platform-specific JSON output
 python tests/enhanced_smoke_test.py --json
 ```
 
-### Full Validation
+## Full Validation
 
 ```bash
 # Complete confidence validation
@@ -191,7 +191,7 @@ python tests/confidence_test_suite.py
 python tests/integration_test_suite.py
 ```
 
-### Individual Test Categories
+## Individual Test Categories
 
 ```bash
 # Build validation

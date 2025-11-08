@@ -37,6 +37,10 @@ class SecureCertificateStore:
         self.ca_cert: Optional[str] = None
         self.platform_cert: Optional[str] = None
         self.platform_key: Optional[str] = None
+        # Initialize temp file paths (set when SSL context is created)
+        self._temp_cert_file: Optional[Path] = None
+        self._temp_key_file: Optional[Path] = None
+        self._temp_dir: Optional[str] = None
 
     def store_certificates(self, ca_cert: str, platform_cert: str, platform_key: str) -> None:
         """Store certificates in memory."""
@@ -47,6 +51,13 @@ class SecureCertificateStore:
 
     def get_ssl_context(self) -> ssl.SSLContext:
         """Create SSL context from in-memory certificates."""
+        # Validate certificates are available
+        if self.platform_cert is None or self.platform_key is None:
+            raise RuntimeError(
+                "🚫 Cannot create SSL context: certificates not loaded. "
+                "Run certificate initialization first."
+            )
+
         # Create temporary SSL context with in-memory certs
         context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
 
@@ -57,11 +68,9 @@ class SecureCertificateStore:
 
         # Write certificates to temporary files
         with cert_file.open("w") as f:
-            if self.platform_cert is not None:
-                f.write(self.platform_cert)
+            f.write(self.platform_cert)
         with key_file.open("w") as f:
-            if self.platform_key is not None:
-                f.write(self.platform_key)
+            f.write(self.platform_key)
 
         # Load certificate chain
         context.load_cert_chain(str(cert_file), str(key_file))
@@ -76,11 +85,21 @@ class SecureCertificateStore:
     @property
     def temp_cert_file(self) -> str:
         """Get the temporary certificate file path."""
+        if self._temp_cert_file is None:
+            raise RuntimeError(
+                "🚫 Temporary certificate files not created. "
+                "Call get_ssl_context() first."
+            )
         return str(self._temp_cert_file)
 
     @property
     def temp_key_file(self) -> str:
         """Get the temporary key file path."""
+        if self._temp_key_file is None:
+            raise RuntimeError(
+                "🚫 Temporary key files not created. "
+                "Call get_ssl_context() first."
+            )
         return str(self._temp_key_file)
 
 

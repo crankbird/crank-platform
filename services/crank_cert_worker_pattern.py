@@ -25,7 +25,10 @@ import asyncio
 import logging
 import os
 import sys
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
 
 logger = logging.getLogger(__name__)
 
@@ -60,8 +63,8 @@ class WorkerCertificatePattern:
         try:
             # Import certificate initialization (add path if needed)
             sys.path.append("/app/scripts")
-            from initialize_certificates import cert_store
-            from initialize_certificates import main as init_certificates
+            from crank_cert_initialize import cert_store
+            from crank_cert_initialize import main as init_certificates
 
             # Set SERVICE_NAME for individual service certificates
             os.environ["SERVICE_NAME"] = self.service_name
@@ -81,9 +84,9 @@ class WorkerCertificatePattern:
             return cert_store
 
         except Exception as e:
-            raise RuntimeError(f"🚫 Certificate initialization failed for {self.service_name}: {e}")
+            raise RuntimeError(f"🚫 Certificate initialization failed for {self.service_name}: {e}") from e
 
-    def start_server(self, app, port: int, host: str = "0.0.0.0"):
+    def start_server(self, app: "FastAPI", port: int, host: str = "0.0.0.0"):
         """Start uvicorn server with pre-loaded certificates.
 
         Args:
@@ -99,7 +102,7 @@ class WorkerCertificatePattern:
         try:
             # Import certificate store
             sys.path.append("/app/scripts")
-            from initialize_certificates import cert_store
+            from crank_cert_initialize import cert_store
 
             # Get certificate file paths for uvicorn
             cert_file = cert_store.temp_cert_file
@@ -116,7 +119,7 @@ class WorkerCertificatePattern:
             )
 
         except Exception as e:
-            raise RuntimeError(f"🚫 Failed to start {self.service_name} with certificates: {e}")
+            raise RuntimeError(f"🚫 Failed to start {self.service_name} with certificates: {e}") from e
 
 
 def create_worker_fastapi_with_certs(
@@ -124,7 +127,7 @@ def create_worker_fastapi_with_certs(
     service_name: str,
     platform_url: Optional[str] = None,
     worker_url: Optional[str] = None,
-    cert_store=None,
+    cert_store: Optional[object] = None,
 ):
     """Helper to create FastAPI worker with certificate store.
 

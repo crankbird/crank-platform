@@ -74,7 +74,7 @@ async def process_request(
 
 # NEW
 async def process_request(
-    self, request: CrankMeshRequest, auth_context: dict[str, Any] 
+    self, request: CrankMeshRequest, auth_context: dict[str, Any]
 ) -> CrankMeshResponse:
 ```## Compatibility & Transition
 
@@ -83,7 +83,7 @@ The old `mesh_interface.py` includes compatibility aliases:
 ```python
 # Temporary aliases - will be removed in next major version
 MeshRequest = CrankMeshRequest
-MeshResponse = CrankMeshResponse  
+MeshResponse = CrankMeshResponse
 MeshInterface = CrankMeshInterface
 # ... etc
 ```

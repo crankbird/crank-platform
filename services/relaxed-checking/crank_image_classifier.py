@@ -17,7 +17,8 @@ from uuid import uuid4
 import cv2
 import httpx
 import numpy as np
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from numpy.typing import NDArray
+from fastapi import FastAPI, Form, HTTPException, UploadFile
 from PIL import Image
 from pydantic import BaseModel
 
@@ -72,7 +73,7 @@ try:
     gpu_info = gpu_manager.get_info()
 except ImportError:
     gpu_available = False
-    gpu_device = None
+    gpu_device = None  # type: ignore
     gpu_info = {"type": "CPU", "platform": "Unknown"}
     logger.warning("GPU libraries not available - running in CPU mode")
 
@@ -134,7 +135,7 @@ class CrankImageClassifier:
         self.key_file = None
         self.ca_file = None
 
-        self.worker_id = None
+        self.worker_id: Optional[str] = None
 
         # Initialize GPU status with universal detection
         self.gpu_available = gpu_available
@@ -222,7 +223,7 @@ class CrankImageClassifier:
 
         @self.app.post("/classify")
         async def classify_image_endpoint(
-            file: UploadFile = File(...),
+            file: UploadFile,
             classification_types: str = Form("object_detection,scene_classification"),
             confidence_threshold: float = Form(0.5),
         ) -> ImageClassificationResponse:
@@ -319,24 +320,25 @@ class CrankImageClassifier:
             return results
 
     async def _detect_objects(
-        self, image_array: np.ndarray, confidence_threshold: float,
+        self, image_array: NDArray[np.uint8], confidence_threshold: float,
     ) -> dict[str, Any]:
         """Basic object detection."""
         # Simplified object detection using OpenCV
         gray = cv2.cvtColor(image_array, cv2.COLOR_RGB2GRAY)
 
-        # Basic feature detection
-        sift = cv2.SIFT_create()
-        keypoints, _descriptors = sift.detectAndCompute(gray, None)
+        # Basic feature detection - simplified approach
+        # Note: SIFT may require opencv-contrib-python
+        edges = cv2.Canny(gray, 100, 200)
+        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         return {
-            "method": "SIFT features",
-            "keypoints_detected": len(keypoints),
+            "method": "Edge detection",
+            "contours_detected": len(contours),
             "confidence": confidence_threshold,
             "gpu_accelerated": self.gpu_available,
         }
 
-    async def _classify_scene(self, image_array: np.ndarray) -> dict[str, Any]:
+    async def _classify_scene(self, image_array: NDArray[np.uint8]) -> dict[str, Any]:
         """Basic scene classification."""
         # Simplified scene classification based on basic features
         gray = cv2.cvtColor(image_array, cv2.COLOR_RGB2GRAY)
@@ -377,7 +379,7 @@ class CrankImageClassifier:
             "total_pixels": len(pixels),
         }
 
-    async def _analyze_content(self, image_array: np.ndarray) -> dict[str, Any]:
+    async def _analyze_content(self, image_array: NDArray[np.uint8]) -> dict[str, Any]:
         """Basic content analysis."""
         height, width = image_array.shape[:2]
 
@@ -608,6 +610,9 @@ def main() -> None:
             from crank_cert_initialize import cert_store
 
             print("🔒 Using certificates obtained via SECURE CSR pattern")
+
+            # Create SSL context to initialize temp files
+            cert_store.get_ssl_context()
 
             # Get the temporary certificate file paths for uvicorn
             cert_file = cert_store.temp_cert_file

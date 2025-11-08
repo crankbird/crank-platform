@@ -14,6 +14,7 @@ import os
 import time
 from datetime import datetime, timezone
 from typing import Any, Optional
+from contextlib import asynccontextmanager
 
 # Import new platform services
 from crank_platform_service import PlatformService, User, WorkerInfo
@@ -86,34 +87,10 @@ class CrankPlatformApp:
         # Initialize universal protocol support - CRITICAL FEATURE
         self.protocol_service = None  # Will be initialized in startup
 
-        # Create FastAPI app
-        self.app = FastAPI(
-            title="Crank Platform",
-            description="Enhanced mesh platform with diagnostics, auth, billing, worker management, and UNIVERSAL PROTOCOL SUPPORT",
-            version="2.0.0",
-        )
-
-        # Add CORS middleware
-        self.app.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
-
-        # Setup routes
-        self._setup_routes()
-
-        # Setup startup/shutdown events
-        self._setup_events()
-
-    def _setup_events(self):
-        """Setup FastAPI startup and shutdown events."""
-
-        @self.app.on_event("startup")
-        async def startup_event():
-            """Initialize persistent services on startup."""
+        # Create FastAPI app with lifespan
+        @asynccontextmanager
+        async def lifespan(app: FastAPI):
+            # Startup
             print("🚀 Initializing Crank Platform...")
 
             # Security and certificates already initialized synchronously in main()
@@ -132,10 +109,10 @@ class CrankPlatformApp:
             self.protocol_service = UniversalProtocolService(self.platform)
 
             print("✅ Crank Platform startup complete!")
-
-        @self.app.on_event("shutdown")
-        async def shutdown_event():
-            """Cleanup resources on shutdown."""
+            
+            yield
+            
+            # Shutdown
             print("🛑 Shutting down Crank Platform...")
 
             if self.discovery_service and hasattr(self.discovery_service, "cleanup"):
@@ -143,6 +120,29 @@ class CrankPlatformApp:
                 print("🧹 Cleaned up discovery service")
 
             print("✅ Crank Platform shutdown complete!")
+
+        self.app = FastAPI(
+            title="Crank Platform",
+            description="Enhanced mesh platform with diagnostics, auth, billing, worker management, and UNIVERSAL PROTOCOL SUPPORT",
+            version="2.0.0",
+            lifespan=lifespan,
+        )
+
+        # Add CORS middleware
+        self.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+
+        # Setup routes
+        self._setup_routes()
+
+    def get_auth_dependency(self):
+        """Create authentication dependency for FastAPI routes."""
+        return Depends(self.get_current_user)
 
     async def get_current_user(self, authorization: str = Header(None)) -> User:
         """Extract and authenticate user from Authorization header."""
@@ -291,7 +291,7 @@ class CrankPlatformApp:
                     "diagnostic",
                     duration_ms,
                 )
-                raise HTTPException(status_code=500, detail=str(e))
+                raise HTTPException(status_code=500, detail=str(e)) from e
 
         # =============================================================================
         # PLATFORM ENDPOINTS (New functionality)
@@ -567,7 +567,7 @@ def main():
         except Exception as e:
             raise RuntimeError(
                 f"🚫 Secure Certificate Authority Service initialization failed: {e}",
-            )
+            ) from e
     elif https_only:
         raise RuntimeError(
             "🚫 HTTPS_ONLY=true but no CA_SERVICE_URL provided. NO LEGACY CERTIFICATE GENERATION ALLOWED!",
@@ -613,7 +613,7 @@ def main():
         except Exception as e:
             raise RuntimeError(
                 f"🚫 Failed to create SSL context from Certificate Authority Service: {e}",
-            )
+            ) from e
     else:
         raise RuntimeError(
             "🚫 HTTP mode disabled permanently - Certificate Authority Service provides HTTPS-only security",
