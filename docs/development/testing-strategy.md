@@ -7,20 +7,20 @@ The Crank Platform uses a comprehensive, multi-tiered testing strategy designed 
 ## Testing Pyramid
 
 ```
-🏗️  INTEGRATION TESTS (Slow, High Confidence)
-    ├── Full platform validation (confidence_test_suite.py)
-    ├── Multi-service communication (enhanced_smoke_test.py) 
-    └── Security & certificate validation
-    
-⚡  SMOKE TESTS (Medium Speed, Critical Path)
-    ├── Service health validation
-    ├── API endpoint verification
-    └── Core functionality checks
-    
-🧪  UNIT TESTS (Fast, Isolated)
-    ├── Business logic validation (services/*)
-    ├── Boundary shim testing (ml_boundary_shims)
-    └── Framework validation (conftest, fixtures)
+Integration Tests (Slow, High Confidence)
+├── Full platform validation (confidence_test_suite.py)
+├── Multi-service communication (enhanced_smoke_test.py) 
+└── Security & certificate validation
+
+Smoke Tests (Medium Speed, Critical Path)
+├── Service health validation
+├── API endpoint verification
+└── Core functionality checks
+
+Unit Tests (Fast, Isolated)
+├── Business logic validation (services/*)
+├── Boundary shim testing (ml_boundary_shims)
+└── Framework validation (conftest, fixtures)
 ```
 
 ## Test Categories & Markers
@@ -49,9 +49,8 @@ The Crank Platform uses a comprehensive, multi-tiered testing strategy designed 
 ### Unified Test Runner
 
 The `test_runner.py` provides a unified interface for all testing scenarios:
-
 ```bash
-# Development workflow
+# Development workflow commands
 python test_runner.py --unit                    # Fast feedback loop
 python test_runner.py --smoke                   # Pre-commit validation
 python test_runner.py --integration            # Pre-merge validation
@@ -66,7 +65,7 @@ python test_runner.py --unit --coverage        # Unit test coverage
 python test_runner.py --all --coverage --html  # Full coverage report
 ```
 
-### Pipeline Stages
+### Test Pipeline Stages
 
 #### 1. Fast Feedback (< 2 minutes)
 ```bash
@@ -149,7 +148,7 @@ python test_runner.py --smoke --coverage --html
 open htmlcov/index.html
 ```
 
-### CI/CD Integration
+### CI Pipeline Integration
 ```bash
 # Generate coverage reports for CI systems
 python test_runner.py --ci --coverage --xml-output=coverage.xml
