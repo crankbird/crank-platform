@@ -5,12 +5,17 @@ crank_platform.egg-info/SOURCES.txt
 crank_platform.egg-info/dependency_links.txt
 crank_platform.egg-info/requires.txt
 crank_platform.egg-info/top_level.txt
+services/ml/crank_email_classifier.py
+services/relaxed-checking/crank_image_classifier.py
 services/runtime/__init__.py
 services/runtime/container_runtime.py
 tests/test-hello-world.py
+tests/test_basic_validation.py
 tests/test_certificate_fix.py
 tests/test_cuda_regression.py
 tests/test_email_pipeline.py
+tests/test_framework_simple.py
+tests/test_framework_validation.py
 tests/test_gpu_cpu_performance.py
 tests/test_gpu_integration_pattern.py
 tests/test_kevin_runtime.py

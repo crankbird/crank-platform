@@ -1,7 +1,7 @@
 # CRITICAL CONTEXT - ALWAYS REMEMBER
 
 ## Package Management
-**ALWAYS USE UV, NEVER PIP**
+### ALWAYS USE UV, NEVER PIP
 ```bash
 uv pip install package-name
 uv pip list
@@ -9,7 +9,7 @@ uv pip freeze > requirements.txt
 ```
 
 ## Image Classifier Architecture
-**TWO SEPARATE CLASSIFIERS - NOT ONE**
+### TWO SEPARATE CLASSIFIERS - NOT ONE
 
 ### CPU Classifier (Basic)
 - **File**: `services/relaxed-checking/crank_image_classifier.py`
@@ -38,3 +38,38 @@ uv pip freeze > requirements.txt
 - "Fix what we can, tolerate what we must"
 - Graduated type checking for different service complexity levels
 - Real functionality over perfect type checking
+
+## Testing Infrastructure (Updated 2025-11-08)
+### Unified Test Runner
+**PRIMARY TOOL**: `uv run python test_runner.py`
+```bash
+# Development workflow
+uv run python test_runner.py --unit          # Fast unit tests (< 60s)
+uv run python test_runner.py --smoke         # Critical path validation (< 2min)
+uv run python test_runner.py --integration   # Full platform tests (< 15min)
+
+# CI/CD workflow
+uv run python test_runner.py --ci           # CI-optimized (unit + smoke)
+uv run python test_runner.py --pr           # Pull request validation
+uv run python test_runner.py --release      # Release validation
+
+# Coverage & reporting
+uv run python test_runner.py --unit --coverage --html
+```
+
+### Test Organization
+- **Unit Tests**: `@pytest.mark.unit` - Fast, isolated, no dependencies
+- **Smoke Tests**: `@pytest.mark.smoke` - Service validation, requires Docker
+- **Integration Tests**: `@pytest.mark.integration` - Full platform, requires Docker + Network
+- **Documentation**: `docs/development/testing-strategy.md`
+
+### Key Test Files
+- `tests/test_ml_boundary_shims.py` - ML isolation layer with type safety
+- `tests/test_basic_validation.py` - Framework validation
+- `tests/conftest.py` - Fixtures and test infrastructure
+- `test_runner.py` - Unified test orchestration
+
+### Legacy Test Integration
+- Existing smoke tests: `enhanced_smoke_test.py`, `confidence_test_suite.py`
+- Can be included with: `--include-legacy` flag
+- Gradual migration to pytest framework ongoing

@@ -1,0 +1,25 @@
+{
+  "timestamp": 1762595996.112352,
+  "summary": {
+    "total_suites": 1,
+    "passed_suites": 0,
+    "failed_suites": 1,
+    "total_duration": 0.15444302558898926,
+    "success": false
+  },
+  "suites": [
+    {
+      "suite": "Unit Tests",
+      "duration": 0.15444302558898926,
+      "return_code": 4,
+      "stdout": "",
+      "stderr": "ERROR: usage: pytest [options] [file_or_dir] [file_or_dir] [...]\npytest: error: unrecognized arguments: --timeout 60\n  inifile: /Users/richardmartin/Projects/crank-platform/pytest.ini\n  rootdir: /Users/richardmartin/Projects/crank-platform\n\n",
+      "command": "uv run pytest /Users/richardmartin/Projects/crank-platform/tests -m unit -v --timeout 60"
+    }
+  ],
+  "environment": {
+    "python_version": "3.9.6 (default, Oct 17 2025, 17:15:53) \n[Clang 17.0.0 (clang-1700.4.4.1)]",
+    "platform": "posix",
+    "cwd": "/Users/richardmartin/Projects/crank-platform"
+  }
+}

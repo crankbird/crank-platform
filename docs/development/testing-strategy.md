@@ -9,7 +9,7 @@ The Crank Platform uses a comprehensive, multi-tiered testing strategy designed 
 ```
 Integration Tests (Slow, High Confidence)
 ├── Full platform validation (confidence_test_suite.py)
-├── Multi-service communication (enhanced_smoke_test.py) 
+├── Multi-service communication (enhanced_smoke_test.py)
 └── Security & certificate validation
 
 Smoke Tests (Medium Speed, Critical Path)
@@ -81,7 +81,7 @@ python test_runner.py --unit --parallel
 # Unit + Smoke tests - ensure changes don't break critical paths
 python test_runner.py --pr --coverage --xml-output=junit.xml
 ```
-- **Target**: < 300 seconds  
+- **Target**: < 300 seconds
 - **Coverage**: Critical paths, service health, API endpoints
 - **Triggers**: Pull request creation/updates
 
@@ -124,7 +124,7 @@ tests/
 - **Dependencies**: None (mocked)
 - **Isolation**: Complete - no shared state
 
-### Smoke Tests  
+### Smoke Tests
 - **Coverage Target**: Critical paths only
 - **Speed Target**: < 30 seconds per service
 - **Dependencies**: Docker containers
@@ -273,7 +273,7 @@ python test_runner.py --smoke --include-legacy
 
 ### Continuous Improvement
 1. **Regular Review**: Monthly assessment of test strategy effectiveness
-2. **Coverage Analysis**: Identify gaps and improvement opportunities  
+2. **Coverage Analysis**: Identify gaps and improvement opportunities
 3. **Performance Optimization**: Optimize slow tests and CI pipeline
 4. **Tool Updates**: Keep testing tools and dependencies current
 

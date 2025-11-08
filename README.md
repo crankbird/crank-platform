@@ -49,11 +49,14 @@ make test-org
 # Start development environment
 ./dev-universal.sh
 
-# Run smoke tests
-python tests/enhanced_smoke_test.py
+# Quick testing (unified test runner)
+uv run python test_runner.py --unit
 
-# Run full test suite
-python tests/confidence_test_suite.py
+# Run comprehensive tests
+uv run python test_runner.py --integration
+
+# CI/CD pipeline validation
+uv run python test_runner.py --ci
 ```
 
 ## Documentation
@@ -61,6 +64,7 @@ python tests/confidence_test_suite.py
 - **[🏗️ Architecture](docs/ARCHITECTURE.md)** - Platform architecture, JEMM principles, GPU strategy
 - **[🚀 Platform Services](docs/PLATFORM_SERVICES.md)** - Service catalog, universal patterns, deployment
 - **[🌟 Vision & Strategy](docs/VISION.md)** - Economic model, market strategy, long-term vision
+- **[🧪 Testing Strategy](docs/development/testing-strategy.md)** - CI/CD testing approach, unified test runner
 - **[Quick Start Guide](QUICK_START.md)** - Get running in 5 minutes
 - **[Azure Setup Guide](AZURE_SETUP_GUIDE.md)** - Cloud deployment walkthrough
 - **[Universal GPU Dependencies](scripts/QUICK_START.md)** - Automated dependency installation for GPU services
@@ -102,9 +106,10 @@ Every time ChatGPT says "I can't do X, but here's some Python code to run in you
 ## Contributing
 
 1. **Read the docs**: Start with [Architecture](docs/ARCHITECTURE.md) to understand the platform
-2. **Check test organization**: Run `make test-org` to validate proper file structure
-3. **Run smoke tests**: Use `python tests/enhanced_smoke_test.py` for development validation
-4. **Follow mascot guidance**: Our architectural mascots guide code quality and consistency
+2. **Use unified testing**: Run `uv run python test_runner.py --unit` for development validation
+3. **Follow testing strategy**: See [Testing Strategy](docs/development/testing-strategy.md) for comprehensive CI/CD approach
+4. **Check implementation**: Review [Testing Implementation](docs/development/testing-implementation-summary.md) for current status
+5. **Follow mascot guidance**: Our architectural mascots guide code quality and consistency
 
 ## Support
 
