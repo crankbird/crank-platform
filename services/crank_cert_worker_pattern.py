@@ -102,8 +102,8 @@ class WorkerCertificatePattern:
             from initialize_certificates import cert_store
 
             # Get certificate file paths for uvicorn
-            cert_file = cert_store._temp_cert_file
-            key_file = cert_store._temp_key_file
+            cert_file = cert_store.temp_cert_file
+            key_file = cert_store.temp_key_file
 
             print("🔒 Using certificates obtained via SECURE CSR pattern")
 

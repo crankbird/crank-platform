@@ -466,8 +466,8 @@ def main() -> None:
 
             # Get the temporary certificate file paths for uvicorn - accessing private members
             # This is necessary as the cert_store doesn't provide a public API for uvicorn
-            cert_file = cert_store._temp_cert_file  # pyright: ignore[reportPrivateUsage]
-            key_file = cert_store._temp_key_file    # pyright: ignore[reportPrivateUsage]
+            cert_file = cert_store.temp_cert_file  # pyright: ignore[reportAttributeAccessIssue]
+            key_file = cert_store.temp_key_file    # pyright: ignore[reportAttributeAccessIssue]
 
             uvicorn.run(
                 app,

@@ -692,8 +692,8 @@ def main() -> None:
         logger.info("🔒 Using certificates obtained via SECURE CSR pattern")
 
         # Get the temporary certificate file paths for uvicorn
-        cert_file = cert_store._temp_cert_file  # pyright: ignore[reportPrivateUsage]
-        key_file = cert_store._temp_key_file  # pyright: ignore[reportPrivateUsage]
+        cert_file = cert_store.temp_cert_file  # pyright: ignore[reportAttributeAccessIssue]
+        key_file = cert_store.temp_key_file  # pyright: ignore[reportAttributeAccessIssue]
 
         uvicorn.run(
             app,

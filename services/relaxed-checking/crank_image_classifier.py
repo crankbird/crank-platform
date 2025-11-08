@@ -610,8 +610,8 @@ def main() -> None:
             print("🔒 Using certificates obtained via SECURE CSR pattern")
 
             # Get the temporary certificate file paths for uvicorn
-            cert_file = cert_store._temp_cert_file
-            key_file = cert_store._temp_key_file
+            cert_file = cert_store.temp_cert_file
+            key_file = cert_store.temp_key_file
 
             uvicorn.run(
                 app,
