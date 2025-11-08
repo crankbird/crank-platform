@@ -23,8 +23,14 @@ COPY services/ml/crank_email_classifier.py .
 COPY services/security_config.py .
 COPY services/crank-email-classifier.plugin.yaml ./plugin.yaml
 
-# Copy certificate initialization script (needed for in-process initialization)
+# Copy the new package structure instead of individual scripts
+COPY src/ ./src/
+
+# Copy certificate initialization script (legacy fallback)
 COPY services/crank_cert_initialize.py ./scripts/
+
+# Add src to Python path
+ENV PYTHONPATH="/app/src:$PYTHONPATH"
 
 # Create certificates directory with proper ownership
 RUN mkdir -p /etc/certs && chown worker:worker /etc/certs

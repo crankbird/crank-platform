@@ -22,8 +22,14 @@ RUN pip install --no-cache-dir -r requirements-crank-image-classifier.txt
 # Copy service files
 COPY services/relaxed-checking/crank_image_classifier.py ./crank_image_classifier_simple.py
 
-# Copy certificate initialization script (needed for in-process initialization)
+# Copy the new package structure
+COPY src/ ./src/
+
+# Copy certificate initialization script (legacy fallback)
 COPY services/crank_cert_initialize.py ./scripts/
+
+# Add src to Python path
+ENV PYTHONPATH="/app/src:$PYTHONPATH"
 
 # Create certificates directory with proper ownership
 RUN mkdir -p /etc/certs && chown worker:worker /etc/certs

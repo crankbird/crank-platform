@@ -11,7 +11,6 @@ import logging
 import os
 import re
 import ssl
-import sys
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -37,9 +36,8 @@ _SecureCertificateStore: Optional[type[Any]] = None
 _init_certificates: Optional[Any] = None
 
 try:
-    sys.path.append("/app/scripts")
-    from crank_cert_initialize import SecureCertificateStore as _SecureCertificateStore
-    from crank_cert_initialize import main as _init_certificates
+    from crank_platform.security import SecureCertificateStore as _SecureCertificateStore
+    from crank_platform.security import init_certificates as _init_certificates
 
     # Note: cert_store from crank_cert_initialize is not used directly in this file
 except ImportError:
@@ -369,7 +367,6 @@ class CrankEmailClassifier:
             self.cert_store = cert_store
         else:
             logger.info("🔐 Creating fallback certificate store for local development")
-            sys.path.append("/app/scripts")
             try:
                 # Try to import and create SecureCertificateStore
                 if SecureCertificateStore:
@@ -797,7 +794,6 @@ def main() -> None:
         print("🔐 Initializing certificates using SECURE CSR pattern...")
         try:
             # Run secure certificate initialization in the same process
-            sys.path.append("/app/scripts")
 
             # Run secure certificate initialization and create certificate store
             if init_certificates and SecureCertificateStore:

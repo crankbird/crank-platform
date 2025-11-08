@@ -17,8 +17,8 @@ from uuid import uuid4
 import cv2
 import httpx
 import numpy as np
-from numpy.typing import NDArray
 from fastapi import FastAPI, Form, HTTPException, UploadFile
+from numpy.typing import NDArray
 from PIL import Image
 from pydantic import BaseModel
 
@@ -39,17 +39,17 @@ try:
     from pathlib import Path
 
     # Try multiple possible paths for gpu_manager
-    possible_paths = [
-        str(Path(__file__).parent.parent / "src"),  # Host environment
-        str(Path(__file__).parent),  # Container environment
-        "/app",  # Container fallback
-    ]
-
-    for path in possible_paths:
-        if path not in sys.path:
-            sys.path.insert(0, path)
-
-    from gpu_manager import UniversalGPUManager
+    # Import GPU manager directly - no path manipulation needed
+    try:
+        from gpu_manager import UniversalGPUManager
+    except ImportError:
+        # Fallback import if not in path 
+        import sys
+        from pathlib import Path
+        # Add src directory to path temporarily
+        src_path = Path(__file__).parent.parent.parent / "src"
+        sys.path.insert(0, str(src_path))
+        from gpu_manager import UniversalGPUManager
 
     # 🚨 WSL2 GPU COMPATIBILITY CRITICAL ISSUE - See docs/WSL2-GPU-CUDA-COMPATIBILITY.md
     #
@@ -119,12 +119,13 @@ class CrankImageClassifier:
             self.cert_store = cert_store
         else:
             logger.info("🔐 Creating empty certificate store (fallback)")
-            import sys
-
-            sys.path.append("/app/scripts")
-            from crank_cert_initialize import SecureCertificateStore
-
-            self.cert_store = SecureCertificateStore()
+            try:
+                from crank_platform.security import SecureCertificateStore
+                self.cert_store = SecureCertificateStore()
+            except ImportError:
+                # Fallback for development
+                logger.warning("Certificate store not available - using minimal fallback")
+                self.cert_store = None
 
         # Always use HTTPS with Certificate Authority Service certificates
         self.platform_url = platform_url or os.getenv("PLATFORM_URL", "https://platform:8443")
@@ -557,16 +558,16 @@ def main() -> None:
         print("🔐 Initializing certificates using SECURE CSR pattern...")
         try:
             # Run secure certificate initialization in the same process
-            import sys
-
-            sys.path.append("/app/scripts")
             import asyncio
 
-            from crank_cert_initialize import cert_store
-            from crank_cert_initialize import main as init_certificates
+            try:
+                from crank_platform.security import cert_store
+                from crank_platform.security import init_certificates
 
-            # Run secure certificate initialization
-            asyncio.run(init_certificates())
+                # Run secure certificate initialization
+                asyncio.run(init_certificates())
+            except ImportError:
+                logger.warning("Certificate initialization not available")
 
             # Check if certificates were loaded
             if cert_store.platform_cert is None:
@@ -604,10 +605,7 @@ def main() -> None:
 
         # Create SSL context from in-memory certificates (SECURE CSR pattern)
         try:
-            import sys
-
-            sys.path.append("/app/scripts")
-            from crank_cert_initialize import cert_store
+            from crank_platform.security import cert_store
 
             print("🔒 Using certificates obtained via SECURE CSR pattern")
 

@@ -12,9 +12,9 @@ JEMM Implementation: Modular monolith with extract-ready design.
 
 import os
 import time
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Any, Optional
-from contextlib import asynccontextmanager
 
 # Import new platform services
 from crank_platform_service import PlatformService, User, WorkerInfo
@@ -109,9 +109,9 @@ class CrankPlatformApp:
             self.protocol_service = UniversalProtocolService(self.platform)
 
             print("✅ Crank Platform startup complete!")
-            
+
             yield
-            
+
             # Shutdown
             print("🛑 Shutting down Crank Platform...")
 
@@ -139,10 +139,6 @@ class CrankPlatformApp:
 
         # Setup routes
         self._setup_routes()
-
-    def get_auth_dependency(self):
-        """Create authentication dependency for FastAPI routes."""
-        return Depends(self.get_current_user)
 
     async def get_current_user(self, authorization: str = Header(None)) -> User:
         """Extract and authenticate user from Authorization header."""
@@ -374,9 +370,9 @@ class CrankPlatformApp:
                 return PlatformResponse(**result)
 
             except ValueError as e:
-                raise HTTPException(status_code=400, detail=str(e))
+                raise HTTPException(status_code=400, detail=str(e)) from e
             except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
+                raise HTTPException(status_code=500, detail=str(e)) from e
 
         @self.app.post("/v1/documents/convert")
         async def convert_document(
@@ -410,9 +406,9 @@ class CrankPlatformApp:
                 )
 
             except ValueError as e:
-                raise HTTPException(status_code=400, detail=str(e))
+                raise HTTPException(status_code=400, detail=str(e)) from e
             except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
+                raise HTTPException(status_code=500, detail=str(e)) from e
 
         @self.app.get("/v1/billing/balance")
         async def get_balance(user: User = Depends(self.get_current_user)):
@@ -454,9 +450,9 @@ class CrankPlatformApp:
                 )
 
             except ValueError as e:
-                raise HTTPException(status_code=400, detail=str(e))
+                raise HTTPException(status_code=400, detail=str(e)) from e
             except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
+                raise HTTPException(status_code=500, detail=str(e)) from e
 
         # =============================================================================
         # UNIVERSAL PROTOCOL ENDPOINTS - CRITICAL INNOVATION
