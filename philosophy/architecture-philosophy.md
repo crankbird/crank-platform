@@ -44,6 +44,7 @@ Before extracting a service from the monolith, we measure:
 ### Reversible Architecture
 
 All architectural decisions should be reversible:
+
 - Services can be consolidated back into the monolith if microservices add complexity
 - Clean interfaces allow moving code between deployment units
 - No architectural decisions that create irreversible lock-in
@@ -80,6 +81,7 @@ def process_transaction(input_data, policies, context):
 ```
 
 This means:
+
 - **Consistent Security**: Every service has the same auth, policy, audit patterns
 - **Easy Extraction**: Services can move from in-process to remote without client changes
 - **Protocol Agnostic**: Same service can be called via REST, gRPC, MCP, or RS422
@@ -88,16 +90,19 @@ This means:
 ## 🧠 Three-Tier Architecture Clarity
 
 ### IaaS Layer (crank-infrastructure)
+
 - **Purpose**: Environment provisioning and infrastructure
 - **Responsibilities**: Containers, VMs, networking, storage
 - **Deployment**: Terraform, Helm charts, cloud resources
 
 ### PaaS Layer (crank-platform)
+
 - **Purpose**: Service mesh, security, governance patterns
 - **Responsibilities**: Auth, policy, routing, service discovery, economic layer
 - **Deployment**: Single container or extracted services based on constraints
 
 ### SaaS Layer (crankdoc, parse-email-archive, etc.)
+
 - **Purpose**: Business logic and domain-specific AI services
 - **Responsibilities**: Document conversion, email parsing, data analysis
 - **Deployment**: Worker containers that plug into the mesh
@@ -107,16 +112,19 @@ This means:
 Our architecture is intentionally constrained by gaming laptop limitations:
 
 ### Memory Constraints (16GB)
+
 - **Force efficient models**: Can't run 70B parameter models, must use specialized smaller ones
 - **Encourage composability**: Multiple small services vs. one large service
 - **Drive optimization**: Every MB of memory use must be justified
 
 ### CPU Constraints (4-8 cores)
+
 - **Force async design**: Can't block threads, must use async/await patterns
 - **Encourage parallelization**: Work must be parallelizable across services
 - **Drive efficiency**: CPU cycles are precious, algorithms must be optimal
 
 ### Storage Constraints (1TB SSD)
+
 - **Force selective caching**: Can't cache everything, must be strategic
 - **Encourage streaming**: Process data in streams, not all-in-memory
 - **Drive compression**: Storage optimization is essential
@@ -133,18 +141,21 @@ These constraints aren't bugs - they're features that drive elegant solutions:
 ## 🌱 Architectural Evolution Principles
 
 ### Start Simple, Evolve Purposefully
+
 1. Begin with the simplest architecture that could possibly work
 2. Add complexity only when measurements prove it's necessary
 3. Keep interfaces clean so evolution is possible
 4. Document the reasoning behind every architectural decision
 
 ### Measure Everything
+
 - Performance metrics for every service
 - Resource usage patterns
 - Team velocity impact of architectural changes
 - Cost implications of different deployment patterns
 
 ### Optimize for Change
+
 - Interfaces over implementations
 - Composition over inheritance
 - Configuration over hard-coding

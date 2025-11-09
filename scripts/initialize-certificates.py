@@ -38,7 +38,10 @@ class CertificateClient:
         for _attempt in range(timeout):
             try:
                 timeout_config = ClientTimeout(total=2)
-                async with aiohttp.ClientSession(timeout=timeout_config) as session, session.get(f"{self.ca_service_url}/health") as response:
+                async with (
+                    aiohttp.ClientSession(timeout=timeout_config) as session,
+                    session.get(f"{self.ca_service_url}/health") as response,
+                ):
                     if response.status == 200:
                         health_data = await response.json()
                         logger.info(
@@ -59,7 +62,10 @@ class CertificateClient:
 
     async def get_ca_certificate(self) -> str:
         """Get the CA root certificate."""
-        async with aiohttp.ClientSession() as session, session.get(f"{self.ca_service_url}/ca/certificate") as response:
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(f"{self.ca_service_url}/ca/certificate") as response,
+        ):
             if response.status != 200:
                 raise RuntimeError(f"Failed to get CA certificate: {response.status}")
 
@@ -71,7 +77,10 @@ class CertificateClient:
         """Request platform certificate bundle from CA service."""
         logger.info("🔐 Requesting platform certificate bundle")
 
-        async with aiohttp.ClientSession() as session, session.post(f"{self.ca_service_url}/certificates/platform") as response:
+        async with (
+            aiohttp.ClientSession() as session,
+            session.post(f"{self.ca_service_url}/certificates/platform") as response,
+        ):
             if response.status != 200:
                 error_text = await response.text()
                 raise RuntimeError(
@@ -128,7 +137,9 @@ async def main() -> None:
         # Set permissions based on environment
         key_permissions = 0o600 if environment == "production" else 0o644
         write_certificate_file(
-            cert_dir / "platform.key", platform_cert["private_key"], key_permissions,
+            cert_dir / "platform.key",
+            platform_cert["private_key"],
+            key_permissions,
         )
 
         # Write client certificates

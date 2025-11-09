@@ -4,10 +4,11 @@ Certificate Fix Confidence Test
 Tests document conversion after mTLS certificate initialization fix
 """
 
+import pytest
 import requests
 
 
-def test_document_conversion():
+def test_document_conversion() -> bool:
     """Test document conversion with confidence tests"""
 
     platform_url = "https://crank-platform.greenforest-24b43401.australiaeast.azurecontainerapps.io"
@@ -20,7 +21,7 @@ def test_document_conversion():
         print(f"✅ Platform health: {health_response.status_code}")
     except Exception as e:
         print(f"❌ Platform health failed: {e}")
-        return False
+        pytest.fail(f"Platform health failed: {e}")
 
     # Test worker status
     try:
@@ -62,21 +63,23 @@ def test_document_conversion():
             print(f"   - Status: {result.get('status', 'unknown')}")
             print(f"   - Worker: {result.get('worker_id', 'unknown')}")
             print(f"   - Format: {result.get('target_format', 'unknown')}")
-            return True
-        print(f"❌ Document conversion failed: {conversion_response.status_code}")
-        try:
-            error_detail = conversion_response.json()
-            print(f"   Error details: {error_detail}")
-        except:
-            print(f"   Error text: {conversion_response.text}")
-        return False
+        else:
+            print(f"❌ Document conversion failed: {conversion_response.status_code}")
+            try:
+                error_detail = conversion_response.json()
+                print(f"   Error details: {error_detail}")
+            except ValueError:
+                print(f"   Error text: {conversion_response.text}")
+            pytest.fail(f"Document conversion failed: {conversion_response.status_code}")
 
     except Exception as e:
         print(f"❌ Document conversion error: {e}")
-        return False
+        pytest.fail(f"Document conversion error: {e}")
+
+    return True
 
 
-def test_email_classification():
+def test_email_classification() -> bool:
     """Test email classification with confidence tests"""
 
     platform_url = "https://crank-platform.greenforest-24b43401.australiaeast.azurecontainerapps.io"
@@ -111,18 +114,20 @@ John"""
             print(f"   - Status: {result.get('status', 'unknown')}")
             print(f"   - Worker: {result.get('worker_id', 'unknown')}")
             print(f"   - Classification: {result.get('classification', 'unknown')}")
-            return True
-        print(f"❌ Email classification failed: {classification_response.status_code}")
-        try:
-            error_detail = classification_response.json()
-            print(f"   Error details: {error_detail}")
-        except:
-            print(f"   Error text: {classification_response.text}")
-        return False
+        else:
+            print(f"❌ Email classification failed: {classification_response.status_code}")
+            try:
+                error_detail = classification_response.json()
+                print(f"   Error details: {error_detail}")
+            except ValueError:
+                print(f"   Error text: {classification_response.text}")
+            pytest.fail(f"Email classification failed: {classification_response.status_code}")
 
     except Exception as e:
         print(f"❌ Email classification error: {e}")
-        return False
+        pytest.fail(f"Email classification error: {e}")
+
+    return True
 
 
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+# pyright: reportUnusedFunction=none
 """
 REST API and Swagger Documentation for Crank Mesh Services
 
@@ -14,6 +15,7 @@ Your mesh architecture supports:
 """
 
 import time
+from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.openapi.docs import get_swagger_ui_html
@@ -32,40 +34,26 @@ def enhance_mesh_with_rest_api(service: MeshInterface) -> FastAPI:
     - REST API (for web apps)
     - Swagger UI (for documentation)
     """
-
-    app = service.create_app()  # Start with base mesh app
-
-    # Add comprehensive REST endpoints
+    app = service.create_app()
     _add_rest_endpoints(app, service)
-
-    # Enhance OpenAPI documentation
     _enhance_openapi_docs(app, service)
-
-    # Add Swagger UI customization
     _add_custom_swagger_ui(app, service)
-
     return app
 
 
 def _add_rest_endpoints(app: FastAPI, service: MeshInterface):
     """Add comprehensive REST endpoints for each capability."""
-
-    # Get capabilities to create specific endpoints
     capabilities = service.get_capabilities()
-
     for capability in capabilities:
-        # Create REST endpoint for each capability
         endpoint_path = f"/api/v1/{service.service_type}/{capability.operation}"
 
-        # Create the endpoint function dynamically
         async def create_capability_endpoint(cap=capability):
             async def capability_handler(
                 request_data: dict,
-                auth_context: dict = Depends(service._get_auth_context),
+                auth_context: Annotated[dict, Depends(service._get_auth_context)],
             ):
                 """Handle REST request for specific capability."""
                 try:
-                    # Convert REST request to mesh request
                     mesh_request = MeshRequest(
                         service_type=service.service_type,
                         operation=cap.operation,
@@ -73,11 +61,7 @@ def _add_rest_endpoints(app: FastAPI, service: MeshInterface):
                         policies=cap.policies_required,
                         metadata={"access_method": "rest_api"},
                     )
-
-                    # Process through mesh interface
                     response = await service.process_request(mesh_request, auth_context)
-
-                    # Return REST-friendly response
                     if response.success:
                         return {
                             "success": True,
@@ -97,20 +81,14 @@ def _add_rest_endpoints(app: FastAPI, service: MeshInterface):
                             "operation": cap.operation,
                         },
                     )
-
                 except Exception as e:
                     raise HTTPException(
                         status_code=500,
-                        detail={
-                            "success": False,
-                            "error": str(e),
-                            "operation": cap.operation,
-                        },
-                    )
+                        detail={"success": False, "error": str(e), "operation": cap.operation},
+                    ) from e
 
             return capability_handler
 
-        # Add the endpoint to FastAPI
         handler = create_capability_endpoint()
         app.post(
             endpoint_path,
@@ -120,9 +98,8 @@ def _add_rest_endpoints(app: FastAPI, service: MeshInterface):
             response_model=dict,
         )(handler)
 
-    # Add service-level endpoints
     @app.get(f"/api/v1/{service.service_type}/info", tags=[f"{service.service_type}-info"])
-    async def get_service_info(auth_context: dict = Depends(service._get_auth_context)):
+    async def get_service_info(auth_context: Annotated[dict, Depends(service._get_auth_context)]):
         """Get detailed service information."""
         return {
             "service_type": service.service_type,
@@ -157,67 +134,29 @@ def _enhance_openapi_docs(app: FastAPI, service: MeshInterface):
     def custom_openapi():
         if app.openapi_schema:
             return app.openapi_schema
-
         openapi_schema = get_openapi(
             title=f"Crank {service.service_type.title()} Mesh Service API",
             version="1.0.0",
-            description=f"""
-# Crank {service.service_type.title()} Mesh Service
-
-This service provides secure, enterprise-grade {service.service_type} processing capabilities through multiple interfaces:
-
-## 🔌 **Multiple Protocol Support**
-- **REST API** - Traditional HTTP endpoints for web applications
-- **MCP (Model Context Protocol)** - For AI agent integration
-- **Mesh Interface** - Universal service mesh communication
-
-## 🔒 **Security First**
-- API key authentication required for all operations
-- Input validation and sanitization
-- Audit trails and receipt generation
-- Policy-based access control
-
-## 📋 **Available Operations**
-{chr(10).join([f"- **{cap.operation}**: {cap.description}" for cap in service.get_capabilities()])}
-
-## 🚀 **Getting Started**
-1. Obtain an API key
-2. Include `Authorization: Bearer <your-api-key>` header
-3. Make requests to operation endpoints
-4. Check audit receipts in responses
-
-## 📖 **Documentation**
-- REST endpoints: `/api/v1/{service.service_type}/{{operation}}`
-- Service info: `/api/v1/{service.service_type}/info`
-- Health check: `/api/v1/{service.service_type}/health`
-- MCP interface: `/mcp` (for AI agents)
-
-Built on proven security foundation with adversarial testing.
-            """,
+            description=f"\n# Crank {service.service_type.title()} Mesh Service\n\nThis service provides secure, enterprise-grade {service.service_type} processing capabilities through multiple interfaces:\n\n## 🔌 **Multiple Protocol Support**\n- **REST API** - Traditional HTTP endpoints for web applications\n- **MCP (Model Context Protocol)** - For AI agent integration\n- **Mesh Interface** - Universal service mesh communication\n\n## 🔒 **Security First**\n- API key authentication required for all operations\n- Input validation and sanitization\n- Audit trails and receipt generation\n- Policy-based access control\n\n## 📋 **Available Operations**\n{chr(10).join([f'- **{cap.operation}**: {cap.description}' for cap in service.get_capabilities()])}\n\n## 🚀 **Getting Started**\n1. Obtain an API key\n2. Include `Authorization: Bearer <your-api-key>` header\n3. Make requests to operation endpoints\n4. Check audit receipts in responses\n\n## 📖 **Documentation**\n- REST endpoints: `/api/v1/{service.service_type}/{{operation}}`\n- Service info: `/api/v1/{service.service_type}/info`\n- Health check: `/api/v1/{service.service_type}/health`\n- MCP interface: `/mcp` (for AI agents)\n\nBuilt on proven security foundation with adversarial testing.\n            ",
             routes=app.routes,
             servers=[
                 {"url": "http://localhost:8000", "description": "Development server"},
                 {"url": "https://api.crank.example.com", "description": "Production server"},
             ],
         )
-
-        # Add security schemes
         openapi_schema["components"]["securitySchemes"] = {
             "ApiKeyAuth": {
                 "type": "apiKey",
                 "in": "header",
                 "name": "Authorization",
                 "description": "API key authentication. Include 'Bearer ' prefix.",
-            },
+            }
         }
-
-        # Apply security to all endpoints
         for path_data in openapi_schema["paths"].values():
             for operation in path_data.values():
                 if isinstance(operation, dict) and "tags" in operation:
                     if not any("health" in tag for tag in operation["tags"]):
                         operation["security"] = [{"ApiKeyAuth": []}]
-
         app.openapi_schema = openapi_schema
         return app.openapi_schema
 
@@ -272,30 +211,17 @@ def _add_custom_swagger_ui(app: FastAPI, service: MeshInterface):
                     "mesh": "/v1/process (universal)",
                 },
                 "examples": {
-                    "curl": f"""curl -X POST http://localhost:8000/api/v1/{service.service_type}/{{operation}} \\
-  -H "Authorization: Bearer your-api-key" \\
-  -H "Content-Type: application/json" \\
-  -d '{{"key": "value"}}'""",
-                    "python": f"""import requests
-
-response = requests.post(
-    'http://localhost:8000/api/v1/{service.service_type}/{{operation}}',
-    headers={{'Authorization': 'Bearer your-api-key'}},
-    json={{'key': 'value'}}
-)""",
+                    "curl": f"""curl -X POST http://localhost:8000/api/v1/{service.service_type}/{{operation}} \\\n  -H "Authorization: Bearer your-api-key" \\\n  -H "Content-Type: application/json" \\\n  -d '{{"key": "value"}}'""",
+                    "python": f"import requests\n\nresponse = requests.post(\n    'http://localhost:8000/api/v1/{service.service_type}/{{operation}}',\n    headers={{'Authorization': 'Bearer your-api-key'}},\n    json={{'key': 'value'}}\n)",
                 },
-            },
+            }
         )
 
 
-# Example of creating a full REST API service
 def create_rest_api_service(service: MeshInterface) -> FastAPI:
     """Create a complete REST API service with all enhancements."""
-
-    # Start with enhanced mesh service
     app = enhance_mesh_with_rest_api(service)
 
-    # Add additional REST-specific features
     @app.get("/", include_in_schema=False)
     async def root():
         """API root with navigation."""

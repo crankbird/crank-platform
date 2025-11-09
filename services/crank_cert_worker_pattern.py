@@ -81,7 +81,9 @@ class WorkerCertificatePattern:
             return cert_store
 
         except Exception as e:
-            raise RuntimeError(f"🚫 Certificate initialization failed for {self.service_name}: {e}") from e
+            raise RuntimeError(
+                f"🚫 Certificate initialization failed for {self.service_name}: {e}"
+            ) from e
 
     def start_server(self, app: "FastAPI", port: int, host: str = "0.0.0.0"):
         """Start uvicorn server with pre-loaded certificates.
@@ -115,7 +117,9 @@ class WorkerCertificatePattern:
             )
 
         except Exception as e:
-            raise RuntimeError(f"🚫 Failed to start {self.service_name} with certificates: {e}") from e
+            raise RuntimeError(
+                f"🚫 Failed to start {self.service_name} with certificates: {e}"
+            ) from e
 
 
 def create_worker_fastapi_with_certs(

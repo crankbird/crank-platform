@@ -48,7 +48,8 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -546,7 +547,9 @@ class EnhancedSmokeTest:
                     }
 
                     # Check if our expected workers are registered
-                    registered_services: set[Any] = {worker.get("service_type") for worker in all_workers}
+                    registered_services: set[Any] = {
+                        worker.get("service_type") for worker in all_workers
+                    }
                     {config.service_type for config in self.archetypes.values()}
 
                     for archetype_key, config in self.archetypes.items():
@@ -770,7 +773,9 @@ class EnhancedSmokeTest:
 
                                     health_response = await client.get(health_url)
                                     if health_response.status_code == 200:
-                                        reachable_list: list[str] = communication_results["reachable_workers"]
+                                        reachable_list: list[str] = communication_results[
+                                            "reachable_workers"
+                                        ]
                                         service_type = str(current_worker.get("service_type", ""))
                                         reachable_list.append(service_type)
 

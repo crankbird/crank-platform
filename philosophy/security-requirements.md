@@ -7,6 +7,7 @@ All security requirements are guided by Wendy the Zero-Trust Security Bunny's co
 ## 🛡️ Authentication & Authorization
 
 ### Multi-tier Authentication
+
 - **API Keys**: For service-to-service communication
 - **JWT Tokens**: For user session management
 - **mTLS Certificates**: For high-security service communication
@@ -15,6 +16,7 @@ All security requirements are guided by Wendy the Zero-Trust Security Bunny's co
 ### Per-Protocol Security Models
 
 #### REST API Security
+
 ```python
 @rest_secure(require_auth=True, rate_limit="100/hour")
 async def convert_document(request: ConvertRequest) -> ConvertResponse:
@@ -25,6 +27,7 @@ async def convert_document(request: ConvertRequest) -> ConvertResponse:
 ```
 
 #### gRPC Security
+
 ```python
 @grpc_secure(require_mtls=True, client_cert_validation=True)
 async def convert_document(request: ConvertRequest) -> ConvertResponse:
@@ -35,6 +38,7 @@ async def convert_document(request: ConvertRequest) -> ConvertResponse:
 ```
 
 #### MCP Security
+
 ```python
 @mcp_secure(capability_based=True, agent_verification=True)
 async def convert_document(request: ConvertRequest) -> ConvertResponse:
@@ -47,6 +51,7 @@ async def convert_document(request: ConvertRequest) -> ConvertResponse:
 ## 🔍 Policy Enforcement
 
 ### OPA/Rego Integration
+
 All requests are subject to policy evaluation:
 
 ```rego
@@ -67,12 +72,14 @@ deny[msg] {
 ```
 
 ### Resource Limits
+
 - **Per-user Quotas**: CPU time, memory usage, request counts
 - **Rate Limiting**: Requests per minute/hour/day
 - **Size Limits**: Maximum file sizes, request payload limits
 - **Time Limits**: Maximum processing time per request
 
 ### Security Receipts
+
 Every operation generates a cryptographic receipt:
 
 ```json
@@ -93,16 +100,19 @@ Every operation generates a cryptographic receipt:
 ### Encryption Requirements
 
 #### Data in Transit
+
 - **TLS 1.3**: All HTTP communication
 - **mTLS**: Service-to-service communication
 - **Protocol Encryption**: Native encryption for legacy protocols when available
 
 #### Data at Rest
+
 - **Volume Encryption**: All persistent storage encrypted
 - **Key Management**: Separate key management service
 - **Secrets Management**: Environment variables only, no hardcoded secrets
 
 #### Data in Processing
+
 - **Memory Protection**: Clear sensitive data after processing
 - **Temporary Files**: Encrypted temporary storage
 - **Process Isolation**: Containers with limited privileges
@@ -110,6 +120,7 @@ Every operation generates a cryptographic receipt:
 ### Privacy by Design
 
 #### Data Minimization
+
 ```python
 class ConvertRequest:
     content: str  # Only the content needed for conversion
@@ -118,6 +129,7 @@ class ConvertRequest:
 ```
 
 #### Data Retention
+
 - **Automatic Cleanup**: Temporary files deleted after processing
 - **Configurable Retention**: User-defined data retention policies
 - **Right to Erasure**: GDPR-compliant data deletion
@@ -127,6 +139,7 @@ class ConvertRequest:
 ### Input Validation
 
 #### Bobby Tables Prevention
+
 Wendy specifically protects against SQL injection and related attacks:
 
 ```python
@@ -144,6 +157,7 @@ def validate_input(data: str) -> str:
 ```
 
 #### Command Injection Prevention
+
 ```python
 def safe_subprocess_call(command: List[str], input_data: str) -> str:
     # Never use shell=True
@@ -166,11 +180,13 @@ def safe_subprocess_call(command: List[str], input_data: str) -> str:
 ### Network Security
 
 #### Zero Trust Network
+
 - **No Implicit Trust**: Every network connection must be authenticated
 - **Micro-segmentation**: Services can only communicate through defined interfaces
 - **Network Policies**: Kubernetes NetworkPolicies restrict traffic flow
 
 #### DDoS Protection
+
 - **Rate Limiting**: Multiple layers of rate limiting
 - **Circuit Breakers**: Automatic protection against cascading failures
 - **Resource Limits**: CPU and memory limits on all containers
@@ -178,6 +194,7 @@ def safe_subprocess_call(command: List[str], input_data: str) -> str:
 ### Container Security
 
 #### Security Hardening
+
 ```dockerfile
 FROM python:3.11-slim
 
@@ -194,6 +211,7 @@ USER 1000:1000
 ```
 
 #### Runtime Security
+
 - **AppArmor/SELinux**: Mandatory access controls
 - **Seccomp**: System call filtering
 - **Capabilities**: Drop all unnecessary capabilities
@@ -202,7 +220,9 @@ USER 1000:1000
 ## 📊 Audit & Compliance
 
 ### Audit Trail Requirements
+
 Every operation must be logged with:
+
 - **Who**: User or service identity
 - **What**: Operation performed
 - **When**: Precise timestamp
@@ -213,17 +233,20 @@ Every operation must be logged with:
 ### Compliance Standards
 
 #### SOX Compliance
+
 - **Segregation of Duties**: Development and production access separated
 - **Change Management**: All changes tracked and approved
 - **Data Integrity**: Cryptographic verification of all processing
 
 #### HIPAA Compliance
+
 - **Access Controls**: Role-based access to sensitive data
 - **Audit Logs**: Comprehensive audit trail
 - **Encryption**: All PHI encrypted in transit and at rest
 - **Business Associate Agreements**: Proper contractual protections
 
 #### GDPR Compliance
+
 - **Data Minimization**: Only collect necessary data
 - **Right to Erasure**: Ability to delete user data
 - **Data Portability**: Export user data in standard formats
@@ -232,18 +255,21 @@ Every operation must be logged with:
 ## 🔧 Security Operations
 
 ### Incident Response
+
 - **Automated Detection**: Security events trigger alerts
 - **Rapid Response**: Automated containment of security incidents
 - **Forensics**: Immutable audit logs for investigation
 - **Recovery**: Automated rollback and system restoration
 
 ### Vulnerability Management
+
 - **Dependency Scanning**: Automated scanning of all dependencies
 - **Container Scanning**: Security scanning of all container images
 - **Penetration Testing**: Regular security testing
 - **Bug Bounty**: External security researcher engagement
 
 ### Security Monitoring
+
 ```python
 class SecurityMonitor:
     def monitor_request(self, request: Request) -> SecurityEvent:
@@ -267,12 +293,14 @@ class SecurityMonitor:
 ## 🎯 Security Success Metrics
 
 ### Technical Metrics
+
 - **Zero Critical Vulnerabilities**: No unpatched critical security issues
 - **Authentication Success Rate**: >99.9% of valid requests authenticated
 - **Policy Compliance**: 100% of requests subject to policy evaluation
 - **Audit Coverage**: 100% of operations logged and auditable
 
 ### Operational Metrics
+
 - **Incident Response Time**: <15 minutes to contain security incidents
 - **Vulnerability Remediation**: <24 hours for critical vulnerabilities
 - **Security Training**: 100% of team trained on security practices

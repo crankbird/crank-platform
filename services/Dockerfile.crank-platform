@@ -23,6 +23,7 @@ COPY *.py ./
 COPY src/ src/
 COPY services/crank_platform_app.py ./scripts/
 COPY services/crank_platform_service.py ./
+COPY services/dependencies.py ./
 COPY services/mesh_diagnostics_v2.py ./
 COPY services/mesh_interface_v2.py ./
 COPY services/security_config.py ./

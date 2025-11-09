@@ -12,8 +12,8 @@ from .cert_worker_pattern import WorkerCertificatePattern, create_worker_fastapi
 
 __all__ = [
     "SecureCertificateStore",
-    "cert_store",
-    "init_certificates",
     "WorkerCertificatePattern",
+    "cert_store",
     "create_worker_fastapi_with_certs",
+    "init_certificates",
 ]

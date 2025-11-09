@@ -321,7 +321,9 @@ class DiagnosticMixin:
         return self.diagnostics.get_diagnostic_capabilities()
 
     async def handle_diagnostic_request(
-        self, request: MeshRequest, file: Optional[UploadFile] = None,
+        self,
+        request: MeshRequest,
+        file: Optional[UploadFile] = None,
     ) -> dict[str, Any]:
         """Handle diagnostic operations."""
         if request.operation == "ping":

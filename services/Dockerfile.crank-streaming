@@ -17,6 +17,9 @@ WORKDIR /app
 COPY services/requirements-crank-streaming.txt .
 RUN pip install --no-cache-dir -r requirements-crank-streaming.txt
 
+# Copy shared platform code (for crank_platform.security imports)
+COPY src/ src/
+
 # Copy service files
 COPY services/crank_streaming.py ./crank_streaming_simple.py
 
@@ -42,6 +45,9 @@ EXPOSE 8500
 # Health check for HTTPS-only mode
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
     CMD curl -k -f https://localhost:${STREAMING_HTTPS_PORT:-8500}/health || exit 1
+
+# Set PYTHONPATH to include src directory
+ENV PYTHONPATH="/app/src:/app"
 
 # Run simplified startup script
 CMD ["python", "run_worker.py"]

@@ -3,6 +3,7 @@
 ## 🔐 Safe Encrypted Backup in Git Repo
 
 ### Why This Works Securely
+
 - **Strong Encryption**: AES-256 encryption makes the backup unreadable without password
 - **Git Distribution**: Backup available wherever you clone the repository
 - **Access Control**: Only you have the decryption password
@@ -12,12 +13,14 @@
 ### Implementation Strategy
 
 #### 1. Enhanced Backup Script with Git Integration
+
 ```bash
 # Modified backup script that creates git-safe encrypted backups
 ./intellectual-property/backup-ip-context.sh --for-git
 ```
 
 #### 2. Git Repository Structure
+
 ```
 crank-platform/
 ├── intellectual-property/
@@ -30,6 +33,7 @@ crank-platform/
 ```
 
 #### 3. Security Benefits
+
 - **Distributed Availability**: Access backups from any machine with repo access
 - **Version Control**: Track backup history and restore specific points
 - **Automated Backup**: Include in CI/CD pipeline for regular snapshots

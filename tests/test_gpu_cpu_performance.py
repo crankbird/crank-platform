@@ -11,13 +11,14 @@ import ssl
 import statistics
 import time
 from io import BytesIO
+from typing import Any
 
 import httpx
 from PIL import Image, ImageDraw
 
 
 # Create a test image
-def create_test_image(size=(800, 600)):
+def create_test_image(size: tuple[int, int] = (800, 600)) -> Image.Image:
     """Create a test image with various objects for classification."""
     img = Image.new("RGB", size, color="lightblue")
     draw = ImageDraw.Draw(img)
@@ -40,15 +41,20 @@ def create_test_image(size=(800, 600)):
     return img
 
 
-def image_to_bytes(img):
+def image_to_bytes(img: Image.Image) -> bytes:
     """Convert PIL image to bytes."""
     img_buffer = BytesIO()
     img.save(img_buffer, format="JPEG", quality=95)
     return img_buffer.getvalue()
 
 
-async def test_classifier(endpoint, image_data, classification_types, label):
-    """Test a classifier endpoint and measure response time."""
+async def _classifier_helper(
+    endpoint: str,
+    image_data: bytes,
+    classification_types: str,
+    label: str,
+) -> tuple[float | None, dict[str, Any] | None]:
+    """Helper function to test a classifier endpoint and measure response time."""
 
     # Create SSL context that ignores certificate verification (for self-signed certs)
     ssl_context = ssl.create_default_context()
@@ -101,7 +107,7 @@ async def test_classifier(endpoint, image_data, classification_types, label):
             return None, None
 
 
-async def run_performance_comparison():
+async def run_performance_comparison() -> None:
     """Run the performance comparison between CPU and GPU classifiers."""
 
     print("🚀 CPU vs GPU Image Classifier Performance Test")
@@ -131,7 +137,7 @@ async def run_performance_comparison():
         },
     ]
 
-    results = {
+    results: dict[str, list[Any]] = {
         "cpu_times": [],
         "gpu_times": [],
         "cpu_results": [],
@@ -145,7 +151,7 @@ async def run_performance_comparison():
 
         # Test CPU classifier
         print("\n   Testing CPU Classifier...")
-        cpu_time, cpu_result = await test_classifier(
+        cpu_time, cpu_result = await _classifier_helper(
             cpu_endpoint,
             image_data,
             scenario["types"],
@@ -154,7 +160,7 @@ async def run_performance_comparison():
 
         # Test GPU classifier
         print("\n   Testing GPU Classifier...")
-        gpu_time, gpu_result = await test_classifier(
+        gpu_time, gpu_result = await _classifier_helper(
             gpu_endpoint,
             image_data,
             scenario["types"],

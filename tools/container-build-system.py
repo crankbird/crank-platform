@@ -55,7 +55,9 @@ class ContainerBuildSystem:
         return missing_files
 
     def generate_compose_service(
-        self, service_name: str, environment: str = "development",
+        self,
+        service_name: str,
+        environment: str = "development",
     ) -> dict[str, Any]:
         """Generate docker-compose service definition from manifest"""
         manifest = self.manifests[service_name]

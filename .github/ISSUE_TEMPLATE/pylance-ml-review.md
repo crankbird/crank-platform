@@ -15,13 +15,17 @@ assignees: ''
 ### Library Status Check
 
 - [ ] **sklearn** - Check for `py.typed` marker
+
   ```bash
   find .venv -name "py.typed" | grep sklearn || echo "Still no py.typed"
   ```
+
 - [ ] **NLTK** - Check for official type stubs
+
   ```bash
   pip show types-nltk 2>/dev/null || echo "Still no official stubs"
   ```
+
 - [ ] **PyTorch** - Review typing improvements in latest version
 - [ ] **Community standards** - Check Python typing PEPs and ML community discussions
 
@@ -29,10 +33,13 @@ assignees: ''
 
 - [ ] Run error count before config: `# TODO: Add baseline count`
 - [ ] Run error count with config:
+
   ```bash
   # Open email classifier in VS Code, count Problems panel
   ```
+
 - [ ] Verify ruff still at 0 errors:
+
   ```bash
   uv run ruff check services/crank_email_classifier.py
   ```
@@ -65,6 +72,7 @@ assignees: ''
 ---
 
 **Auto-close conditions**:
+
 - All ML libraries we use have comprehensive type stubs
 - Pylance adds ML-specific inference
 - Community consensus on better ML typing patterns

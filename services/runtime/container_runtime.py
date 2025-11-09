@@ -15,6 +15,17 @@ from typing import Any, Optional
 logger = logging.getLogger(__name__)
 
 
+def _format_stderr(err: subprocess.CalledProcessError) -> str:
+    """Best-effort decode of stderr from subprocess errors."""
+    stderr = err.stderr
+    if isinstance(stderr, bytes):
+        try:
+            return stderr.decode()
+        except Exception:
+            return stderr.decode("utf-8", errors="replace")
+    return stderr or str(err)
+
+
 class ContainerRuntime(ABC):
     """Kevin's abstract container runtime interface"""
 
@@ -126,31 +137,32 @@ class DockerRuntime(ContainerRuntime):
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             container_id = result.stdout.strip()
-            logger.info("🐳 Started Docker container: {container_id}")
+            logger.info("🐳 Started Docker container: %s", container_id)
             return container_id
-        except subprocess.CalledProcessError as e:
-            logger.exception("Docker run failed: {e.stderr}")
-            raise RuntimeError(f"Docker run failed: {e.stderr}")
+        except subprocess.CalledProcessError as err:
+            error_msg = _format_stderr(err)
+            logger.exception("Docker run failed: %s", error_msg)
+            raise RuntimeError(f"Docker run failed: {error_msg}") from err
 
     def build(self, dockerfile_path: str, tag: str, context: str = ".") -> bool:
         """Build image with Docker"""
         try:
             cmd = ["docker", "build", "-f", dockerfile_path, "-t", tag, context]
             subprocess.run(cmd, check=True, capture_output=True)
-            logger.info("🏗️ Built Docker image: {tag}")
+            logger.info("🏗️ Built Docker image: %s", tag)
             return True
-        except subprocess.CalledProcessError:
-            logger.exception("Docker build failed: {e.stderr.decode()}")
+        except subprocess.CalledProcessError as err:
+            logger.exception("Docker build failed: %s", _format_stderr(err))
             return False
 
     def stop(self, container_id: str) -> bool:
         """Stop Docker container"""
         try:
             subprocess.run(["docker", "stop", container_id], check=True, capture_output=True)
-            logger.info("🛑 Stopped Docker container: {container_id}")
+            logger.info("🛑 Stopped Docker container: %s", container_id)
             return True
-        except subprocess.CalledProcessError:
-            logger.exception("Docker stop failed: {e.stderr.decode()}")
+        except subprocess.CalledProcessError as err:
+            logger.exception("Docker stop failed: %s", _format_stderr(err))
             return False
 
     def remove(self, container_id: str, force: bool = False) -> bool:
@@ -161,10 +173,10 @@ class DockerRuntime(ContainerRuntime):
                 cmd.append("-f")
             cmd.append(container_id)
             subprocess.run(cmd, check=True, capture_output=True)
-            logger.info("🗑️ Removed Docker container: {container_id}")
+            logger.info("🗑️ Removed Docker container: %s", container_id)
             return True
-        except subprocess.CalledProcessError:
-            logger.exception("Docker remove failed: {e.stderr.decode()}")
+        except subprocess.CalledProcessError as err:
+            logger.exception("Docker remove failed: %s", _format_stderr(err))
             return False
 
     def logs(self, container_id: str, follow: bool = False) -> str:
@@ -176,8 +188,8 @@ class DockerRuntime(ContainerRuntime):
             cmd.append(container_id)
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             return result.stdout
-        except subprocess.CalledProcessError:
-            logger.exception("Docker logs failed: {e.stderr}")
+        except subprocess.CalledProcessError as err:
+            logger.exception("Docker logs failed: %s", _format_stderr(err))
             return ""
 
     def inspect(self, container_id: str) -> dict[str, Any]:
@@ -190,8 +202,11 @@ class DockerRuntime(ContainerRuntime):
                 check=True,
             )
             return json.loads(result.stdout)[0]  # Docker returns array
-        except (subprocess.CalledProcessError, json.JSONDecodeError, IndexError):
-            logger.exception("Docker inspect failed: {e}")
+        except subprocess.CalledProcessError as err:
+            logger.exception("Docker inspect failed: %s", _format_stderr(err))
+            return {}
+        except (json.JSONDecodeError, IndexError) as err:
+            logger.exception("Docker inspect failed: %s", err)
             return {}
 
 
@@ -269,31 +284,32 @@ class PodmanRuntime(ContainerRuntime):
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             container_id = result.stdout.strip()
-            logger.info("🦭 Started Podman container: {container_id}")
+            logger.info("🦭 Started Podman container: %s", container_id)
             return container_id
-        except subprocess.CalledProcessError as e:
-            logger.exception("Podman run failed: {e.stderr}")
-            raise RuntimeError(f"Podman run failed: {e.stderr}")
+        except subprocess.CalledProcessError as err:
+            error_msg = _format_stderr(err)
+            logger.exception("Podman run failed: %s", error_msg)
+            raise RuntimeError(f"Podman run failed: {error_msg}") from err
 
     def build(self, dockerfile_path: str, tag: str, context: str = ".") -> bool:
         """Build image with Podman"""
         try:
             cmd = ["podman", "build", "-f", dockerfile_path, "-t", tag, context]
             subprocess.run(cmd, check=True, capture_output=True)
-            logger.info("🏗️ Built Podman image: {tag}")
+            logger.info("🏗️ Built Podman image: %s", tag)
             return True
-        except subprocess.CalledProcessError:
-            logger.exception("Podman build failed: {e.stderr.decode()}")
+        except subprocess.CalledProcessError as err:
+            logger.exception("Podman build failed: %s", _format_stderr(err))
             return False
 
     def stop(self, container_id: str) -> bool:
         """Stop Podman container"""
         try:
             subprocess.run(["podman", "stop", container_id], check=True, capture_output=True)
-            logger.info("🛑 Stopped Podman container: {container_id}")
+            logger.info("🛑 Stopped Podman container: %s", container_id)
             return True
-        except subprocess.CalledProcessError:
-            logger.exception("Podman stop failed: {e.stderr.decode()}")
+        except subprocess.CalledProcessError as err:
+            logger.exception("Podman stop failed: %s", _format_stderr(err))
             return False
 
     def remove(self, container_id: str, force: bool = False) -> bool:
@@ -304,10 +320,10 @@ class PodmanRuntime(ContainerRuntime):
                 cmd.append("-f")
             cmd.append(container_id)
             subprocess.run(cmd, check=True, capture_output=True)
-            logger.info("🗑️ Removed Podman container: {container_id}")
+            logger.info("🗑️ Removed Podman container: %s", container_id)
             return True
-        except subprocess.CalledProcessError:
-            logger.exception("Podman remove failed: {e.stderr.decode()}")
+        except subprocess.CalledProcessError as err:
+            logger.exception("Podman remove failed: %s", _format_stderr(err))
             return False
 
     def logs(self, container_id: str, follow: bool = False) -> str:
@@ -319,8 +335,8 @@ class PodmanRuntime(ContainerRuntime):
             cmd.append(container_id)
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             return result.stdout
-        except subprocess.CalledProcessError:
-            logger.exception("Podman logs failed: {e.stderr}")
+        except subprocess.CalledProcessError as err:
+            logger.exception("Podman logs failed: %s", _format_stderr(err))
             return ""
 
     def inspect(self, container_id: str) -> dict[str, Any]:
@@ -333,8 +349,11 @@ class PodmanRuntime(ContainerRuntime):
                 check=True,
             )
             return json.loads(result.stdout)[0]  # Podman returns array
-        except (subprocess.CalledProcessError, json.JSONDecodeError, IndexError):
-            logger.exception("Podman inspect failed: {e}")
+        except subprocess.CalledProcessError as err:
+            logger.exception("Podman inspect failed: %s", _format_stderr(err))
+            return {}
+        except (json.JSONDecodeError, IndexError) as err:
+            logger.exception("Podman inspect failed: %s", err)
             return {}
 
 
@@ -344,7 +363,7 @@ class RuntimeManager:
     def __init__(self, preferred_runtime: str = "auto"):
         self.preferred_runtime = preferred_runtime
         self.runtime = self._detect_best_runtime()
-        logger.info("🦙 Kevin selected runtime: {self.runtime.name}")
+        logger.info("🦙 Kevin selected runtime: %s", self.runtime.name)
 
     def _detect_best_runtime(self) -> ContainerRuntime:
         """Kevin's intelligent runtime detection"""
@@ -359,7 +378,7 @@ class RuntimeManager:
         if self.preferred_runtime != "auto" and self.preferred_runtime in available_runtimes:
             runtime = available_runtimes[self.preferred_runtime]
             if runtime.is_available():
-                logger.info("🎯 Using preferred runtime: {self.preferred_runtime}")
+                logger.info("🎯 Using preferred runtime: %s", self.preferred_runtime)
                 return runtime
             logger.warning(
                 f"⚠️ Preferred runtime {self.preferred_runtime} not available, falling back...",
@@ -371,7 +390,7 @@ class RuntimeManager:
         for runtime_name in priority_order:
             runtime = available_runtimes[runtime_name]
             if runtime.is_available():
-                logger.info("🔍 Auto-detected runtime: {runtime_name}")
+                logger.info("🔍 Auto-detected runtime: %s", runtime_name)
                 return runtime
 
         # No runtime available - Kevin is sad
@@ -404,10 +423,10 @@ class RuntimeManager:
 
         try:
             container_id = self.runtime.run(image, config)
-            logger.info("🚀 Service deployed: {image} -> {container_id[:12]}")
+            logger.info("🚀 Service deployed: %s -> %s", image, container_id[:12])
             return container_id
-        except Exception:
-            logger.exception("❌ Service deployment failed: {e}")
+        except Exception as err:
+            logger.exception("❌ Service deployment failed: %s", err)
             raise
 
     def build_service(self, dockerfile_path: str, tag: str, context: str = ".") -> bool:
@@ -415,12 +434,12 @@ class RuntimeManager:
         try:
             success = self.runtime.build(dockerfile_path, tag, context)
             if success:
-                logger.info("🏗️ Built service image: {tag}")
+                logger.info("🏗️ Built service image: %s", tag)
             else:
-                logger.error("❌ Failed to build service image: {tag}")
+                logger.error("❌ Failed to build service image: %s", tag)
             return success
-        except Exception:
-            logger.exception("❌ Build error: {e}")
+        except Exception as err:
+            logger.exception("❌ Build error: %s", err)
             return False
 
     def stop_service(self, container_id: str) -> bool:

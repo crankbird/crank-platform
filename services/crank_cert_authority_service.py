@@ -492,32 +492,44 @@ class ADCSProvider(CertificateProvider):
         """Request certificate from Active Directory Certificate Services."""
         logger.info("🏢 Requesting server certificate from ADCS for %s", request.common_name)
         # TODO: Implement ADCS integration via certreq/PowerShell
-        raise NotImplementedError("Active Directory Certificate Services integration not yet implemented")
+        raise NotImplementedError(
+            "Active Directory Certificate Services integration not yet implemented"
+        )
 
     async def provision_client_certificate(self, request: CertificateRequest) -> CertificateBundle:
         """Request client certificate from Active Directory Certificate Services."""
         # TODO: Implement ADCS client certificate provisioning
-        raise NotImplementedError("Active Directory Certificate Services integration not yet implemented")
+        raise NotImplementedError(
+            "Active Directory Certificate Services integration not yet implemented"
+        )
 
     async def get_ca_certificate(self) -> str:
         """Get the Certificate Authority root certificate from ADCS."""
         # TODO: Implement ADCS CA certificate retrieval
-        raise NotImplementedError("Active Directory Certificate Services integration not yet implemented")
+        raise NotImplementedError(
+            "Active Directory Certificate Services integration not yet implemented"
+        )
 
     async def sign_certificate_request(self, csr_pem: str, service_name: str) -> str:
         """Sign a Certificate Signing Request using ADCS."""
         # TODO: Implement ADCS CSR signing
-        raise NotImplementedError("Active Directory Certificate Services integration not yet implemented")
+        raise NotImplementedError(
+            "Active Directory Certificate Services integration not yet implemented"
+        )
 
     async def revoke_certificate(self, serial_number: str) -> bool:
         """Revoke a certificate in ADCS."""
         # TODO: Implement ADCS certificate revocation
-        raise NotImplementedError("Active Directory Certificate Services integration not yet implemented")
+        raise NotImplementedError(
+            "Active Directory Certificate Services integration not yet implemented"
+        )
 
     async def validate_certificate(self, certificate: str) -> dict[str, Any]:
         """Validate a certificate against ADCS CA."""
         # TODO: Implement ADCS certificate validation
-        raise NotImplementedError("Active Directory Certificate Services integration not yet implemented")
+        raise NotImplementedError(
+            "Active Directory Certificate Services integration not yet implemented"
+        )
 
     def get_provider_info(self) -> dict[str, str]:
         return {
@@ -619,7 +631,9 @@ def create_certificate_provider() -> CertificateProvider:
         client_secret = os.getenv("AZURE_CLIENT_SECRET")
 
         if not all([vault_url, tenant_id, client_id, client_secret]):
-            raise ValueError("Azure Key Vault provider requires AZURE_KEYVAULT_URL, AZURE_TENANT_ID, AZURE_CLIENT_ID, and AZURE_CLIENT_SECRET environment variables")
+            raise ValueError(
+                "Azure Key Vault provider requires AZURE_KEYVAULT_URL, AZURE_TENANT_ID, AZURE_CLIENT_ID, and AZURE_CLIENT_SECRET environment variables"
+            )
 
         # Type assertion: we've verified these are not None above
         assert vault_url is not None
@@ -639,7 +653,9 @@ def create_certificate_provider() -> CertificateProvider:
         vault_token = os.getenv("VAULT_TOKEN")
 
         if not vault_url or not vault_token:
-            raise ValueError("Vault provider requires VAULT_URL and VAULT_TOKEN environment variables")
+            raise ValueError(
+                "Vault provider requires VAULT_URL and VAULT_TOKEN environment variables"
+            )
 
         # Type assertion: we've verified these are not None above
         assert vault_url is not None
@@ -656,7 +672,9 @@ def create_certificate_provider() -> CertificateProvider:
         ca_name = os.getenv("ADCS_CA_NAME")
 
         if not ca_server or not ca_name:
-            raise ValueError("ADCS provider requires ADCS_CA_SERVER and ADCS_CA_NAME environment variables")
+            raise ValueError(
+                "ADCS provider requires ADCS_CA_SERVER and ADCS_CA_NAME environment variables"
+            )
 
         # Type assertion: we've verified these are not None above
         assert ca_server is not None

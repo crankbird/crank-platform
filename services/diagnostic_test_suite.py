@@ -83,7 +83,10 @@ class DiagnosticTestSuite:
 
         # Would include actual file in real implementation
         result = await self._simulate_file_request(
-            "echo_file", test_data, "test.txt", b"Hello, file test!",
+            "echo_file",
+            test_data,
+            "test.txt",
+            b"Hello, file test!",
         )
 
         self.test_results["echo_file"] = result
@@ -147,7 +150,8 @@ class DiagnosticTestSuite:
 
         # Only test business logic if infrastructure tests passed
         infrastructure_ok = self.test_results.get("ping", {}).get(
-            "success", False,
+            "success",
+            False,
         ) and self.test_results.get("echo_file", {}).get("success", False)
 
         if not infrastructure_ok:
@@ -163,7 +167,10 @@ class DiagnosticTestSuite:
 
         # Would include actual document in real implementation
         result = await self._simulate_file_request(
-            "convert", test_data, "test.docx", b"Fake document content",
+            "convert",
+            test_data,
+            "test.docx",
+            b"Fake document content",
         )
 
         self.test_results["convert"] = result
@@ -229,7 +236,11 @@ class DiagnosticTestSuite:
             }
 
     async def _simulate_file_request(
-        self, operation: str, data: dict[str, Any], filename: str, content: bytes,
+        self,
+        operation: str,
+        data: dict[str, Any],
+        filename: str,
+        content: bytes,
     ) -> dict[str, Any]:
         """Simulate a file-based mesh request."""
         import hashlib

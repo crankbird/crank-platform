@@ -171,7 +171,11 @@ class CrankConfidenceTestSuite:
 
         if exit_code != 0:
             self.log_result(
-                service_key, "Container Health", "FAIL", f"Container not found: {stderr}", duration,
+                service_key,
+                "Container Health",
+                "FAIL",
+                f"Container not found: {stderr}",
+                duration,
             )
             return False
 
@@ -179,7 +183,11 @@ class CrankConfidenceTestSuite:
 
         if health_status == "healthy":
             self.log_result(
-                service_key, "Container Health", "PASS", "Container is healthy", duration,
+                service_key,
+                "Container Health",
+                "PASS",
+                "Container is healthy",
+                duration,
             )
             return True
         self.log_result(
@@ -212,14 +220,22 @@ class CrankConfidenceTestSuite:
                 )
                 return True
             self.log_result(
-                service_key, "HTTPS Endpoint", "FAIL", f"Status {response.status_code}", duration,
+                service_key,
+                "HTTPS Endpoint",
+                "FAIL",
+                f"Status {response.status_code}",
+                duration,
             )
             return False
 
         except requests.exceptions.RequestException as e:
             duration = time.time() - start_time
             self.log_result(
-                service_key, "HTTPS Endpoint", "FAIL", f"Request failed: {str(e)[:50]}...", duration,
+                service_key,
+                "HTTPS Endpoint",
+                "FAIL",
+                f"Request failed: {str(e)[:50]}...",
+                duration,
             )
             return False
 
@@ -303,7 +319,10 @@ class CrankConfidenceTestSuite:
 
         if failed_deps:
             self.log_result(
-                service_key, "Dependencies", "FAIL", f"Failed deps: {', '.join(failed_deps)}",
+                service_key,
+                "Dependencies",
+                "FAIL",
+                f"Failed deps: {', '.join(failed_deps)}",
             )
             return False
         self.log_result(
@@ -389,7 +408,8 @@ class CrankConfidenceTestSuite:
         for service_key, results in all_results.items():
             service_passed = all(results.values())
             service_critical_passed = results.get("container_health", False) and results.get(
-                "https_endpoint", False,
+                "https_endpoint",
+                False,
             )
 
             report["services"][service_key] = {

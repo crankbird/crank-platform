@@ -11,6 +11,7 @@ assignees: []
 During email classifier testing, discovered **inconsistent endpoint naming** across services that violates the **principle of least surprise**:
 
 ### Current Inconsistencies Observed
+
 - **Email Classifier**: `/classify` (generic)
 - **Expected Pattern**: `/classify_email` (service-specific)
 - **Potential Others**: `/classify_image`, `/parse_email`, etc.
@@ -18,6 +19,7 @@ During email classifier testing, discovered **inconsistent endpoint naming** acr
 ## 🎯 Investigation Required
 
 ### 1. Audit All Service Endpoints
+
 - [ ] Email Classifier: Document actual endpoints
 - [ ] Email Parser: Document actual endpoints
 - [ ] Image Classifier (CPU): Document actual endpoints
@@ -27,6 +29,7 @@ During email classifier testing, discovered **inconsistent endpoint naming** acr
 - [ ] Platform Service: Document actual endpoints
 
 ### 2. Identify Patterns
+
 - [ ] Generic patterns: `/classify`, `/parse`, `/convert`
 - [ ] Service-specific patterns: `/classify_email`, `/parse_email`
 - [ ] Resource-based patterns: `/emails/classify`, `/images/classify`
@@ -35,50 +38,60 @@ During email classifier testing, discovered **inconsistent endpoint naming** acr
 ## 💭 Design Considerations
 
 ### Option A: Service-Specific Endpoints
-```
+
+```text
 /classify_email     # Email classifier
 /classify_image     # Image classifier
 /parse_email        # Email parser
 /convert_document   # Document converter
 ```
+
 **Pros**: Clear, unambiguous, follows service naming
 **Cons**: Longer URLs, potential redundancy
 
 ### Option B: Generic Endpoints (Current)
-```
+
+```text
 /classify          # All classifiers
 /parse             # All parsers
 /convert           # All converters
 ```
+
 **Pros**: Shorter, consistent across service types
 **Cons**: Ambiguous, doesn't follow principle of least surprise
 
 ### Option C: Resource-Based RESTful
-```
+
+```text
 /emails/classify   # Email operations
 /images/classify   # Image operations
 /documents/convert # Document operations
 ```
+
 **Pros**: RESTful, scalable, resource-centric
 **Cons**: Larger breaking change
 
 ### Option D: Hybrid Approach
-```
+
+```text
 /classify          # Primary endpoint (backward compatibility)
 /classify_email    # Explicit alias for clarity
 ```
+
 **Pros**: Backward compatible, clear intent
 **Cons**: Multiple endpoints for same function
 
 ## 🚨 Impact Assessment
 
 ### Breaking Changes
+
 - [ ] Determine client dependencies on current endpoints
 - [ ] Assess Docker compose configurations
 - [ ] Review integration tests and scripts
 - [ ] Check documentation and examples
 
 ### Migration Strategy
+
 - [ ] Version migration path (v1/v2)
 - [ ] Deprecation timeline
 - [ ] Backward compatibility period

@@ -1,17 +1,24 @@
 # Universal GPU Development Environment
 
 ## The Problem
+
 PyTorch CUDA installations often conflict between different package managers:
+
 - **conda**: Bundles CUDA libraries, can conflict with system CUDA
+
 - **pip**: Requires system CUDA installation, version mismatches common
+
 - **uv**: Fast but limited CUDA wheel support
+
 - **Apple Silicon**: Requires Metal Performance Shaders (MPS) backend
 
 ## Solution: Adaptive Environment Detection
 
 ### Environment Detection Script
+
 ```python
 #!/usr/bin/env python3
+
 """
 Universal GPU capability detection and PyTorch installation
 Handles CUDA, MPS (Apple Silicon), and CPU-only environments
@@ -37,6 +44,7 @@ def detect_gpu_environment():
     }
     
     # Check for Apple Silicon
+
     if gpu_info["platform"] == "Darwin" and "arm" in gpu_info["architecture"].lower():
         gpu_info["mps_available"] = True
         gpu_info["recommended_backend"] = "mps"
@@ -46,12 +54,14 @@ def detect_gpu_environment():
         return gpu_info
     
     # Check for NVIDIA CUDA
+
     try:
         result = subprocess.run(["nvidia-smi"], capture_output=True, text=True)
         if result.returncode == 0:
             gpu_info["cuda_available"] = True
             
             # Extract CUDA version from nvidia-smi
+
             for line in result.stdout.split('\n'):
                 if "CUDA Version:" in line:
                     cuda_version = line.split("CUDA Version: ")[1].split()[0]
@@ -59,6 +69,7 @@ def detect_gpu_environment():
                     break
             
             # Determine PyTorch CUDA version
+
             if gpu_info["cuda_version"]:
                 major_version = gpu_info["cuda_version"].split('.')[0]
                 if major_version == "12":
@@ -77,6 +88,7 @@ def detect_gpu_environment():
         pass
     
     # Fallback to CPU
+
     if not gpu_info["cuda_available"] and not gpu_info["mps_available"]:
         gpu_info["recommended_backend"] = "cpu"
         gpu_info["install_command"] = [
@@ -105,6 +117,7 @@ def install_pytorch_optimal():
     print(f"Command: {' '.join(gpu_info['install_command'])}")
     
     # Execute installation
+
     result = subprocess.run(gpu_info['install_command'])
     
     if result.returncode == 0:
@@ -122,6 +135,7 @@ def verify_pytorch_installation():
         print(f"\n✅ PyTorch {torch.__version__} imported successfully")
         
         # Check CUDA
+
         if torch.cuda.is_available():
             print(f"🎮 CUDA available: {torch.cuda.device_count()} GPU(s)")
             for i in range(torch.cuda.device_count()):
@@ -129,10 +143,12 @@ def verify_pytorch_installation():
                 print(f"   Memory: {torch.cuda.get_device_properties(i).total_memory / 1e9:.1f}GB")
         
         # Check MPS (Apple Silicon)
+
         if hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
             print("🍎 Metal Performance Shaders (MPS) available")
         
         # Test tensor creation on optimal device
+
         if torch.cuda.is_available():
             device = "cuda"
         elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
@@ -166,11 +182,14 @@ if __name__ == "__main__":
         verify_pytorch_installation()
     else:
         # Full setup
+
         if install_pytorch_optimal():
             verify_pytorch_installation()
+
 ```
 
 ### Smart Device Detection Class
+
 ```python
 class UniversalGPUManager:
     """
@@ -194,6 +213,7 @@ class UniversalGPUManager:
         }
         
         # Check CUDA first (highest performance)
+
         if torch.cuda.is_available():
             device_info.update({
                 "device": "cuda",
@@ -203,9 +223,11 @@ class UniversalGPUManager:
             })
             
         # Check MPS (Apple Silicon)
+
         elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
             try:
                 # Test MPS availability
+
                 _ = torch.zeros(1).to('mps')
                 device_info.update({
                     "device": "mps",
@@ -215,6 +237,7 @@ class UniversalGPUManager:
                 })
             except:
                 # Fallback to CPU if MPS fails
+
                 pass
                 
         return device_info
@@ -233,11 +256,14 @@ class UniversalGPUManager:
         
         if self.device == "cuda":
             # CUDA optimizations
+
             model = torch.compile(model) if hasattr(torch, 'compile') else model
             
         elif self.device == "mps":
             # MPS optimizations
+
             # Use float16 for memory efficiency on unified memory
+
             if hasattr(model, 'half'):
                 model = model.half()
                 
@@ -253,6 +279,7 @@ class UniversalGPUManager:
             }
         elif self.device == "mps":
             # For MPS, we can check system memory
+
             import psutil
             return {
                 "allocated": None,  # Not directly available
@@ -266,13 +293,16 @@ class UniversalGPUManager:
                 "cached": None,
                 "total": psutil.virtual_memory().total
             }
+
 ```
 
 ## Usage in Crank Platform
 
 ### Integration with Mesh Interface
+
 ```python
 # In mesh_interface.py
+
 from .gpu_manager import UniversalGPUManager
 
 class MeshInterface:
@@ -287,43 +317,58 @@ class MeshInterface:
         model = torch.load(model_path, map_location='cpu')
         model = self.gpu_manager.optimize_for_device(model)
         return model
+
 ```
 
 ### Environment Setup Script
+
 ```bash
 #!/bin/bash
+
 # setup_universal_gpu_env.sh
 
 echo "🔧 Setting up Universal GPU Development Environment"
 
 # Detect environment
+
 python3 gpu_detection.py --detect-only
 
 # Install optimal PyTorch
+
 python3 gpu_detection.py
 
 # Verify installation
+
 python3 gpu_detection.py --verify-only
 
 echo "🎉 Environment setup complete!"
+
 ```
 
 ## Benefits of This Approach
 
 ### ✅ Advantages
+
 - **Automatic detection** of optimal GPU backend
+
 - **No manual configuration** across different machines
+
 - **Consistent API** regardless of underlying hardware
+
 - **Graceful fallbacks** when GPU unavailable
+
 - **Package manager agnostic** (works with pip, conda, uv)
 
 ### 🎯 For Your Multi-Environment Strategy
+
 ```python
-# Same code works everywhere:
+# Same code works everywhere
+
 # RTX 4070 (CUDA) → Mac Mini M4 (MPS) → Raspberry Pi (CPU)
 
 gpu_manager = UniversalGPUManager()
 model = model.to(gpu_manager.get_device())  # Automatic optimal placement
+
 ```
 
 This approach eliminates the CUDA/conda/uv conflicts by detecting capabilities first, then installing the appropriate PyTorch variant. Perfect for your multi-platform development strategy!

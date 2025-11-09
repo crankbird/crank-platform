@@ -136,8 +136,6 @@ services:
     depends_on:
       crank-platform-dev:
         condition: service_healthy
-      crank-email-classifier-dev:
-        condition: service_healthy
     restart: unless-stopped
     networks:
       - crank-local-net

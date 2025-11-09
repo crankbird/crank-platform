@@ -5,6 +5,7 @@
 ### Current Sprint: Patent Preparation (Oct 30 - Nov 15, 2025)
 
 #### High Priority Tasks
+
 - [ ] **Prior Art Search - Multi-Cloud Orchestration**
   - Search Google Patents for "multi-cloud orchestration" + "workload placement"
   - Review AWS, Microsoft, Google cloud management patents
@@ -24,6 +25,7 @@
   - **Assigned**: TBD | **Due**: Nov 13, 2025
 
 #### Medium Priority Tasks
+
 - [ ] **Competitive Analysis - Privacy-Preserving AI**
   - Research Google, Microsoft differential privacy patents
   - Analyze federated learning patent landscape
@@ -45,7 +47,9 @@
 ### Research Templates & Checklists
 
 #### Prior Art Research Checklist
+
 For each relevant patent found:
+
 - [ ] Patent number and title recorded
 - [ ] Applicant/assignee identified
 - [ ] Filing date and status confirmed
@@ -55,7 +59,9 @@ For each relevant patent found:
 - [ ] Design-around opportunities identified
 
 #### Patent Application Checklist
+
 For each application being prepared:
+
 - [ ] Invention disclosure reviewed and updated
 - [ ] Technical implementation documented with code examples
 - [ ] Prior art analysis completed
@@ -68,24 +74,28 @@ For each application being prepared:
 ### Research Results Repository
 
 #### Multi-Cloud Orchestration Landscape
+
 **Status**: Not started  
 **Key Search Terms**: multi-cloud, hybrid cloud, workload placement, cloud broker  
 **Target Companies**: AWS, Microsoft, Google, IBM, VMware  
 **Research Notes**: [To be populated]
 
 #### Data Sovereignty & Compliance
+
 **Status**: Not started  
 **Key Search Terms**: data sovereignty, geo-fencing, compliance automation  
 **Target Companies**: Enterprise software vendors, government contractors  
 **Research Notes**: [To be populated]
 
 #### Blockchain Payment Systems
+
 **Status**: Not started  
 **Key Search Terms**: cryptocurrency payments, blockchain settlement, smart contracts  
 **Target Companies**: Ripple, Stellar, ConsenSys, traditional payment processors  
 **Research Notes**: [To be populated]
 
 #### Privacy-Preserving AI
+
 **Status**: Not started  
 **Key Search Terms**: federated learning, differential privacy, homomorphic encryption  
 **Target Companies**: Google, Microsoft, IBM, academic institutions  
@@ -94,6 +104,7 @@ For each application being prepared:
 ### Collaboration Workflow
 
 #### For AI Patent Specialist
+
 1. **Context Review**: Read development-log.md and specialist-briefing.md
 2. **Task Assignment**: Update task assignments in this document
 3. **Research Execution**: Use research templates and document findings
@@ -101,6 +112,7 @@ For each application being prepared:
 5. **Deliverable Creation**: Prepare refined patent applications based on research
 
 #### For GitHub Copilot Sessions
+
 1. **Status Check**: Review current task progress and priorities
 2. **Technical Support**: Assist with implementation tasks supporting patent applications
 3. **Research Assistance**: Help with patent database searches and analysis
@@ -110,12 +122,14 @@ For each application being prepared:
 ### Meeting & Review Schedule
 
 #### Weekly IP Review (Fridays)
+
 - Review task progress and research findings
 - Update priority rankings based on new information
 - Plan next week's research and implementation tasks
 - Document decisions and strategic changes
 
 #### Patent Application Review Points
+
 - **November 7**: Prior art research checkpoint
 - **November 13**: First patent application draft review
 - **November 20**: Second patent application preparation
@@ -124,18 +138,21 @@ For each application being prepared:
 ### Knowledge Management
 
 #### Research Database Access
-- **Google Patents**: https://patents.google.com/
-- **USPTO**: https://www.uspto.gov/patents/search
-- **Espacenet**: https://worldwide.espacenet.com/
-- **WIPO**: https://www.wipo.int/branddb/en/
+
+- **Google Patents**: <https://patents.google.com/>
+- **USPTO**: <https://www.uspto.gov/patents/search>
+- **Espacenet**: <https://worldwide.espacenet.com/>
+- **WIPO**: <https://www.wipo.int/branddb/en/>
 
 #### Documentation Standards
+
 - All research findings documented in markdown format
 - Patent analysis using standardized template
 - Regular backups of research database
 - Version control for all patent application drafts
 
 #### Communication Protocols
+
 - Weekly progress updates via development-log.md
 - Research findings documented immediately upon discovery
 - Strategic decisions logged with rationale

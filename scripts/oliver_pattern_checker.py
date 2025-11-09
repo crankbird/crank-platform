@@ -484,7 +484,9 @@ def main():
     parser.add_argument("path", nargs="?", default=".", help="File or directory to check")
     parser.add_argument("--check-all", action="store_true", help="Check entire current directory")
     parser.add_argument(
-        "--authority-sources", action="store_true", help="Show Oliver's authority sources",
+        "--authority-sources",
+        action="store_true",
+        help="Show Oliver's authority sources",
     )
 
     args = parser.parse_args()

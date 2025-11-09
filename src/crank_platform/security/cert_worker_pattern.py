@@ -24,7 +24,7 @@ Usage:
 import asyncio
 import logging
 import os
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Any
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
@@ -45,7 +45,7 @@ class WorkerCertificatePattern:
         self.https_only = os.getenv("HTTPS_ONLY", "true").lower() == "true"
         self.ca_service_url = os.getenv("CA_SERVICE_URL")
 
-    def initialize_certificates(self):
+    def initialize_certificates(self) -> Any:
         """Initialize certificates synchronously BEFORE FastAPI creation.
 
         Returns:
@@ -82,9 +82,11 @@ class WorkerCertificatePattern:
             return cert_store
 
         except Exception as e:
-            raise RuntimeError(f"🚫 Certificate initialization failed for {self.service_name}: {e}") from e
+            raise RuntimeError(
+                f"🚫 Certificate initialization failed for {self.service_name}: {e}"
+            ) from e
 
-    def start_server(self, app: "FastAPI", port: int, host: str = "0.0.0.0"):
+    def start_server(self, app: "FastAPI", port: int, host: str = "0.0.0.0") -> None:
         """Start uvicorn server with pre-loaded certificates.
 
         Args:
@@ -116,7 +118,9 @@ class WorkerCertificatePattern:
             )
 
         except Exception as e:
-            raise RuntimeError(f"🚫 Failed to start {self.service_name} with certificates: {e}") from e
+            raise RuntimeError(
+                f"🚫 Failed to start {self.service_name} with certificates: {e}"
+            ) from e
 
 
 def create_worker_fastapi_with_certs(
@@ -125,7 +129,7 @@ def create_worker_fastapi_with_certs(
     platform_url: Optional[str] = None,
     worker_url: Optional[str] = None,
     cert_store: Optional[object] = None,
-):
+) -> dict[str, Any]:
     """Helper to create FastAPI worker with certificate store.
 
     Args:

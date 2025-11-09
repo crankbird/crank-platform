@@ -29,7 +29,7 @@ COPY src/ ./src/
 COPY services/crank_cert_initialize.py ./scripts/
 
 # Add src to Python path
-ENV PYTHONPATH="/app/src:$PYTHONPATH"
+ENV PYTHONPATH="/app/src"
 
 # Create certificates directory with proper ownership
 RUN mkdir -p /etc/certs && chown worker:worker /etc/certs

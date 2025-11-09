@@ -43,7 +43,9 @@ class TestFrameworkValidation:
             await asyncio.sleep(0.01)  # 10ms delay
             return n * 3
 
-        result, duration = await PerformanceBenchmark.measure_async_operation(async_slow_operation, 5)
+        result, duration = await PerformanceBenchmark.measure_async_operation(
+            async_slow_operation, 5
+        )
 
         assert result == 15
         assert 0.008 < duration < 0.1  # Should be around 10ms, with some tolerance
@@ -109,7 +111,7 @@ class TestServiceTestBase:
         valid_response = {
             "status": "success",
             "data": {"result": "test"},
-            "timestamp": "2024-01-01T00:00:00Z"
+            "timestamp": "2024-01-01T00:00:00Z",
         }
 
         required_fields = ["status", "data", "timestamp"]
@@ -118,7 +120,7 @@ class TestServiceTestBase:
         # Test invalid response (missing field)
         invalid_response = {
             "status": "success",
-            "data": {"result": "test"}
+            "data": {"result": "test"},
             # missing timestamp
         }
 

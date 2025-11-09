@@ -74,7 +74,9 @@ class MCPMeshServer:
             self.tools[tool.name] = tool
 
     def _create_capability_handler(
-        self, service: MeshInterface, capability: MeshCapability,
+        self,
+        service: MeshInterface,
+        capability: MeshCapability,
     ) -> Callable:
         """Create a handler function for a specific capability."""
 

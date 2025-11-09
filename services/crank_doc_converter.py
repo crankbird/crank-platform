@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 # FastAPI dependency defaults - create at module level to avoid evaluation in defaults
 _DEFAULT_FILE_UPLOAD = File(...)
 
+
 # Worker registration model
 class WorkerRegistration(BaseModel):
     """Model for worker registration with platform."""
@@ -59,7 +60,9 @@ class ConversionResponse(BaseModel):
 class CrankDocumentConverter:
     """Crank Document Converter Service following the working pattern."""
 
-    def __init__(self, platform_url: Optional[str] = None, cert_store: Optional[Any] = None) -> None:
+    def __init__(
+        self, platform_url: Optional[str] = None, cert_store: Optional[Any] = None
+    ) -> None:
         self.app = FastAPI(title="Crank Document Converter", version="1.0.0")
 
         # 🔐 ZERO-TRUST: Use pre-loaded certificates from synchronous initialization
@@ -232,7 +235,11 @@ class CrankDocumentConverter:
         return "plain"
 
     def convert_document(
-        self, input_content: bytes, input_format: str, output_format: str, options: Optional[dict[str, Any]] = None,
+        self,
+        input_content: bytes,
+        input_format: str,
+        output_format: str,
+        options: Optional[dict[str, Any]] = None,
     ) -> bytes:
         """Convert document using pandoc."""
         options = options or {}
@@ -242,7 +249,8 @@ class CrankDocumentConverter:
             input_file.flush()
 
             with tempfile.NamedTemporaryFile(
-                suffix=f".{output_format}", delete=False,
+                suffix=f".{output_format}",
+                delete=False,
             ) as output_file:
                 try:
                     # Build pandoc command
@@ -263,7 +271,11 @@ class CrankDocumentConverter:
 
                     # Run conversion
                     result = subprocess.run(
-                        cmd, check=False, capture_output=True, text=True, timeout=30,
+                        cmd,
+                        check=False,
+                        capture_output=True,
+                        text=True,
+                        timeout=30,
                     )
 
                     if result.returncode != 0:
@@ -385,7 +397,9 @@ class CrankDocumentConverter:
                 logger.warning("Failed to deregister from platform: {e}")
 
 
-def create_crank_document_converter(platform_url: Optional[str] = None, cert_store: Optional[Any] = None) -> FastAPI:
+def create_crank_document_converter(
+    platform_url: Optional[str] = None, cert_store: Optional[Any] = None
+) -> FastAPI:
     """Create Crank Document Converter application."""
     converter = CrankDocumentConverter(platform_url, cert_store)
     return converter.app
@@ -457,7 +471,7 @@ def main() -> None:
             # Get the temporary certificate file paths for uvicorn - accessing private members
             # This is necessary as the cert_store doesn't provide a public API for uvicorn
             cert_file = cert_store.temp_cert_file  # pyright: ignore[reportAttributeAccessIssue]
-            key_file = cert_store.temp_key_file    # pyright: ignore[reportAttributeAccessIssue]
+            key_file = cert_store.temp_key_file  # pyright: ignore[reportAttributeAccessIssue]
 
             uvicorn.run(
                 app,

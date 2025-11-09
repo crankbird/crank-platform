@@ -84,7 +84,7 @@ def process_transaction(input_data, policies, context):
     result = do_something(input_data)
     return result
 
-# Automatically gets:
+# Automatically gets
 # - FastAPI endpoint with authentication
 # - Security isolation in containers
 # - Audit logging and receipts

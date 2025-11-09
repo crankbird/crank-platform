@@ -80,7 +80,9 @@ class CrankStreamingService:
         self.heartbeat_task: Optional[asyncio.Task[None]] = None
 
     async def text_stream_generator(
-        self, content: str, chunk_size: int = 100,
+        self,
+        content: str,
+        chunk_size: int = 100,
     ) -> AsyncGenerator[str, None]:
         """Generate text chunks for streaming."""
         words = content.split()

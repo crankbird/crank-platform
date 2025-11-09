@@ -5,30 +5,43 @@
 ### Mesh Interface Architecture
 
 - Universal `MeshInterface` base class with standardized patterns
+
 - Authentication middleware with Bearer token support
+
 - Policy enforcement engine (OPA/Rego ready)
+
 - Receipt generation system for audit trails
+
 - Health check endpoints and service discovery
 
 ### Production Services
 
 - **CrankDoc Mesh Service**: Document conversion, validation, analysis
+
 - **CrankEmail Mesh Service**: Email parsing, classification, message analysis
+
 - **Platform Gateway**: Unified routing, capability aggregation, health monitoring
 
 ### Infrastructure Ready
 
 - Docker containers with security hardening (non-root, read-only filesystems)
+
 - Docker Compose orchestration for local development
+
 - Azure Container Apps deployment strategy with auto-scaling
+
 - Adversarial testing suite for security and performance validation
 
 ## Planned Services
 
 - **CrankClassify**: Text and image classification
+
 - **CrankExtract**: Entity extraction and data mining
+
 - **CrankValidate**: Schema validation and data quality
+
 - **CrankRoute**: API gateway and transformation
+
 - **CrankAnalyze**: Data analytics and insights
 
 ## The Universal Pattern
@@ -39,16 +52,24 @@ Every service follows the same architecture:
 @crank_service
 def process_transaction(input_data, policies, context):
     # Your original Python logic here
+
     result = do_something(input_data)
     return result
 
-# Automatically gets:
+# Automatically gets
+
 # - FastAPI endpoint with authentication
+
 # - Security isolation in containers
+
 # - Audit logging and receipts
+
 # - Policy enforcement via OPA/Rego
+
 # - Chargeback tracking
+
 # - Multi-deployment options (laptop to cloud)
+
 ```
 
 ## Service Categories
@@ -72,6 +93,7 @@ class CrankDoc(MeshInterface):
             "structure": self.analyze_structure(document),
             "content_analysis": self.analyze_content(document)
         }
+
 ```
 
 **CrankEmail** - Email archive processing
@@ -87,6 +109,7 @@ class CrankEmail(MeshInterface):
     def classify_email(self, email_content: str) -> Dict:
         """Classify email type, priority, and content."""
         return self.classifier.predict(email_content)
+
 ```
 
 ### AI and Classification Services
@@ -104,6 +127,7 @@ class CrankClassify(MeshInterface):
     def classify_image(self, image: bytes, model_type: str = "general") -> Dict:
         """Classify images using specified model."""
         return self.image_classifier.predict(image, model_type)
+
 ```
 
 **CrankExtract** - Entity and data extraction
@@ -119,6 +143,7 @@ class CrankExtract(MeshInterface):
     def extract_structured_data(self, document: bytes) -> Dict:
         """Extract tables, forms, and structured data."""
         return self.structure_extractor.extract(document)
+
 ```
 
 ### Validation and Quality Services
@@ -136,6 +161,7 @@ class CrankValidate(MeshInterface):
     def check_data_quality(self, dataset: List[Dict]) -> Dict:
         """Analyze data quality metrics."""
         return self.quality_checker.analyze(dataset)
+
 ```
 
 ## Service Discovery and Registration
@@ -161,6 +187,7 @@ class ServiceRegistry:
             service for service in self.registry.values()
             if capability in service["capabilities"]
         ]
+
 ```
 
 ### Health Monitoring
@@ -181,6 +208,7 @@ class HealthMonitor:
                 }
         except Exception as e:
             return {"status": "unreachable", "error": str(e)}
+
 ```
 
 ## Economic Model
@@ -210,6 +238,7 @@ class UsageTracker:
 
         self.audit_logger.log_transaction(receipt)
         return receipt
+
 ```
 
 ### Resource Optimization
@@ -231,6 +260,7 @@ class ResourceOptimizer:
             return {"batch_size": 16, "precision": "float16", "device": "cuda"}
         else:  # CPU only
             return {"batch_size": 8, "precision": "float32", "device": "cpu"}
+
 ```
 
 ## Deployment Patterns
@@ -239,18 +269,24 @@ class ResourceOptimizer:
 
 ```bash
 # Start all services locally
+
 docker compose -f docker-compose.development.yml up
 
-# Services available at:
+# Services available at
+
 # - CrankDoc: http://localhost:8000
+
 # - CrankEmail: http://localhost:8001
+
 # - Gateway: http://localhost:8080
+
 ```
 
 ### Production Cloud
 
 ```yaml
 # kubernetes/crank-platform.yaml
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -266,24 +302,30 @@ spec:
         app: crank-doc
     spec:
       containers:
+
       - name: crank-doc
         image: crank-platform/doc-service:latest
         ports:
+
         - containerPort: 8000
         env:
+
         - name: CRANK_ENVIRONMENT
           value: "production"
+
 ```
 
 ### Edge Deployment
 
 ```bash
 # Single container on edge device
+
 docker run -d \
   --name crank-platform \
   -p 8080:8080 \
   -v /data:/app/data \
   crank-platform/gateway:latest
+
 ```
 
 This unified architecture enables the same services to run efficiently from laptop development to cloud production to edge devices.

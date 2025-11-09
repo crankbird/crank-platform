@@ -87,8 +87,7 @@ class SecureCertificateStore:
         """Get the temporary certificate file path."""
         if self._temp_cert_file is None:
             raise RuntimeError(
-                "🚫 Temporary certificate files not created. "
-                "Call get_ssl_context() first."
+                "🚫 Temporary certificate files not created. Call get_ssl_context() first."
             )
         return str(self._temp_cert_file)
 
@@ -96,10 +95,7 @@ class SecureCertificateStore:
     def temp_key_file(self) -> str:
         """Get the temporary key file path."""
         if self._temp_key_file is None:
-            raise RuntimeError(
-                "🚫 Temporary key files not created. "
-                "Call get_ssl_context() first."
-            )
+            raise RuntimeError("🚫 Temporary key files not created. Call get_ssl_context() first.")
         return str(self._temp_key_file)
 
 

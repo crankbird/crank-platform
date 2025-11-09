@@ -34,12 +34,12 @@ from sklearn.pipeline import Pipeline  # type: ignore[import-untyped]
 # Conditional imports for certificate management
 _SecureCertificateStore: Optional[type[Any]] = None
 _init_certificates: Optional[Any] = None
+_cert_store: Optional[Any] = None
 
 try:
     from crank_platform.security import SecureCertificateStore as _SecureCertificateStore
+    from crank_platform.security import cert_store as _cert_store
     from crank_platform.security import init_certificates as _init_certificates
-
-    # Note: cert_store from crank_cert_initialize is not used directly in this file
 except ImportError:
     # Fallback when running outside container - keep as None
     pass
@@ -47,6 +47,7 @@ except ImportError:
 # Use the imported values or fallback to None
 SecureCertificateStore = _SecureCertificateStore
 init_certificates = _init_certificates
+platform_cert_store = _cert_store
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -795,10 +796,10 @@ def main() -> None:
         try:
             # Run secure certificate initialization in the same process
 
-            # Run secure certificate initialization and create certificate store
-            if init_certificates and SecureCertificateStore:
+            # Run secure certificate initialization and use the singleton cert_store
+            if init_certificates and platform_cert_store:
                 asyncio.run(init_certificates())
-                cert_store = SecureCertificateStore()
+                cert_store = platform_cert_store
 
             # Check if certificates were loaded
             _validate_certificate_initialization(cert_store)
@@ -825,7 +826,7 @@ def main() -> None:
 
     # 🚢 PORT CONFIGURATION: Use environment variables for flexible deployment
     http_port = int(os.getenv("EMAIL_CLASSIFIER_PORT", "8200"))  # HTTP fallback port
-    service_host = os.getenv("EMAIL_CLASSIFIER_HOST", "127.0.0.1")  # Default to localhost for security
+    service_host = os.getenv("EMAIL_CLASSIFIER_HOST", "0.0.0.0")  # Bind to all interfaces in container
     https_port = int(os.getenv("EMAIL_CLASSIFIER_HTTPS_PORT", "8201"))
 
     # Create FastAPI app with pre-loaded certificates
@@ -838,6 +839,10 @@ def main() -> None:
 
         # Create SSL context from in-memory certificates (SECURE CSR pattern)
         try:
+            # Initialize SSL context so temp files exist before uvicorn reads them
+            if cert_store:
+                cert_store.get_ssl_context()
+
             cert_file = cert_store.temp_cert_file if cert_store else None
             key_file = cert_store.temp_key_file if cert_store else None
 

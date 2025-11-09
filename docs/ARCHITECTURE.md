@@ -19,6 +19,7 @@
 │  │ <1W         │  │ <50W        │  │ <5W                 │  │
 │  └─────────────┘  └─────────────┘  └─────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
+
 ```
 
 ### Energy Efficiency Hierarchy
@@ -41,18 +42,23 @@ JEMM Decision Framework:
 ├─ Deployment conflicts? → Extract ONE service, measure impact
 ├─ Technology constraints? → Selective extraction only
 └─ Performance/scaling needs? → Worker containers (not platform services)
+
 ```
 
 **Crank Platform Implementation:**
 
 - **Platform Monolith**: Auth, billing, routing in single container (clean internal boundaries)
+
 - **Worker Containers**: CrankDoc, CrankEmail as separate scalable units
+
 - **Extract-Ready Design**: Interface-based modules that can become services if needed
 
 **JEMM vs. Alternatives:**
 
 - ❌ **Microservices First**: Premature complexity, distributed debugging nightmares
+
 - ❌ **Monolith Forever**: Ignores real team/scaling constraints
+
 - ✅ **JEMM**: Right-sized architecture that evolves with actual needs
 
 *Architecture serves business value, not resume building.*
@@ -73,17 +79,21 @@ class SustainableAI:
 
     def training_phase(self):
         # Expensive but one-time: Use GPT-4 to create training data
+
         training_data = self.generate_labels_with_gpt4(raw_data)
 
         # Train small, specialized model
+
         efficient_model = self.train_cnn(training_data, target_size="1MB")
 
         return efficient_model
 
     def inference_phase(self, efficient_model):
         # Fast, cheap, local inference
+
         result = efficient_model.predict(input_data)  # <10ms
         return result
+
 ```
 
 ### Container-First GPU Strategy
@@ -111,12 +121,15 @@ class UniversalGPUManager:
             return model.to("mps")
         else:
             return model.cpu()
+
 ```
 
 **Benefits**:
 
 - Same container works on laptops, desktops, cloud
+
 - No separate GPU/CPU builds
+
 - Graceful degradation when GPU unavailable
 
 ## Service Mesh Architecture
@@ -132,14 +145,21 @@ class DocumentConverter(MeshInterface):
 
     def process_request(self, input_data: Dict) -> Dict:
         # Your business logic here
+
         return {"converted_document": result}
 
     # Automatically provides:
+
     # - FastAPI endpoints with auth
+
     # - Health checks and metrics
+
     # - Audit logging
+
     # - Policy enforcement
+
     # - Container deployment
+
 ```
 
 ### Security Architecture
@@ -154,14 +174,19 @@ class DocumentConverter(MeshInterface):
       │                        │                        │
       ▼                        ▼                        ▼
   [Audit Log]            [Policy Engine]           [Audit Log]
+
 ```
 
 **Wendy's Security Framework**:
 
 - mTLS certificates for all inter-service communication
+
 - Bearer token authentication for client requests
+
 - Policy-based access control (OPA/Rego ready)
+
 - Comprehensive audit logging
+
 - Service isolation via containers
 
 ### Deployment Flexibility
@@ -170,13 +195,17 @@ class DocumentConverter(MeshInterface):
 
 ```yaml
 # Local Development
+
 docker compose up
 
 # Production Cloud
+
 kubectl apply -f k8s/
 
 # Edge Device
+
 docker run -p 8080:8080 crank-platform
+
 ```
 
 ## Platform Integration
@@ -205,12 +234,15 @@ docker run -p 8080:8080 crank-platform
 │  │ Containers  │ │ Instances   │ │   & Networking         │ │
 │  └─────────────┘ └─────────────┘ └─────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
+
 ```
 
 **Clean Separation**:
 
 - **IaaS**: Infrastructure provisioning and container orchestration
+
 - **PaaS**: Service mesh, security, governance, and platform services
+
 - **SaaS**: Business logic and domain-specific functionality
 
 This separation enables independent scaling, testing, and deployment of each layer.

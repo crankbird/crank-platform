@@ -8,11 +8,14 @@ Test the complete email processing pipeline:
 
 import asyncio
 import json
+from pathlib import Path
+from typing import Any
 
 import httpx
+import pytest
 
 
-async def test_complete_pipeline():
+async def test_complete_pipeline() -> None:
     """Test the complete email processing pipeline."""
 
     print("🔄 Testing Complete Email Processing Pipeline")
@@ -21,9 +24,17 @@ async def test_complete_pipeline():
     # Step 1: Parse emails using email parser
     print("\n📧 Step 1: Parsing email archive...")
 
-    mbox_path = "/home/johnr/projects/parse-email-archive/tests/data/sample_receipts.mbox"
+    # Look for test data in the tests directory
+    test_data_dir = Path(__file__).parent / "data"
+    mbox_path = test_data_dir / "sample_receipts.mbox"
 
-    async with httpx.AsyncClient() as client:
+    # Skip test if test data doesn't exist
+    if not mbox_path.exists():
+        pytest.skip(f"Test data file not found: {mbox_path}")
+
+    classified_emails: list[dict[str, Any]] = []
+
+    async with httpx.AsyncClient(verify=False) as client:
         with open(mbox_path, "rb") as f:
             files = {"file": f}
             data = {
@@ -37,56 +48,57 @@ async def test_complete_pipeline():
             }
 
             response = await client.post(
-                "http://localhost:8009/parse/mbox",
+                "https://localhost:8300/parse/mbox",
                 files=files,
                 data=data,
             )
 
         parse_results = response.json()
+        print(
+            f"✅ Parsed {parse_results['message_count']} emails in {parse_results['processing_time_ms']:.1f}ms",
+        )
 
-    print(
-        f"✅ Parsed {parse_results['message_count']} emails in {parse_results['processing_time_ms']:.1f}ms",
-    )
+        # Step 2: Classify each email with ML
+        print("\n🤖 Step 2: ML Classification of emails...")
 
-    # Step 2: Classify each email with ML
-    print("\n🤖 Step 2: ML Classification of emails...")
-
-    classified_emails = []
-
-    for i, email in enumerate(parse_results["messages"]):
-        # Prepare email content for classification
-        email_content = f"Subject: {email.get('subject', '')}\nFrom: {email.get('from', '')}\nBody: {email.get('body_snippet', '')}"
-
-        try:
-            response = await client.post(
-                "https://localhost:8004/classify",
-                data={
-                    "email_content": email_content,
-                    "classification_types": "spam_detection,bill_detection,receipt_detection",
-                },
-                verify=False,  # Skip SSL verification for self-signed certs
+        for i, email in enumerate(parse_results["messages"]):
+            # Prepare email content for classification
+            email_content = (
+                f"Subject: {email.get('subject', '')}\n"
+                f"From: {email.get('from', '')}\n"
+                f"Body: {email.get('body_snippet', '')}"
             )
 
-            classification_result = response.json()
-
-            # Combine original email with ML results
-            enhanced_email = {
-                **email,
-                "ml_results": classification_result["results"],
-                "email_id": classification_result["email_id"],
-            }
-
-            classified_emails.append(enhanced_email)
-
-            print(f"  📮 Email {i + 1}: {email.get('subject', 'No subject')[:40]}...")
-            for result in classification_result["results"]:
-                print(
-                    f"    - {result['classification_type']}: {result['prediction']} ({result['confidence']:.1%})",
+            try:
+                response = await client.post(
+                    "https://localhost:8200/classify",
+                    data={
+                        "email_content": email_content,
+                        "classification_types": "spam_detection,bill_detection,receipt_detection",
+                    },
                 )
 
-        except Exception as e:
-            print(f"  ❌ Failed to classify email {i + 1}: {e}")
-            classified_emails.append(email)
+                classification_result = response.json()
+
+                # Combine original email with ML results
+                enhanced_email = {
+                    **email,
+                    "ml_results": classification_result["results"],
+                    "email_id": classification_result["email_id"],
+                }
+
+                classified_emails.append(enhanced_email)
+
+                print(f"  📮 Email {i + 1}: {email.get('subject', 'No subject')[:40]}...")
+                for result in classification_result["results"]:
+                    print(
+                        f"    - {result['classification_type']}: {result['prediction']} "
+                        f"({result['confidence']:.1%})",
+                    )
+
+            except Exception as e:
+                print(f"  ❌ Failed to classify email {i + 1}: {e}")
+                classified_emails.append(email)
 
     # Step 3: Generate pipeline insights
     print("\n📊 Step 3: Pipeline Analysis...")

@@ -9,12 +9,16 @@ This test satisfies:
 - Wendy the Zero Security Bunny: Configurable deployment options
 """
 
+from __future__ import annotations
+
 import subprocess
-import sys
 from pathlib import Path
+from typing import Callable
+
+import pytest
 
 
-def test_service_port_configuration():
+def test_service_port_configuration() -> None:
     """Test that all services respect environment variables for ports."""
 
     services_dir = Path("services")
@@ -41,18 +45,16 @@ def test_service_port_configuration():
             else:
                 print(f"{service_file.name:30} ✅ Port configuration detected")
         else:
-            print(f"{service_file.name:30} ➖ No uvicorn server detected")
+            print(f"{service_file.name:30} - No uvicorn server detected")
 
     print("\n" + "=" * 50)
-    if all_passed:
-        print("🎉 All services properly configured!")
-        print("Kevin the Portability Llama is happy! 🦙")
-        return True
-    print("❌ Some services need port configuration fixes")
-    return False
+    if not all_passed:
+        pytest.fail("Some services need port configuration fixes")
+    print("🎉 All services properly configured!")
+    print("Kevin the Portability Llama is happy! 🦙")
 
 
-def test_dockerfile_port_configuration():
+def test_dockerfile_port_configuration() -> None:
     """Test that Dockerfiles use environment variables or call files that do."""
 
     services_dir = Path("services")
@@ -90,10 +92,11 @@ def test_dockerfile_port_configuration():
         else:
             print(f"{dockerfile.name:25} ✅ No port conflicts detected")
 
-    return all_passed
+    if not all_passed:
+        pytest.fail("Some Dockerfiles have port configuration issues")
 
 
-def test_oliver_validation():
+def test_oliver_validation() -> None:
     """Test Oliver's pattern checker on our services."""
 
     print("\n🦅 Running Oliver's Evidence-Based Validation...")
@@ -112,24 +115,24 @@ def test_oliver_validation():
         if "No anti-patterns detected" in result.stdout:
             print("✅ Oliver approves: No anti-patterns detected!")
             print("🦅 Architecture is clean according to industry authorities")
-            return True
-        print("❌ Oliver found issues:")
-        print(result.stdout[-500:])  # Last 500 chars
-        return False
+        else:
+            print("❌ Oliver found issues:")
+            print(result.stdout[-500:])  # Last 500 chars
+            pytest.fail("Oliver found anti-patterns in services")
 
     except Exception as e:
         print(f"❌ Could not run Oliver: {e}")
-        return False
+        pytest.fail(f"Could not run Oliver: {e}")
 
 
-def main():
+def main() -> None:
     """Run all validation tests."""
 
     print("🚢 Crank Platform Port Configuration Validation")
     print("Validating Kevin, Oliver, Wendy, and Bella's requirements")
     print("=" * 60)
 
-    tests = [
+    tests: list[tuple[str, Callable[[], None]]] = [
         ("Service Port Configuration", test_service_port_configuration),
         ("Dockerfile Configuration", test_dockerfile_port_configuration),
         ("Oliver's Pattern Validation", test_oliver_validation),
@@ -138,28 +141,21 @@ def main():
     all_passed = True
     for test_name, test_func in tests:
         try:
-            passed = test_func()
-            if not passed:
-                all_passed = False
+            test_func()
         except Exception as e:
             print(f"❌ {test_name} failed with error: {e}")
             all_passed = False
 
     print("\n" + "=" * 60)
-    if all_passed:
-        print("🎉 ALL TESTS PASSED!")
-        print("✅ Kevin the Portability Llama: Environment configuration working")
-        print("✅ Oliver the Evidence-Based Owl: No anti-patterns detected")
-        print("✅ Wendy the Zero Security Bunny: Configurable deployments ready")
-        print("✅ Bella the Modularity Poodle: Service separation maintained")
-        print("\n🏆 Architecture passes all mascot requirements!")
-    else:
-        print("❌ SOME TESTS FAILED")
-        print("Review the issues above and rerun the test")
-
-    return all_passed
+    if not all_passed:
+        pytest.fail("Some tests failed")
+    print("🎉 ALL TESTS PASSED!")
+    print("✅ Kevin the Portability Llama: Environment configuration working")
+    print("✅ Oliver the Evidence-Based Owl: No anti-patterns detected")
+    print("✅ Wendy the Zero Security Bunny: Configurable deployments ready")
+    print("✅ Bella the Modularity Poodle: Service separation maintained")
+    print("\n🏆 Architecture passes all mascot requirements!")
 
 
 if __name__ == "__main__":
-    success = main()
-    sys.exit(0 if success else 1)
+    main()

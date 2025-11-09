@@ -29,7 +29,9 @@ Every time ChatGPT says "I can't do X, but here's some Python code to run in you
 The current AI industry is built on unsustainable economics:
 
 - **Massive computational overhead**: Training costs in millions, inference costs that don't scale
+
 - **Centralized energy consumption**: Nuclear power plants dedicated to AI inference
+
 - **Venture capital subsidies**: Free/cheap AI services that mask true costs
 
 ### The Crank Economic Model
@@ -42,13 +44,17 @@ User → Pay for GPU hours → Get computation → Hope for value
 
 Crank Model:
 User → Pay for outcome → Get guaranteed value → Efficient computation
+
 ```
 
 **Aligned Incentives**:
 
 - **Efficiency rewards efficiency**: More efficient algorithms cost less
+
 - **Quality rewards quality**: Better results command higher prices
+
 - **Edge rewards edge**: Local processing costs less than cloud
+
 - **Specialization rewards specialization**: Purpose-built beats general-purpose
 
 ### Economic Primitives
@@ -57,6 +63,7 @@ User → Pay for outcome → Get guaranteed value → Efficient computation
 
 ```python
 # Example pricing model
+
 def calculate_cost(operation: str, input_size: int, processing_time: float) -> float:
     """Calculate cost based on actual resource consumption."""
     base_costs = {
@@ -69,6 +76,7 @@ def calculate_cost(operation: str, input_size: int, processing_time: float) -> f
     time_multiplier = max(1.0, processing_time)           # Time in seconds
 
     return base_costs[operation] * size_multiplier * time_multiplier
+
 ```
 
 #### Quality Guarantees
@@ -95,6 +103,7 @@ class QualityContract:
             penalty += 0.2  # 20% refund for slow response
 
         return min(penalty, 1.0)  # Maximum 100% refund
+
 ```
 
 #### Edge Economics
@@ -116,6 +125,7 @@ class EdgePricingModel:
 
         base_cost = self.get_base_cost(operation)
         return base_cost * location_multipliers.get(location, 2.0)
+
 ```
 
 ## Technological Strategy
@@ -127,8 +137,11 @@ class EdgePricingModel:
 **Benefits**:
 
 - **Consistent environments**: Same container works everywhere
+
 - **Security isolation**: Each service runs in isolation
+
 - **Resource limits**: Prevent runaway processes
+
 - **Deployment flexibility**: Deploy anywhere containers run
 
 ### Runtime GPU Detection
@@ -151,6 +164,7 @@ class AdaptiveCompute:
             return "mps"  # Apple Silicon
         else:
             return "cpu"
+
 ```
 
 ### Efficient Model Pipeline
@@ -167,6 +181,7 @@ Production Phase (Ongoing):
 ├─ 10MB model processes requests → <100ms response time
 ├─ Runs on any device (laptop/phone/edge) → Universal deployment
 └─ $0.001 per transaction → Sustainable economics
+
 ```
 
 ## Market Strategy
@@ -179,20 +194,28 @@ Make it trivial to turn Python scripts into enterprise services:
 
 ```bash
 # Existing Python script
+
 def process_document(file_path):
     return convert_to_pdf(file_path)
 
 # One decorator to make it a service
+
 @crank_service
 def process_document(file_path):
     return convert_to_pdf(file_path)
 
-# Automatically gets:
+# Automatically gets
+
 # - FastAPI endpoint
+
 # - Authentication
+
 # - Audit logging
+
 # - Container deployment
+
 # - Usage tracking
+
 ```
 
 #### Economic Incentives
@@ -200,8 +223,11 @@ def process_document(file_path):
 Developers get paid when their services are used:
 
 - **Revenue sharing**: 70% to developer, 30% to platform
+
 - **Performance bonuses**: More efficient code earns more
+
 - **Quality bonuses**: Higher accuracy/reliability earns premium pricing
+
 - **Innovation rewards**: Novel capabilities command market rates
 
 #### Network Effects
@@ -209,7 +235,9 @@ Developers get paid when their services are used:
 Each new service makes the platform more valuable:
 
 - **Service composition**: Combine services for complex workflows
+
 - **Data network effects**: More usage improves model quality
+
 - **Ecosystem growth**: Platform grows stronger with each participant
 
 ### Enterprise Adoption
@@ -219,8 +247,11 @@ Each new service makes the platform more valuable:
 Built-in enterprise features from day one:
 
 - **Audit logging**: Every transaction logged and traceable
+
 - **Access controls**: Role-based permissions and policies
+
 - **Data sovereignty**: Keep data where regulations require
+
 - **Security isolation**: Services can't access each other's data
 
 #### Gradual Adoption Path
@@ -242,6 +273,7 @@ Phase 3: Critical Workloads
 ├─ Real-time decision making
 ├─ Customer-facing AI features
 └─ Mission-critical automations
+
 ```
 
 ## Long-Term Vision
@@ -253,8 +285,11 @@ Phase 3: Critical Workloads
 **Metrics**:
 
 - 100 active developers building services
+
 - 1,000 daily transactions across platform
+
 - $10,000 MRR (Monthly Recurring Revenue)
+
 - 5 enterprise pilot customers
 
 ### 2028: The Adoption Phase
@@ -264,8 +299,11 @@ Phase 3: Critical Workloads
 **Metrics**:
 
 - 10,000 active developers
+
 - 1,000,000 daily transactions
+
 - $1,000,000 MRR
+
 - 100 enterprise customers
 
 ### 2030: The Ubiquity Phase
@@ -275,8 +313,11 @@ Phase 3: Critical Workloads
 **Metrics**:
 
 - 100,000 active developers
+
 - 100,000,000 daily transactions
+
 - $100,000,000 MRR
+
 - 10,000 enterprise customers
 
 ### The Economic Vision
@@ -284,10 +325,15 @@ Phase 3: Critical Workloads
 **By 2030, we envision a world where**:
 
 - **Every useful algorithm is a service**: From laptop experiments to global infrastructure
+
 - **Efficiency is rewarded**: Better algorithms earn more money
+
 - **Edge intelligence thrives**: Local processing is preferred and profitable
+
 - **Developers prosper**: Creating useful AI services provides sustainable income
+
 - **Enterprises get value**: Pay only for outcomes, not infrastructure
+
 - **Energy consumption drops**: AI becomes more efficient, not more wasteful
 
 This economic transformation makes AI sustainable, profitable, and aligned with human and environmental well-being.
@@ -297,22 +343,31 @@ This economic transformation makes AI sustainable, profitable, and aligned with 
 **Technical Metrics**:
 
 - Service response time: <100ms average
+
 - GPU utilization efficiency: >80% when available
+
 - Container startup time: <5 seconds
+
 - Cross-platform compatibility: 100% (same containers everywhere)
 
 **Economic Metrics**:
 
 - Developer revenue per service: >$1000/month for quality services
+
 - Platform take rate: <30% (most value goes to creators)
+
 - Cost per transaction: <$0.01 for most operations
+
 - Customer acquisition cost: <3 months of revenue
 
 **Impact Metrics**:
 
 - Energy efficiency improvement: 10x better than centralized AI
+
 - Developer productivity: 90% faster from script to production service
+
 - Enterprise compliance: 100% audit trail coverage
+
 - Global accessibility: Works in any regulatory environment
 
 This vision transforms AI from an expensive, centralized resource into an abundant, distributed capability that benefits everyone.

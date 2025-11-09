@@ -56,7 +56,11 @@ class PluginManager:
                 logger.exception("Failed to initialize plugin {plugin_name}: {e}")
 
     async def route_to_plugin(
-        self, service_type: str, operation: str, data: dict[str, Any], request_id: str,
+        self,
+        service_type: str,
+        operation: str,
+        data: dict[str, Any],
+        request_id: str,
     ) -> PluginResponse:
         """Route request to appropriate plugin."""
 
@@ -138,7 +142,11 @@ class PlatformWithPlugins:
         await self.plugin_manager.initialize_plugins(plugin_configs)
 
     async def route_request_via_plugins(
-        self, service_type: str, operation: str, data: dict[str, Any], user_id: str,
+        self,
+        service_type: str,
+        operation: str,
+        data: dict[str, Any],
+        user_id: str,
     ) -> dict[str, Any]:
         """Route request through plugin architecture."""
 

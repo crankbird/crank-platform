@@ -20,21 +20,25 @@ Protocol Input → Adapter → MeshInterface → Business Logic → Adapter → 
 ## 📡 Supported Protocols (Minimum)
 
 ### 1. REST API
+
 - **Purpose**: Standard HTTP/JSON for web integration
 - **Security**: Bearer tokens, API keys
 - **Use Cases**: Web dashboards, mobile apps, simple integrations
 
 ### 2. MCP (Model Context Protocol)
+
 - **Purpose**: AI agent discovery and tool usage
 - **Security**: Token-based authentication
 - **Use Cases**: Claude MCP tools, ChatGPT plugins, autonomous AI agents
 
 ### 3. gRPC
+
 - **Purpose**: High-performance binary protocol for services
 - **Security**: mTLS with certificate validation
 - **Use Cases**: Service-to-service communication, high-throughput scenarios
 
 ### 4. Legacy Protocol Framework
+
 - **Purpose**: Extensible for industrial protocols
 - **Examples**: RS422, Modbus, CAN bus, proprietary protocols
 - **Use Cases**: Industrial equipment integration, embedded systems
@@ -42,16 +46,19 @@ Protocol Input → Adapter → MeshInterface → Business Logic → Adapter → 
 ## 🎯 Protocol-Agnostic Benefits
 
 ### For Developers
+
 - **Write Once, Use Everywhere**: Same business logic, multiple access methods
 - **Future-Proof**: New protocols can be added without changing existing code
 - **Protocol Choice**: Use the optimal protocol for each use case
 
 ### For Organizations
+
 - **Legacy Integration**: Industrial systems can connect via their native protocols
 - **Modern Integration**: AI agents can discover and use services automatically
 - **Vendor Independence**: Not locked into any single communication protocol
 
 ### For AI Agents
+
 - **Automatic Discovery**: MCP enables agents to find and use services
 - **Native Communication**: Each agent can use its preferred protocol
 - **Composable Workflows**: Agents can chain services together seamlessly
@@ -59,6 +66,7 @@ Protocol Input → Adapter → MeshInterface → Business Logic → Adapter → 
 ## 🔐 Security Per Protocol
 
 ### REST API Security
+
 ```python
 @rest_adapter.secure
 def convert_document(request: ConvertRequest) -> ConvertResponse:
@@ -69,6 +77,7 @@ def convert_document(request: ConvertRequest) -> ConvertResponse:
 ```
 
 ### gRPC Security
+
 ```python
 @grpc_adapter.secure(require_mtls=True)
 def convert_document(request: ConvertRequest) -> ConvertResponse:
@@ -79,6 +88,7 @@ def convert_document(request: ConvertRequest) -> ConvertResponse:
 ```
 
 ### MCP Security
+
 ```python
 @mcp_adapter.secure
 def convert_document(request: ConvertRequest) -> ConvertResponse:
@@ -198,16 +208,19 @@ All happening automatically through protocol adapters.
 ## 🔧 Implementation Strategy
 
 ### Phase 1: Core Protocols
+
 - REST API (web integration)
 - MCP (AI agent integration)
 - gRPC (service-to-service)
 
 ### Phase 2: Industrial Protocols
+
 - RS422 framework
 - Modbus support
 - CAN bus adapter
 
 ### Phase 3: Custom Protocols
+
 - Extensible adapter framework
 - Plugin system for new protocols
 - Community-contributed adapters
@@ -215,11 +228,13 @@ All happening automatically through protocol adapters.
 ## 📊 Success Metrics
 
 ### Technical Metrics
+
 - **Protocol Parity**: Same features available across all protocols
 - **Performance**: Protocol overhead <10ms per request
 - **Reliability**: <0.1% protocol conversion errors
 
 ### Adoption Metrics
+
 - **Developer Usage**: Developers use multiple protocols for same service
 - **AI Agent Integration**: Services discoverable and usable by AI agents
 - **Industrial Integration**: Legacy systems successfully integrated

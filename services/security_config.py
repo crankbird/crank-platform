@@ -115,7 +115,10 @@ class SecurePlatformService:
         self.environment = environment
 
     async def secure_worker_call(
-        self, worker_endpoint: str, endpoint: str, **request_kwargs: Any,
+        self,
+        worker_endpoint: str,
+        endpoint: str,
+        **request_kwargs: Any,
     ) -> httpx.Response:
         """Make secure HTTPS call to worker with mTLS."""
 
@@ -144,13 +147,19 @@ class SecurePlatformService:
 
         except httpx.ConnectError as e:
             logger.exception("Failed to connect to worker %s", worker_endpoint)
-            raise HTTPException(status_code=503, detail=f"Worker unavailable: {worker_endpoint}") from e
+            raise HTTPException(
+                status_code=503, detail=f"Worker unavailable: {worker_endpoint}"
+            ) from e
         except httpx.TimeoutException as e:
             logger.exception("Timeout calling worker %s", worker_endpoint)
             raise HTTPException(status_code=504, detail=f"Worker timeout: {worker_endpoint}") from e
         except httpx.HTTPStatusError as e:
-            logger.exception("Worker returned error %s: %s", e.response.status_code, e.response.text)
-            raise HTTPException(status_code=502, detail=f"Worker error: {e.response.status_code}") from e
+            logger.exception(
+                "Worker returned error %s: %s", e.response.status_code, e.response.text
+            )
+            raise HTTPException(
+                status_code=502, detail=f"Worker error: {e.response.status_code}"
+            ) from e
 
 
 # Certificate generation utilities for development

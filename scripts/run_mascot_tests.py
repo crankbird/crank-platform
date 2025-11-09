@@ -213,7 +213,9 @@ class MascotTestOrchestrator:
         )
         return result
 
-    async def _execute_mascot_tests(self, mascot: MascotType, _target: str, _config: dict[str, Any]) -> tuple[list[str], list[str], list[str], float]:
+    async def _execute_mascot_tests(
+        self, mascot: MascotType, _target: str, _config: dict[str, Any]
+    ) -> tuple[list[str], list[str], list[str], float]:
         """Execute specific mascot test suite"""
         # This would integrate with actual test execution
         # For now, return mock results based on mascot type
@@ -277,7 +279,9 @@ class MascotTestOrchestrator:
         return findings, recommendations, evidence, score
 
     async def run_collaboration_pattern(
-        self, pattern_name: str, target: str,
+        self,
+        pattern_name: str,
+        target: str,
     ) -> dict[MascotType, TestResult]:
         """Run collaborative testing between specific mascots"""
         if pattern_name not in self.collaboration_patterns:
@@ -386,7 +390,9 @@ async def main() -> None:
     parser = argparse.ArgumentParser(description="🎭 Mascot-Driven Testing Framework")
     parser.add_argument("--target", help="Target file/directory to test")
     parser.add_argument(
-        "--mascot", choices=[m.value for m in MascotType], help="Run tests for specific mascot",
+        "--mascot",
+        choices=[m.value for m in MascotType],
+        help="Run tests for specific mascot",
     )
     parser.add_argument(
         "--collaboration",

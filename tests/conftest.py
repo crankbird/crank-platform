@@ -45,7 +45,7 @@ class TestConfig:
         "*/.venv/*",
         "*/site-packages/*",
         "*/archive/*",
-        "*/scripts/deprecated/*"
+        "*/scripts/deprecated/*",
     ]
 
     # Test environment settings
@@ -58,7 +58,7 @@ class TestConfig:
         "image_classifier_gpu": "http://localhost:8506",
         "email_parser": "http://localhost:8501",
         "doc_converter": "http://localhost:8502",
-        "streaming": "http://localhost:8503"
+        "streaming": "http://localhost:8503",
     }
 
 
@@ -71,9 +71,7 @@ def coverage_instance() -> Generator[Any, None, None]:
         return
 
     cov = Coverage(
-        source=["services", "src"],
-        omit=TestConfig.COVERAGE_EXCLUDE_PATTERNS,
-        config_file=False
+        source=["services", "src"], omit=TestConfig.COVERAGE_EXCLUDE_PATTERNS, config_file=False
     )
     cov.start()
 
@@ -83,15 +81,17 @@ def coverage_instance() -> Generator[Any, None, None]:
     cov.save()
 
     # Generate coverage report
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("📊 CODE COVERAGE REPORT")
-    print("="*60)
+    print("=" * 60)
     cov.report(show_missing=True)
 
     # Check if we meet minimum coverage
     total_coverage = cov.report(show_missing=False)
     if total_coverage < TestConfig.COVERAGE_MINIMUM:
-        print(f"\n⚠️ WARNING: Coverage {total_coverage}% below target {TestConfig.COVERAGE_MINIMUM}%")
+        print(
+            f"\n⚠️ WARNING: Coverage {total_coverage}% below target {TestConfig.COVERAGE_MINIMUM}%"
+        )
     else:
         print(f"\n✅ Coverage target achieved: {total_coverage}% >= {TestConfig.COVERAGE_MINIMUM}%")
 
@@ -107,7 +107,7 @@ def mock_gpu_manager() -> MagicMock:
         "type": "Apple Silicon GPU",
         "memory_gb": 36.0,
         "platform": "darwin",
-        "architecture": "arm64"
+        "architecture": "arm64",
     }
     return mock
 
@@ -151,7 +151,7 @@ MIIBkTCB+wIJAK8xyz123TestClient...
 -----END CERTIFICATE-----""",
         "client_key": """-----BEGIN PRIVATE KEY-----
 MIIEvgIBADANBgkqhkiG9w0Test...
------END PRIVATE KEY-----"""
+-----END PRIVATE KEY-----""",
     }
 
 
@@ -216,18 +216,24 @@ class PerformanceBenchmark:
     """Performance testing utilities."""
 
     @staticmethod
-    async def measure_async_operation(operation: Callable[..., Awaitable[Any]], *args: Any, **kwargs: Any) -> tuple[Any, float]:
+    async def measure_async_operation(
+        operation: Callable[..., Awaitable[Any]], *args: Any, **kwargs: Any
+    ) -> tuple[Any, float]:
         """Measure execution time of async operation."""
         import time
+
         start_time = time.perf_counter()
         result = await operation(*args, **kwargs)
         end_time = time.perf_counter()
         return result, end_time - start_time
 
     @staticmethod
-    def measure_sync_operation(operation: Callable[..., Any], *args: Any, **kwargs: Any) -> tuple[Any, float]:
+    def measure_sync_operation(
+        operation: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> tuple[Any, float]:
         """Measure execution time of sync operation."""
         import time
+
         start_time = time.perf_counter()
         result = operation(*args, **kwargs)
         end_time = time.perf_counter()
@@ -237,35 +243,27 @@ class PerformanceBenchmark:
 # Test discovery and execution utilities
 def run_coverage_tests() -> None:
     """Run all tests with coverage reporting."""
-    pytest.main([
-        "--cov=services",
-        "--cov=src",
-        "--cov-report=html:tests/coverage_html",
-        "--cov-report=term-missing",
-        f"--cov-fail-under={TestConfig.COVERAGE_MINIMUM}",
-        "tests/",
-        "-v"
-    ])
+    pytest.main(
+        [
+            "--cov=services",
+            "--cov=src",
+            "--cov-report=html:tests/coverage_html",
+            "--cov-report=term-missing",
+            f"--cov-fail-under={TestConfig.COVERAGE_MINIMUM}",
+            "tests/",
+            "-v",
+        ]
+    )
 
 
 def run_performance_tests() -> None:
     """Run performance benchmark tests."""
-    pytest.main([
-        "tests/",
-        "-m", "performance",
-        "-v",
-        "--tb=short"
-    ])
+    pytest.main(["tests/", "-m", "performance", "-v", "--tb=short"])
 
 
 def run_integration_tests() -> None:
     """Run integration tests only."""
-    pytest.main([
-        "tests/",
-        "-m", "integration",
-        "-v",
-        "--tb=short"
-    ])
+    pytest.main(["tests/", "-m", "integration", "-v", "--tb=short"])
 
 
 if __name__ == "__main__":

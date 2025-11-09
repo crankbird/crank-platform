@@ -50,7 +50,7 @@ async def startup_event():
     shared_ca_dir = Path("/shared/ca-certs")
 
     if shared_ca_dir.exists():
-        logger.info("📁 Shared CA directory exists: {shared_ca_dir}")
+        logger.info("📁 Shared CA directory exists: %s", shared_ca_dir)
         # Optional: Clean up any old/stale certificates for fresh start
         # Uncomment if you want clean startup:
         # for old_file in shared_ca_dir.glob("*.crt"):
@@ -58,7 +58,7 @@ async def startup_event():
         #     logger.info("🧹 Cleaned old certificate: {old_file}")
     else:
         shared_ca_dir.mkdir(parents=True, exist_ok=True)
-        logger.info("📁 Created shared CA directory: {shared_ca_dir}")
+        logger.info("📁 Created shared CA directory: %s", shared_ca_dir)
 
     # Set proper permissions for cross-container access
     import os
@@ -68,8 +68,8 @@ async def startup_event():
         logger.info(
             f"� Set directory permissions: {shared_ca_dir} (755 - readable by all containers)",
         )
-    except Exception:
-        logger.warning("⚠️ Could not set directory permissions: {e}")
+    except Exception as err:
+        logger.warning("⚠️ Could not set directory permissions: %s", err)
 
     try:
         # Create certificate provider based on environment
@@ -79,12 +79,16 @@ async def startup_event():
         # Log provider information
         provider_info = cert_service.get_provider_status()
         logger.info(
-            f"✅ Certificate provider initialized: {provider_info['provider_info']['provider']}",
+            "✅ Certificate provider initialized: %s",
+            provider_info["provider_info"]["provider"],
         )
-        logger.info("🛡️ Security level: {provider_info['provider_info']['security_level']}")
+        logger.info(
+            "🛡️ Security level: %s",
+            provider_info["provider_info"]["security_level"],
+        )
 
-    except Exception:
-        logger.exception("❌ Failed to initialize certificate service: {e}")
+    except Exception as err:
+        logger.exception("❌ Failed to initialize certificate service: %s", err)
         raise
 
 
@@ -110,8 +114,8 @@ async def get_ca_certificate():
             "provider": cert_service.provider.get_provider_info()["provider"],
         }
     except Exception as e:
-        logger.exception("Failed to get CA certificate: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Failed to get CA certificate: %s", e)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/certificates/platform")
@@ -141,8 +145,8 @@ async def provision_platform_certificates():
         }
 
     except Exception as e:
-        logger.exception("Failed to provision platform certificates: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Failed to provision platform certificates: %s", e)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/certificates/csr")
@@ -155,7 +159,7 @@ async def sign_certificate_request(request: dict):
         if not csr_pem:
             raise HTTPException(status_code=400, detail="CSR is required")
 
-        logger.info("🔐 Processing CSR for service: {service_name}")
+        logger.info("🔐 Processing CSR for service: %s", service_name)
 
         # Validate and sign the CSR
         signed_cert = await cert_service.sign_certificate_request(csr_pem, service_name)
@@ -168,15 +172,15 @@ async def sign_certificate_request(request: dict):
         }
 
     except Exception as e:
-        logger.exception("Failed to sign CSR: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Failed to sign CSR: %s", e)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/certificates/server")
 async def provision_server_certificate(request: CertificateRequest):
     """Provision a server certificate."""
     try:
-        logger.info("🔐 Provisioning server certificate for {request.common_name}")
+        logger.info("🔐 Provisioning server certificate for %s", request.common_name)
 
         certificate = await cert_service.provider.provision_server_certificate(request)
 
@@ -189,15 +193,15 @@ async def provision_server_certificate(request: CertificateRequest):
         }
 
     except Exception as e:
-        logger.exception("Failed to provision server certificate: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Failed to provision server certificate: %s", e)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.post("/certificates/client")
 async def provision_client_certificate(request: CertificateRequest):
     """Provision a client certificate."""
     try:
-        logger.info("🔐 Provisioning client certificate for {request.common_name}")
+        logger.info("🔐 Provisioning client certificate for %s", request.common_name)
 
         certificate = await cert_service.provider.provision_client_certificate(request)
 
@@ -210,15 +214,15 @@ async def provision_client_certificate(request: CertificateRequest):
         }
 
     except Exception as e:
-        logger.exception("Failed to provision client certificate: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Failed to provision client certificate: %s", e)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.delete("/certificates/{serial_number}")
 async def revoke_certificate(serial_number: str):
     """Revoke a certificate by serial number."""
     try:
-        logger.info("🚫 Revoking certificate with serial: {serial_number}")
+        logger.info("🚫 Revoking certificate with serial: %s", serial_number)
 
         success = await cert_service.provider.revoke_certificate(serial_number)
 
@@ -229,8 +233,8 @@ async def revoke_certificate(serial_number: str):
         }
 
     except Exception as e:
-        logger.exception("Failed to revoke certificate: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Failed to revoke certificate: %s", e)
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/provider/status")
@@ -412,8 +416,8 @@ def main():
             log_level="info",
         )
     except Exception as e:
-        logger.exception("🚫 Failed to start Certificate Authority Service: {e}")
-        raise RuntimeError(f"🚫 Failed to start Certificate Authority Service: {e}")
+        logger.exception("🚫 Failed to start Certificate Authority Service: %s", e)
+        raise RuntimeError("🚫 Failed to start Certificate Authority Service") from e
 
 
 if __name__ == "__main__":

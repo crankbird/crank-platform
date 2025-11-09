@@ -14,7 +14,7 @@ import httpx
 from PIL import Image, ImageDraw, ImageFilter
 
 
-def create_complex_test_image(size=(1920, 1080)):
+def create_complex_test_image(size: tuple[int, int] = (1920, 1080)) -> Image.Image:
     """Create a complex image that will exercise the classifiers."""
     img = Image.new("RGB", size, color="white")
     draw = ImageDraw.Draw(img)
@@ -45,7 +45,10 @@ def create_complex_test_image(size=(1920, 1080)):
         elif i % 4 == 2:
             # Triangle
             draw.polygon(
-                [(x, y + h), (x + w // 2, y), (x + w, y + h)], fill=color, outline="black", width=2,
+                [(x, y + h), (x + w // 2, y), (x + w, y + h)],
+                fill=color,
+                outline="black",
+                width=2,
             )
         else:
             # Star
@@ -65,14 +68,14 @@ def create_complex_test_image(size=(1920, 1080)):
     return img.filter(ImageFilter.DETAIL)
 
 
-def image_to_bytes(img, quality=90):
+def image_to_bytes(img: Image.Image, quality: int = 90) -> bytes:
     """Convert PIL image to bytes."""
     img_buffer = BytesIO()
     img.save(img_buffer, format="JPEG", quality=quality)
     return img_buffer.getvalue()
 
 
-async def benchmark_performance():
+async def benchmark_performance() -> None:
     """Run an intensive performance benchmark."""
 
     print("🔥 INTENSIVE GPU vs CPU PERFORMANCE BENCHMARK")
@@ -89,8 +92,8 @@ async def benchmark_performance():
     ssl_context.verify_mode = ssl.CERT_NONE
 
     # Test multiple rounds
-    cpu_times = []
-    gpu_times = []
+    cpu_times: list[float] = []
+    gpu_times: list[float] = []
 
     async with httpx.AsyncClient(verify=False, timeout=120.0) as client:
         for round_num in range(3):
@@ -107,7 +110,9 @@ async def benchmark_performance():
             start_time = time.time()
             try:
                 cpu_response = await client.post(
-                    "https://localhost:8006/classify", files=files, data=data,
+                    "https://localhost:8006/classify",
+                    files=files,
+                    data=data,
                 )
                 cpu_time = time.time() - start_time
 
@@ -135,7 +140,9 @@ async def benchmark_performance():
             start_time = time.time()
             try:
                 gpu_response = await client.post(
-                    "https://localhost:8008/classify", files=files, data=data,
+                    "https://localhost:8008/classify",
+                    files=files,
+                    data=data,
                 )
                 gpu_time = time.time() - start_time
 

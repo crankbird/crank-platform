@@ -83,7 +83,11 @@ class BillingServiceInterface(ABC):
 
     @abstractmethod
     async def track_usage(
-        self, user_id: str, operation: str, service_type: str, duration_ms: int,
+        self,
+        user_id: str,
+        operation: str,
+        service_type: str,
+        duration_ms: int,
     ) -> UsageRecord:
         """Track usage and generate billing record."""
 
@@ -166,7 +170,11 @@ class BillingServiceStub(BillingServiceInterface):
         }
 
     async def track_usage(
-        self, user_id: str, operation: str, service_type: str, duration_ms: int,
+        self,
+        user_id: str,
+        operation: str,
+        service_type: str,
+        duration_ms: int,
     ) -> UsageRecord:
         """Track usage and calculate cost."""
         cost_cents = self.pricing.get(operation, 1)
@@ -256,7 +264,11 @@ class PlatformService:
         return await self.auth.authenticate(token)
 
     async def route_request(
-        self, service_type: str, operation: str, request_data: dict[str, Any], user: User,
+        self,
+        service_type: str,
+        operation: str,
+        request_data: dict[str, Any],
+        user: User,
     ) -> dict[str, Any]:
         """Route request to appropriate worker."""
 

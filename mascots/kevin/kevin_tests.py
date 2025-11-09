@@ -159,7 +159,9 @@ class KevinPortabilityAnalyzer:
         return findings
 
     def _detect_platform_assumptions(
-        self, file_path: Path, content: str,
+        self,
+        file_path: Path,
+        content: str,
     ) -> list[PortabilityFinding]:
         """🦙 Detect platform-specific assumptions"""
         findings = []
@@ -284,7 +286,9 @@ class KevinPortabilityAnalyzer:
         return self._analyze_yaml_config(file_path, config)
 
     def _analyze_environment_variables(
-        self, file_path: Path, content: str,
+        self,
+        file_path: Path,
+        content: str,
     ) -> list[PortabilityFinding]:
         """🦙 Analyze environment variable usage"""
         findings = []
@@ -358,7 +362,9 @@ class KevinPortabilityAnalyzer:
         return findings
 
     def _analyze_network_configuration(
-        self, file_path: Path, content: str,
+        self,
+        file_path: Path,
+        content: str,
     ) -> list[PortabilityFinding]:
         """🦙 Analyze network configuration portability"""
         findings = []

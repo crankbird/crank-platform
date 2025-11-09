@@ -3,7 +3,7 @@
 # Requires NVIDIA Docker runtime and CUDA-capable GPU
 
 # Stage 1: Base with Python and system dependencies - using slim variant for security
-FROM python:3.12-slim-bookworm as base
+FROM python:3.12-slim-bookworm AS base
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -30,7 +30,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Stage 2: Python dependencies
-FROM base as dependencies
+FROM base AS dependencies
 
 # Set working directory
 WORKDIR /app
@@ -88,7 +88,7 @@ RUN pip install \
     GPUtil==1.4.0
 
 # Stage 3: Final application
-FROM dependencies as final
+FROM dependencies AS final
 
 # Copy the application code
 COPY ./services/crank_image_classifier_advanced.py .

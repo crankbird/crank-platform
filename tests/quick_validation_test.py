@@ -6,11 +6,12 @@ Focus on validating the core changes we made work correctly.
 
 import os
 import subprocess
-import sys
 import tempfile
 
+import pytest
 
-def test_core_functionality():
+
+def test_core_functionality() -> None:
     """Test the essential functionality that we added"""
 
     print("🚀 Quick Validation Test")
@@ -41,7 +42,7 @@ def test_core_functionality():
     # Test 2: Wendy's Security Framework
     print("\n2. 🐰 Wendy's Security Framework:")
     try:
-        from wendy_security_framework import WendyInputSanitizer
+        from wendy_security_framework import SecurityViolation, WendyInputSanitizer
 
         sanitizer = WendyInputSanitizer()
 
@@ -53,7 +54,7 @@ def test_core_functionality():
         try:
             sanitizer.sanitize_filename("../../../etc/passwd")
             print("   ❌ Dangerous filename was not blocked!")
-        except:
+        except SecurityViolation:
             print("   ✅ Dangerous filename blocked: ../../../etc/passwd")
 
         # Test JSON sanitization
@@ -63,7 +64,7 @@ def test_core_functionality():
 
     except Exception as e:
         print(f"   ❌ Wendy's framework error: {e}")
-        return False
+        pytest.fail(f"Wendy's framework error: {e}")
 
     # Test 3: Oliver's Pattern Detection
     print("\n3. 🦅 Oliver's Pattern Detection:")
@@ -107,11 +108,11 @@ API_KEY = "secret123"
                 print("   ✅ Security severity classification working")
         else:
             print("   ❌ Oliver didn't detect expected vulnerabilities")
-            return False
+            pytest.fail("Oliver didn't detect expected vulnerabilities")
 
     except Exception as e:
         print(f"   ❌ Oliver detection error: {e}")
-        return False
+        pytest.fail(f"Oliver detection error: {e}")
     finally:
         os.unlink(temp_file)
 
@@ -129,10 +130,10 @@ API_KEY = "secret123"
             print("   ✅ .env.template has all required port variables")
         else:
             print(f"   ❌ .env.template missing: {missing}")
-            return False
+            pytest.fail(f".env.template missing: {missing}")
     else:
         print("   ❌ .env.template not found")
-        return False
+        pytest.fail(".env.template not found")
 
     print("\n" + "=" * 40)
     print("🎉 CORE FUNCTIONALITY VALIDATED!")
@@ -140,11 +141,8 @@ API_KEY = "secret123"
     print("✅ Security framework operational")
     print("✅ Pattern detection enhanced")
     print("✅ Configuration files complete")
-    print("\n🏆 Essential changes are working correctly!")
-
-    return True
+    print("✅ Essential changes are working correctly!")
 
 
 if __name__ == "__main__":
-    success = test_core_functionality()
-    sys.exit(0 if success else 1)
+    test_core_functionality()

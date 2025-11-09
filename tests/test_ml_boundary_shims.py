@@ -67,7 +67,7 @@ class TestMLBoundaryShims:
         mock_processor.return_value = mock_inputs
 
         # Mock torch operations throughout the function
-        with patch('services.ml_boundary_shims.torch') as mock_torch:
+        with patch("services.ml_boundary_shims.torch") as mock_torch:
             # Mock the model outputs
             mock_outputs = MagicMock()
             mock_logits = MagicMock()
@@ -93,12 +93,7 @@ class TestMLBoundaryShims:
             # Mock probs indexing for the scores loop
             mock_probs.__getitem__.return_value.item.return_value = 0.1
 
-            result = safe_clip_analyze(
-                mock_model,
-                mock_processor,
-                mock_image,
-                ["cat", "dog"]
-            )
+            result = safe_clip_analyze(mock_model, mock_processor, mock_image, ["cat", "dog"])
 
         assert result is not None
         assert "prediction" in result
@@ -146,6 +141,7 @@ class TestMLBoundaryShims:
 
         # Should return empty array on error
         import numpy as np
+
         expected = np.array([], dtype=np.float32)
         assert np.array_equal(result, expected)
 
@@ -205,7 +201,7 @@ class TestErrorHandling:
         from services.ml_boundary_shims import safe_get_gpu_stats
 
         # Mock the GPUtil import to raise ImportError
-        with patch('builtins.__import__', side_effect=ImportError("No module named 'GPUtil'")):
+        with patch("builtins.__import__", side_effect=ImportError("No module named 'GPUtil'")):
             result = safe_get_gpu_stats()
             assert "available" in result
             assert result["available"] is False
@@ -227,19 +223,19 @@ class TestTypeAnnotations:
 
         # Check function signatures exist and have expected parameters
         yolo_sig = inspect.signature(safe_yolo_detect)
-        assert 'model' in yolo_sig.parameters
-        assert 'image' in yolo_sig.parameters
-        assert 'confidence' in yolo_sig.parameters
+        assert "model" in yolo_sig.parameters
+        assert "image" in yolo_sig.parameters
+        assert "confidence" in yolo_sig.parameters
 
         clip_sig = inspect.signature(safe_clip_analyze)
-        assert 'model' in clip_sig.parameters
-        assert 'processor' in clip_sig.parameters
-        assert 'image' in clip_sig.parameters
-        assert 'text_categories' in clip_sig.parameters
+        assert "model" in clip_sig.parameters
+        assert "processor" in clip_sig.parameters
+        assert "image" in clip_sig.parameters
+        assert "text_categories" in clip_sig.parameters
 
         st_sig = inspect.signature(safe_sentence_transformer_encode)
-        assert 'model' in st_sig.parameters
-        assert 'inputs' in st_sig.parameters
+        assert "model" in st_sig.parameters
+        assert "inputs" in st_sig.parameters
 
     def test_return_types(self) -> None:
         """Test that return types match expectations."""
@@ -276,6 +272,7 @@ class TestTypeAnnotations:
         # Test Sentence Transformer
         mock_st_model = MagicMock()
         import numpy as np
+
         mock_st_model.encode.return_value = np.array([[0.1, 0.2]], dtype=np.float32)
 
         st_result = safe_sentence_transformer_encode(mock_st_model, ["test"])

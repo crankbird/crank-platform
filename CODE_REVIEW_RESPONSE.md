@@ -5,7 +5,9 @@ Thank you for the comprehensive code review! This identified **critical blocking
 ## 🚨 **CRITICAL BLOCKING ISSUES** (Fix Immediately)
 
 ### **Issue #18 - CrankMeshInterface Receipt System** ✅ **RESOLVED**
+
 **STATUS**: � **FIXED** - All services can now emit receipts + Strategic branding established
+
 - **Problem**: `generate_receipt()` read `response.job_id/service_type/operation` but `MeshResponse` didn't expose these fields
 - **Also**: Two conflicting `MeshReceipt` classes (@dataclass vs BaseModel)
 - **Solution**: ✅ Added missing fields to `CrankMeshResponse`, consolidated receipt classes, renamed to `CrankMeshInterface` for brand differentiation
@@ -13,7 +15,9 @@ Thank you for the comprehensive code review! This identified **critical blocking
 - **Files**: `services/crank_mesh_interface.py`, migration guide, updated docs
 
 ### **Issue #22 - Fragile Import Paths**
+
 **STATUS**: 🔴 **CONFIRMED CRITICAL** - Any reorganization breaks everything
+
 - **Evidence**: `sys.path` mutations in:
   - `services/relaxed-checking/crank_image_classifier.py` (lines 34-52)
   - `services/crank_doc_converter.py` (lines 71-75)
@@ -22,7 +26,9 @@ Thank you for the comprehensive code review! This identified **critical blocking
 - **Priority**: **HIGH** - prerequisite for all architectural improvements
 
 ### **Issue #14 - Package Structure**
+
 **STATUS**: 🔴 **ROOT CAUSE** - Services not organized as importable packages
+
 - **Problem**: Pervasive sys.path hacking proves code isn't properly packaged
 - **Impact**: Blocks proper import structure, testing, deployment
 - **Priority**: **HIGH** - foundation for fixing import issues
@@ -30,15 +36,18 @@ Thank you for the comprehensive code review! This identified **critical blocking
 ## 🔧 **ARCHITECTURAL CLEANUP** (After Critical Fixes)
 
 ### **Issue #19 - Security Configuration**
+
 - Only GPU classifier uses `initialize_security()` properly
 - Others use ad-hoc `sys.path` hacking for `SecureCertificateStore`
 - Policy/cert rotation/HTTP clients duplicated across services
 
 ### **Issue #17 - Placeholder Tests**
+
 - Many tests only assert built-in behavior without exercising platform code
 - Need replacement with real service tests via CrankMeshInterface (after #18 fixed ✅)
 
 ### **Issue #16 - Docker/Compose Configuration**
+
 - Legacy `services/docker-compose.yml` points to non-existent files
 - Image classifier contexts outside standardized build manifests
 
@@ -72,6 +81,7 @@ Thank you for the comprehensive code review! This identified **critical blocking
 ## 🎯 **Testing Strategy Integration**
 
 The testing infrastructure we just built is **production-ready** and Issue #18 is now resolved:
+
 - ✅ **CrankMeshInterface tests** can now be written - receipt system is working
 - **Service unit tests** can be written once import structure is fixed (#22/#14)
 - **Integration tests** blocked by Docker/security configuration issues

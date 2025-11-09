@@ -54,11 +54,15 @@ logger = logging.getLogger(__name__)
 
 # FastAPI dependency defaults - create at module level to avoid evaluation in defaults
 _DEFAULT_FILE_UPLOAD = File(...)
-DEFAULT_FORM_CLASSIFICATION_TYPES = Form(default="yolo_detection,clip_analysis,advanced_scene_classification")
+DEFAULT_FORM_CLASSIFICATION_TYPES = Form(
+    default="yolo_detection,clip_analysis,advanced_scene_classification"
+)
+
 
 # Worker registration model
 class WorkerRegistration(BaseModel):
     """Model for worker registration with platform."""
+
     worker_id: str
     service_type: str
     endpoint: str
@@ -68,6 +72,7 @@ class WorkerRegistration(BaseModel):
 
 class GPUImageClassificationRequest(BaseModel):
     """Request model for GPU image classification."""
+
     classification_types: list[str] = ["yolo_detection", "clip_analysis", "scene_classification"]
     confidence_threshold: float = 0.5
     batch_size: int = 1
@@ -76,6 +81,7 @@ class GPUImageClassificationRequest(BaseModel):
 
 class GPUImageClassificationResult(BaseModel):
     """Result model for GPU image classification."""
+
     classification_type: str
     prediction: str
     confidence: float
@@ -85,6 +91,7 @@ class GPUImageClassificationResult(BaseModel):
 
 class GPUClassificationResponse(BaseModel):
     """Response model for GPU image classification."""
+
     success: bool
     image_id: str
     results: list[GPUImageClassificationResult]
@@ -112,7 +119,9 @@ class GPUImageClassifier:
 
         # Ensure we have GPU acceleration available
         if device_info["device"] == "cpu":
-            raise RuntimeError("❌ No GPU acceleration available. This service requires GPU support.")
+            raise RuntimeError(
+                "❌ No GPU acceleration available. This service requires GPU support."
+            )
 
         self.device = gpu_manager.get_device()
 
@@ -172,7 +181,9 @@ class GPUImageClassifier:
         # Use safe GPU stats wrapper from boundary shims
         return safe_get_gpu_stats()
 
-    def _load_image(self, image_data: bytes) -> tuple[np.ndarray[Any, np.dtype[Any]], Image.Image, torch.Tensor]:
+    def _load_image(
+        self, image_data: bytes
+    ) -> tuple[np.ndarray[Any, np.dtype[Any]], Image.Image, torch.Tensor]:
         """Load image from bytes into multiple formats for different models."""
         # Load with PIL
         pil_image = Image.open(io.BytesIO(image_data)).convert("RGB")
@@ -190,7 +201,9 @@ class GPUImageClassifier:
         return opencv_image, pil_image, clip_tensor
 
     @torch.no_grad()  # type: ignore[misc]
-    def yolo_object_detection(self, image_data: bytes, confidence: float = 0.5) -> tuple[str, float, dict[str, Any]]:
+    def yolo_object_detection(
+        self, image_data: bytes, confidence: float = 0.5
+    ) -> tuple[str, float, dict[str, Any]]:
         """Advanced object detection using YOLOv8."""
         if self.yolo_model is None:
             return "model_not_loaded", 0.0, {"error": "YOLO model not initialized"}
@@ -200,30 +213,39 @@ class GPUImageClassifier:
         # Use safe YOLO detection wrapper from boundary shims
         result = safe_yolo_detect(self.yolo_model, opencv_image, confidence)
 
-        return result["prediction"], result["confidence"], {
-            "detections": result["detections"],
-            "model": result["model"],
-            "total_objects": result["total_objects"]
-        }
+        return (
+            result["prediction"],
+            result["confidence"],
+            {
+                "detections": result["detections"],
+                "model": result["model"],
+                "total_objects": result["total_objects"],
+            },
+        )
 
     @torch.no_grad()  # type: ignore[misc]
-    def clip_image_analysis(self, image_data: bytes, custom_categories: Optional[list[str]] = None) -> CLIPResult:
+    def clip_image_analysis(
+        self, image_data: bytes, custom_categories: Optional[list[str]] = None
+    ) -> CLIPResult:
         """Analyze image using CLIP zero-shot classification with safe wrapper."""
         try:
             if self.clip_model is None:
                 return CLIPResult(
-                    prediction="clip_not_loaded",
-                    confidence=0.0,
-                    scores=[],
-                    model="CLIP"
+                    prediction="clip_not_loaded", confidence=0.0, scores=[], model="CLIP"
                 )
 
             _, pil_image, _ = self._load_image(image_data)
 
             categories = custom_categories or [
-                "a photo of a person", "a photo of a car", "a photo of a cat",
-                "a photo of a dog", "a photo of food", "a photo of nature",
-                "a photo of a building", "a photo of technology", "a photo of art"
+                "a photo of a person",
+                "a photo of a car",
+                "a photo of a cat",
+                "a photo of a dog",
+                "a photo of food",
+                "a photo of nature",
+                "a photo of a building",
+                "a photo of technology",
+                "a photo of art",
             ]
 
             return safe_clip_analyze(
@@ -231,16 +253,13 @@ class GPUImageClassifier:
                 processor=self.clip_preprocess,
                 image=pil_image,
                 text_categories=categories,
-                device=str(self.device)
+                device=str(self.device),
             )
 
         except Exception as e:
             logger.error(f"CLIP analysis error: {e}")
             return CLIPResult(
-                prediction="clip_analysis_failed",
-                confidence=0.0,
-                scores=[],
-                model="CLIP"
+                prediction="clip_analysis_failed", confidence=0.0, scores=[], model="CLIP"
             )
 
     @torch.no_grad()  # type: ignore[misc]
@@ -255,10 +274,14 @@ class GPUImageClassifier:
             clip_conf = clip_result["confidence"]
 
             # Color analysis
-            blue_pixels = np.sum((opencv_image[:,:,0] > opencv_image[:,:,1]) &
-                               (opencv_image[:,:,0] > opencv_image[:,:,2]))
-            green_pixels = np.sum((opencv_image[:,:,1] > opencv_image[:,:,0]) &
-                                (opencv_image[:,:,1] > opencv_image[:,:,2]))
+            blue_pixels = np.sum(
+                (opencv_image[:, :, 0] > opencv_image[:, :, 1])
+                & (opencv_image[:, :, 0] > opencv_image[:, :, 2])
+            )
+            green_pixels = np.sum(
+                (opencv_image[:, :, 1] > opencv_image[:, :, 0])
+                & (opencv_image[:, :, 1] > opencv_image[:, :, 2])
+            )
 
             total_pixels = opencv_image.shape[0] * opencv_image.shape[1]
             blue_ratio = blue_pixels / total_pixels
@@ -274,9 +297,11 @@ class GPUImageClassifier:
             enhanced_scene = clip_prediction
 
             # Adjust based on color analysis
-            if (("nature" in clip_result and green_ratio > 0.3) or
-                ("outdoors" in clip_result and blue_ratio > 0.2) or
-                (edge_density > 0.1 and "architecture" in clip_result)):
+            if (
+                ("nature" in clip_result and green_ratio > 0.3)
+                or ("outdoors" in clip_result and blue_ratio > 0.2)
+                or (edge_density > 0.1 and "architecture" in clip_result)
+            ):
                 enhanced_confidence += 0.1
 
             enhanced_confidence = min(0.95, enhanced_confidence)
@@ -319,8 +344,7 @@ class GPUImageClassifier:
             # Also generate sentence transformer embeddings with safe wrapper
             if self.sentence_transformer is not None:
                 st_embeddings: np.ndarray[Any, np.dtype[Any]] = safe_sentence_transformer_encode(
-                    model=self.sentence_transformer,
-                    inputs=[pil_image]
+                    model=self.sentence_transformer, inputs=[pil_image]
                 )
             else:
                 st_embeddings = np.array([], dtype=np.float32)
@@ -405,7 +429,13 @@ class CrankGPUImageClassifier:
             return {
                 "status": "healthy",
                 "service": "crank-image-classifier-gpu",
-                "capabilities": ["yolo_object_detection", "clip_image_understanding", "advanced_scene_analysis", "image_embeddings", "batch_processing"],
+                "capabilities": [
+                    "yolo_object_detection",
+                    "clip_image_understanding",
+                    "advanced_scene_analysis",
+                    "image_embeddings",
+                    "batch_processing",
+                ],
                 "gpu_accelerated": True,
                 "models_loaded": {
                     "yolo": self.classifier.yolo_model is not None,
@@ -426,7 +456,9 @@ class CrankGPUImageClassifier:
 
             def validate_image_file(upload_file: UploadFile) -> None:
                 """Validate that uploaded file is an image."""
-                if not upload_file.content_type or not upload_file.content_type.startswith("image/"):
+                if not upload_file.content_type or not upload_file.content_type.startswith(
+                    "image/"
+                ):
                     raise HTTPException(status_code=400, detail="File must be an image")
 
             try:
@@ -447,40 +479,54 @@ class CrankGPUImageClassifier:
 
                 for class_type in types:
                     if class_type == "yolo_detection":
-                        prediction, confidence, details = self.classifier.yolo_object_detection(image_data)
-                        results.append(GPUImageClassificationResult(
-                            classification_type="yolo_object_detection",
-                            prediction=prediction,
-                            confidence=confidence,
-                            details=details,
-                        ))
+                        prediction, confidence, details = self.classifier.yolo_object_detection(
+                            image_data
+                        )
+                        results.append(
+                            GPUImageClassificationResult(
+                                classification_type="yolo_object_detection",
+                                prediction=prediction,
+                                confidence=confidence,
+                                details=details,
+                            )
+                        )
 
                     elif class_type == "clip_analysis":
                         clip_result = self.classifier.clip_image_analysis(image_data)
-                        results.append(GPUImageClassificationResult(
-                            classification_type="clip_image_understanding",
-                            prediction=clip_result["prediction"],
-                            confidence=clip_result["confidence"],
-                            details=dict(clip_result),
-                        ))
+                        results.append(
+                            GPUImageClassificationResult(
+                                classification_type="clip_image_understanding",
+                                prediction=clip_result["prediction"],
+                                confidence=clip_result["confidence"],
+                                details=dict(clip_result),
+                            )
+                        )
 
                     elif class_type == "advanced_scene_classification":
-                        prediction, confidence, details = self.classifier.advanced_scene_classification(image_data)
-                        results.append(GPUImageClassificationResult(
-                            classification_type="advanced_scene_analysis",
-                            prediction=prediction,
-                            confidence=confidence,
-                            details=details,
-                        ))
+                        prediction, confidence, details = (
+                            self.classifier.advanced_scene_classification(image_data)
+                        )
+                        results.append(
+                            GPUImageClassificationResult(
+                                classification_type="advanced_scene_analysis",
+                                prediction=prediction,
+                                confidence=confidence,
+                                details=details,
+                            )
+                        )
 
                     elif class_type == "image_embeddings":
-                        prediction, confidence, details = self.classifier.generate_image_embeddings(image_data)
-                        results.append(GPUImageClassificationResult(
-                            classification_type="image_embeddings",
-                            prediction=prediction,
-                            confidence=confidence,
-                            details=details,
-                        ))
+                        prediction, confidence, details = self.classifier.generate_image_embeddings(
+                            image_data
+                        )
+                        results.append(
+                            GPUImageClassificationResult(
+                                classification_type="image_embeddings",
+                                prediction=prediction,
+                                confidence=confidence,
+                                details=details,
+                            )
+                        )
 
                 # Get GPU stats for response
                 gpu_stats = self.classifier.get_gpu_stats()
@@ -522,7 +568,12 @@ class CrankGPUImageClassifier:
                 "version": "1.0.0",
                 "description": "GPU-accelerated computer vision ML classification with YOLOv8, CLIP, and modern deep learning",
                 "author": "Crank Platform Team",
-                "capabilities": ["yolo_object_detection", "clip_image_understanding", "advanced_scene_analysis", "image_embeddings"],
+                "capabilities": [
+                    "yolo_object_detection",
+                    "clip_image_understanding",
+                    "advanced_scene_analysis",
+                    "image_embeddings",
+                ],
                 "requirements": {"gpu": "required", "vram_min": "4GB"},
                 "health_endpoint": "/health",
                 "separation_ready": True,
@@ -559,7 +610,13 @@ class CrankGPUImageClassifier:
             service_type="image_classification_gpu",
             endpoint=self.worker_url,
             health_url=f"{self.worker_url}/health",
-            capabilities=["yolo_object_detection", "clip_image_understanding", "advanced_scene_analysis", "image_embeddings", "batch_processing"],
+            capabilities=[
+                "yolo_object_detection",
+                "clip_image_understanding",
+                "advanced_scene_analysis",
+                "image_embeddings",
+                "batch_processing",
+            ],
         )
 
         # Try to register with retries
@@ -574,7 +631,10 @@ class CrankGPUImageClassifier:
                         timeout=10.0,
                     )
                     response.raise_for_status()
-                    logger.info("🔒 Successfully registered GPU image classifier service via mTLS. Worker ID: %s", self.worker_id)
+                    logger.info(
+                        "🔒 Successfully registered GPU image classifier service via mTLS. Worker ID: %s",
+                        self.worker_id,
+                    )
 
                     # Start heartbeat task
                     self._start_heartbeat_task()
@@ -582,12 +642,13 @@ class CrankGPUImageClassifier:
             except Exception as e:
                 logger.warning("Registration attempt %d failed: %s", attempt + 1, e)
                 if attempt < max_retries - 1:
-                    await asyncio.sleep(2 ** attempt)
+                    await asyncio.sleep(2**attempt)
 
         logger.error("Failed to register with platform after all retries")
 
     def _start_heartbeat_task(self) -> None:
         """Start the background heartbeat task."""
+
         async def heartbeat_loop() -> None:
             while True:
                 try:
@@ -660,7 +721,9 @@ def main() -> None:
             ssl_certfile=str(cert_dir / "platform.crt"),
         )
     else:
-        print(f"⚠️  Starting Crank GPU Image Classifier with HTTP on port {http_port} (development only)")
+        print(
+            f"⚠️  Starting Crank GPU Image Classifier with HTTP on port {http_port} (development only)"
+        )
         uvicorn.run(app, host="0.0.0.0", port=http_port)
 
 

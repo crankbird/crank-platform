@@ -9,7 +9,9 @@
 The platform follows a **container-first development philosophy** where:
 
 - **Host environment**: Only essential tooling for container orchestration
+
 - **Development environment**: Lives entirely within containers
+
 - **GPU abstraction**: Runtime detection within containers, not host configuration
 
 ## Required Host Dependencies
@@ -21,8 +23,10 @@ The platform follows a **container-first development philosophy** where:
 
 ```bash
 # Validation
+
 docker --version
 docker compose version
+
 ```
 
 ### 2. GPU Runtime Support (Platform-Specific)
@@ -34,7 +38,9 @@ docker compose version
 
 ```bash
 # Validation
+
 docker run --rm pytorch/pytorch:latest python -c "import torch; print(f'MPS: {torch.backends.mps.is_available()}')"
+
 ```
 
 #### NVIDIA GPU Systems
@@ -44,6 +50,7 @@ docker run --rm pytorch/pytorch:latest python -c "import torch; print(f'MPS: {to
 
 ```bash
 # Installation (Ubuntu/Debian)
+
 curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
 curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
   sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
@@ -55,7 +62,9 @@ sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 
 # Validation
+
 docker run --rm --gpus all nvidia/cuda:12.1-runtime-ubuntu22.04 nvidia-smi
+
 ```
 
 #### CPU-Only Systems
@@ -70,10 +79,13 @@ docker run --rm --gpus all nvidia/cuda:12.1-runtime-ubuntu22.04 nvidia-smi
 
 ```bash
 # Installation
+
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Validation
+
 uv --version
+
 ```
 
 ## Host Environment Validation Script
@@ -86,22 +98,33 @@ The platform includes a comprehensive validation script to check all host requir
 
 ```bash
 # Run validation
+
 ./scripts/validate-host-environment.sh
 
-# Example output for M4 Mac Mini:
+# Example output for M4 Mac Mini
+
 # ✅ Docker: Docker version 24.0.7
+
 # ✅ Docker Compose: Docker Compose version 2.23.0
+
 # 🍎 Apple Silicon detected - checking Metal/MPS support...
+
 # ✅ Apple Silicon GPU runtime ready
+
 # ✅ uv: uv 0.1.23
+
 # 🎉 Host environment validation complete!
+
 ```
 
 **What it validates**:
 
 - Docker and Docker Compose installation
+
 - Platform-specific GPU runtime (NVIDIA Container Toolkit, Apple Silicon Metal)
+
 - uv package manager availability
+
 - GPU container access validation
 
 ## Container-First Development Workflow
@@ -110,21 +133,29 @@ The platform includes a comprehensive validation script to check all host requir
 
 ```bash
 # 1. Validate host environment
+
 ./scripts/validate-host-environment.sh
 
 # 2. Start container-based development
+
 ./dev-universal.sh
 
 # 3. GPU services automatically detect runtime capabilities
+
 docker compose up gpu-classifier
+
 ```
 
 ### No Host Python Environment Required
 
 - **❌ No conda/pip on host**
+
 - **❌ No CUDA toolkit installation**
+
 - **❌ No PyTorch host dependencies**
+
 - **✅ Everything in containers**
+
 - **✅ GPU detection at runtime**
 
 ## Extraction Plan for crank-infrastructure
@@ -134,20 +165,27 @@ When migrating this to the `crank-infrastructure` repository:
 ### 1. Files to Extract
 
 - `scripts/validate-host-environment.sh` → `crank-infrastructure/scripts/`
+
 - This documentation → `crank-infrastructure/docs/host-requirements.md`
+
 - Platform-specific setup scripts → `crank-infrastructure/setup/`
 
 ### 2. Interface Design
 
 ```bash
 # Future crank-infrastructure interface
+
 cd ../crank-infrastructure
 ./setup.sh --environment gpu-development --platform mac-m4
 
-# Validates and configures:
+# Validates and configures
+
 # - Docker with GPU support
+
 # - Platform-specific optimizations
+
 # - Host environment validation
+
 ```
 
 ### 3. Platform-Specific Modules
@@ -161,6 +199,7 @@ crank-infrastructure/
 │   └── cloud-instances.sh          # AWS/Azure/GCP setup
 └── validation/
     └── gpu-runtime-test.sh         # Universal GPU validation
+
 ```
 
 ## Why This is Technical Debt
@@ -168,13 +207,17 @@ crank-infrastructure/
 This host environment complexity violates **JEMM principles**:
 
 - **Monolith-first**: Should be in main platform until extraction is justified
+
 - **Just enough**: Adding infrastructure complexity before it's needed
+
 - **Premature optimization**: Separating concerns before constraints are clear
 
 **Resolution**: Track extraction with Issue #26 and extract when:
 
 1. Multiple repositories need the same host setup
+
 2. Team size justifies infrastructure specialization
+
 3. Host environment complexity reaches maintainability threshold
 
 ---

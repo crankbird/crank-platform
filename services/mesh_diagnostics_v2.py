@@ -15,6 +15,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Optional
 
+from fastapi import FastAPI
 from mesh_interface_v2 import MeshCapability, MeshInterface, MeshRequest, MeshResponse
 
 
@@ -194,7 +195,9 @@ class DiagnosticMeshService(MeshInterface):
         ]
 
     async def process_request(
-        self, request: MeshRequest, auth_context: dict[str, Any],
+        self,
+        request: MeshRequest,
+        auth_context: dict[str, Any],
     ) -> MeshResponse:
         """Process diagnostic requests."""
         operation = request.operation
@@ -234,7 +237,9 @@ class DiagnosticMeshService(MeshInterface):
             )
 
     async def _handle_ping(
-        self, request: MeshRequest, auth_context: dict[str, Any],
+        self,
+        request: MeshRequest,
+        auth_context: dict[str, Any],
     ) -> dict[str, Any]:
         """Handle ping operation."""
         start_time = time.time()
@@ -270,7 +275,9 @@ class DiagnosticMeshService(MeshInterface):
         }
 
     async def _handle_load_test(
-        self, request: MeshRequest, auth_context: dict[str, Any],
+        self,
+        request: MeshRequest,
+        auth_context: dict[str, Any],
     ) -> dict[str, Any]:
         """Handle load test operation."""
         start_time = time.time()
@@ -315,7 +322,9 @@ class DiagnosticMeshService(MeshInterface):
         }
 
     async def _handle_error_test(
-        self, request: MeshRequest, auth_context: dict[str, Any],
+        self,
+        request: MeshRequest,
+        auth_context: dict[str, Any],
     ) -> dict[str, Any]:
         """Handle error test operation."""
         error_type = request.input_data.get("error_type", "validation")
@@ -338,7 +347,7 @@ class DiagnosticMeshService(MeshInterface):
 # =============================================================================
 
 
-def create_diagnostic_app(api_key: str = "dev-mesh-key") -> "FastAPI":
+def create_diagnostic_app(api_key: str = "dev-mesh-key") -> FastAPI:
     """Create diagnostic mesh service app."""
     service = DiagnosticMeshService()
     return service.create_app(api_key)

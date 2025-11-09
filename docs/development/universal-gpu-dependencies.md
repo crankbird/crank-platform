@@ -9,8 +9,11 @@ This document provides automated dependency installation for Universal GPU servi
 During the integration of UniversalGPUManager with `services/crank_image_classifier.py`, we encountered several dependency-related failures:
 
 1. **Silent Import Failures**: Service imports succeeded but GPU detection failed due to missing ML libraries
+
 2. **Missing Core Dependencies**: `ultralytics`, `GPUtil` required for full GPU functionality
+
 3. **Manual Resolution Required**: Dependencies had to be installed step-by-step during integration
+
 4. **No Automation**: No automated way to install service-specific GPU dependencies
 
 ## Dependency Categories
@@ -18,13 +21,17 @@ During the integration of UniversalGPUManager with `services/crank_image_classif
 ### Core PyTorch (Required for UniversalGPUManager)
 
 - `torch>=2.0.0` with MPS support (Apple Silicon) or CUDA support (NVIDIA)
+
 - `torchvision>=0.15.0`
+
 - `torchaudio>=2.0.0` (if audio processing needed)
 
 ### ML Libraries (Required for GPU Services)
 
 - `ultralytics>=8.0.0` (YOLOv8 object detection)
+
 - `GPUtil>=1.4.0` (GPU monitoring and stats)
+
 - `opencv-python>=4.8.0` (Computer vision)
 
 ### System Dependencies (Required for Memory Monitoring)
@@ -39,7 +46,9 @@ During the integration of UniversalGPUManager with `services/crank_image_classif
 
 ```bash
 #!/bin/bash
+
 # install-gpu-dependencies.sh
+
 # Automated installation of Universal GPU service dependencies
 
 set -e
@@ -48,12 +57,14 @@ echo "🔧 Installing Universal GPU Service Dependencies"
 echo "=============================================="
 
 # Activate virtual environment if it exists
+
 if [ -f ".venv/bin/activate" ]; then
     echo "📦 Activating virtual environment..."
     source .venv/bin/activate
 fi
 
 # Check for uv vs pip
+
 if command -v uv &> /dev/null; then
     INSTALLER="uv pip"
     echo "⚡ Using uv for fast installation"
@@ -67,6 +78,7 @@ echo "1️⃣ Installing Core PyTorch Dependencies..."
 echo "----------------------------------------"
 
 # PyTorch installation with platform detection
+
 if [[ "$(uname)" == "Darwin" ]] && [[ "$(uname -m)" == "arm64" ]]; then
     echo "🍎 Apple Silicon detected - installing MPS-compatible PyTorch"
     $INSTALLER install torch torchvision torchaudio
@@ -101,6 +113,7 @@ import torch
 print(f'✅ PyTorch {torch.__version__} imported successfully')
 
 # Test GPU detection
+
 if torch.cuda.is_available():
     print(f'🎮 CUDA available: {torch.cuda.device_count()} GPU(s)')
 elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
@@ -109,6 +122,7 @@ else:
     print(f'💻 CPU-only mode')
 
 # Test ML library imports
+
 try:
     from ultralytics import YOLO
     print('✅ ultralytics imported successfully')
@@ -137,6 +151,7 @@ print('🎯 All dependencies installed and validated!')
 echo ""
 echo "✅ Universal GPU dependencies installed successfully!"
 echo "🚀 Ready for UniversalGPUManager integration"
+
 ```
 
 ### 2. Service-Specific Dependency Checker
@@ -145,6 +160,7 @@ echo "🚀 Ready for UniversalGPUManager integration"
 
 ```python
 #!/usr/bin/env python3
+
 """
 Service Dependency Checker
 
@@ -213,6 +229,7 @@ def validate_service_dependencies(service_name: str) -> bool:
             missing.append(f"❌ {package_name} (import: {import_name})")
 
     # Report results
+
     if available:
         print("Available dependencies:")
         for dep in available:
@@ -252,6 +269,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 ```
 
 ## Usage Examples
@@ -260,30 +278,39 @@ if __name__ == "__main__":
 
 ```bash
 # Install all GPU dependencies
+
 ./scripts/install-gpu-dependencies.sh
 
 # Validate dependencies before starting work
+
 python scripts/check-service-dependencies.py crank_image_classifier
+
 ```
 
 ### During Service Integration
 
 ```bash
 # Check what's missing
+
 python scripts/check-service-dependencies.py crank_image_classifier
 
 # Install only what's needed
+
 uv pip install ultralytics GPUtil opencv-python
 
 # Validate the fix
+
 python scripts/check-service-dependencies.py crank_image_classifier
+
 ```
 
 ### Before Service Startup
 
 ```bash
 # Automated check in service startup
+
 python scripts/check-service-dependencies.py crank_image_classifier && python services/crank_image_classifier.py
+
 ```
 
 ## Integration with UniversalGPUManager
@@ -291,14 +318,18 @@ python scripts/check-service-dependencies.py crank_image_classifier && python se
 The dependency automation ensures that when `UniversalGPUManager` is integrated into services:
 
 1. **All required ML libraries are available** for full GPU detection
+
 2. **Import failures are prevented** by pre-installation validation
+
 3. **Silent fallbacks are avoided** by explicit dependency checking
+
 4. **Cross-platform support** works with PyTorch MPS/CUDA detection
 
 ### Expected Integration Pattern
 
 ```python
 # In services/crank_image_classifier.py
+
 try:
     import torch
     import torchvision.transforms as transforms
@@ -306,6 +337,7 @@ try:
     import GPUtil
 
     # UniversalGPUManager integration
+
     from gpu_manager import UniversalGPUManager
     gpu_manager = UniversalGPUManager()
     GPU_AVAILABLE = gpu_manager.get_device_str() != 'cpu'
@@ -314,18 +346,24 @@ try:
 
 except ImportError:
     # Fallback mode - should be rare with automation
+
     GPU_AVAILABLE = False
     GPU_DEVICE = None
     GPU_INFO = {'type': 'CPU', 'platform': 'Unknown'}
     logger.warning("GPU libraries not available - running in CPU mode")
+
 ```
 
 ## Lessons Learned
 
 1. **Validate Early**: Check dependencies before service integration, not during
+
 2. **Automate Installation**: Manual step-by-step installation leads to errors
+
 3. **Platform Detection**: PyTorch installation varies significantly between platforms
+
 4. **Service-Specific**: Different services need different ML library subsets
+
 5. **Silent Failures**: Import errors can cause services to start in degraded mode
 
 This automation prevents the dependency resolution issues we encountered during Issue #20 and ensures reliable UniversalGPUManager integration across all GPU services.

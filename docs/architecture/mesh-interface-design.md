@@ -69,9 +69,11 @@ class CrankMeshInterface:
     def _setup_middleware(self):
         """Standard middleware every mesh service uses."""
         # Authentication, CORS, logging, etc.
+
         pass
 
     # Abstract methods each service implements
+
     async def handle_request(self, request: MeshRequest, file: Optional[UploadFile]) -> MeshResponse:
         raise NotImplementedError
 
@@ -83,6 +85,7 @@ class CrankMeshInterface:
 
     async def check_readiness(self) -> Dict[str, Any]:
         raise NotImplementedError
+
 ```
 
 ## 🚀 Service Implementations
@@ -105,10 +108,12 @@ class CrankDocService(MeshInterface):
 
     async def _handle_conversion(self, request: MeshRequest, file: UploadFile) -> MeshResponse:
         # Extract conversion parameters
+
         source_format = request.parameters.get("source_format")
         target_format = request.parameters.get("target_format")
 
         # Use existing CrankDoc orchestrator
+
         job_id = request.job_id or str(uuid4())
         conversion_request = ConversionRequest(
             source_format=source_format,
@@ -140,6 +145,7 @@ class CrankDocService(MeshInterface):
             "max_file_size": "50MB",
             "processing_time_limit": "5min"
         }
+
 ```
 
 ### CrankEmail Mesh Interface
@@ -162,9 +168,11 @@ class CrankEmailService(MeshInterface):
 
     async def _handle_parsing(self, request: MeshRequest, file: UploadFile) -> MeshResponse:
         # Parse mbox file using existing parser
+
         mbox_content = await file.read()
 
         # Use existing streaming parser
+
         parsed_messages = list(iter_parsed_messages(
             BytesIO(mbox_content),
             keywords=request.parameters.get("keywords"),
@@ -187,15 +195,18 @@ class CrankEmailService(MeshInterface):
 
     async def _handle_classification(self, request: MeshRequest, file: UploadFile) -> MeshResponse:
         # Single email classification
+
         email_data = await file.read()
         email_text = email_data.decode('utf-8')
 
         # Extract subject and body (simplified)
+
         lines = email_text.split('\n')
         subject = next((line[8:] for line in lines if line.startswith('Subject:')), "")
         body = '\n'.join(lines[10:])[:500]  # First 500 chars
 
         # Use existing AI classifier
+
         is_receipt = self.classifier.predict(subject, body)
         confidence = self.classifier.predict_proba(subject, body)
 
@@ -226,6 +237,7 @@ class CrankEmailService(MeshInterface):
             "max_file_size": "500MB",
             "processing_time_limit": "10min"
         }
+
 ```
 
 ## 🔧 Shared Infrastructure Components
@@ -238,6 +250,7 @@ class MeshAuthMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         # Check for API key or mesh token
+
         auth_header = request.headers.get("Authorization")
 
         if not auth_header or not self.validate_mesh_token(auth_header):
@@ -248,6 +261,7 @@ class MeshAuthMiddleware(BaseHTTPMiddleware):
 
         response = await call_next(request)
         return response
+
 ```
 
 ### Universal Policy Engine
@@ -270,6 +284,7 @@ class MeshPolicyEngine:
         }
 
         # Query OPA for decision
+
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{self.opa_url}/v1/data/mesh/allow",
@@ -278,6 +293,7 @@ class MeshPolicyEngine:
 
         result = response.json()
         return result.get("result", False)
+
 ```
 
 ### Universal Receipt System
@@ -303,8 +319,10 @@ class MeshReceiptSystem:
         }
 
         # Sign receipt
+
         receipt["signature"] = self._sign_receipt(receipt)
         return receipt
+
 ```
 
 ## 🌐 Deployment Configuration
@@ -313,21 +331,26 @@ class MeshReceiptSystem:
 
 ```dockerfile
 # Base image for all mesh services
+
 FROM python:3.12-slim as mesh-base
 
 # Create non-root user (consistent across all services)
+
 RUN addgroup --gid 1000 mesh && \
     adduser --uid 1000 --gid 1000 --disabled-password mesh
 
 # Install common dependencies
+
 RUN pip install fastapi uvicorn httpx pydantic
 
 # Security hardening (consistent across all services)
+
 USER mesh
 WORKDIR /mesh
 EXPOSE 8000
 
 # Service-specific layers inherit from mesh-base
+
 FROM mesh-base as crank-doc
 COPY --chown=mesh:mesh ./crankdoc/ /mesh/
 CMD ["uvicorn", "mesh_service:app", "--host", "0.0.0.0", "--port", "8000"]
@@ -335,6 +358,7 @@ CMD ["uvicorn", "mesh_service:app", "--host", "0.0.0.0", "--port", "8000"]
 FROM mesh-base as crank-email
 COPY --chown=mesh:mesh ./email-parser/ /mesh/
 CMD ["uvicorn", "mesh_service:app", "--host", "0.0.0.0", "--port", "8000"]
+
 ```
 
 ### Universal Kubernetes Deployment
@@ -359,13 +383,17 @@ spec:
         mesh.crank.ai/service-type: document
     spec:
       containers:
+
       - name: crank-doc
         image: crank-doc:latest
         ports:
+
         - containerPort: 8000
         env:
+
         - name: MESH_SERVICE_TYPE
           value: "document"
+
         - name: MESH_NODE_ID
           valueFrom:
             fieldRef:
@@ -393,24 +421,36 @@ spec:
   selector:
     app: crank-doc
   ports:
+
   - port: 8000
     targetPort: 8000
+
 ```
 
 ## 🎯 Benefits of the Mesh Interface
 
 1. **Unified API**: All services use the same request/response format
+
 2. **Consistent Security**: Shared authentication, authorization, and audit
+
 3. **Easy Integration**: Drop any service into the mesh with minimal changes
+
 4. **Future-Proof**: Ready for distributed mesh deployment
+
 5. **Policy Enforcement**: Centralized governance across all services
+
 6. **Receipt System**: Verifiable audit trails for compliance
+
 7. **Health Monitoring**: Standard health checks and readiness probes
+
 8. **Auto-Discovery**: Services self-register capabilities
 
 ## 🚀 Migration Path
 
 1. **Phase 1**: Wrap existing CrankDoc and email parser with mesh interface
+
 2. **Phase 2**: Extract shared components (auth, policy, receipts)
+
 3. **Phase 3**: Add new services using the mesh interface pattern
+
 4. **Phase 4**: Deploy to production with service mesh (Istio/Linkerd)

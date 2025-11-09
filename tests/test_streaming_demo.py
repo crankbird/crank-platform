@@ -179,7 +179,8 @@ class StreamingDemo:
 
             async with httpx.AsyncClient() as client:
                 async with client.stream(
-                    "GET", f"{self.base_url}/stream/emails/json{self.sample_mbox}",
+                    "GET",
+                    f"{self.base_url}/stream/emails/json{self.sample_mbox}",
                 ) as response:
                     print("📄 Streaming JSON response:")
 

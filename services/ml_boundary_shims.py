@@ -15,6 +15,7 @@ from PIL import Image
 # GPU Monitoring Protocol
 class GPUDevice(Protocol):
     """Type protocol for GPU device information."""
+
     name: str
     load: float  # Utilization as a fraction (0-1)
     memoryUsed: int  # Memory used in MB
@@ -26,6 +27,7 @@ class GPUDevice(Protocol):
 # YOLO Detection Types
 class YOLOBox(TypedDict):
     """Bounding box detection result."""
+
     class_name: str
     confidence: float
     bbox: list[int]  # [x1, y1, x2, y2]
@@ -33,6 +35,7 @@ class YOLOBox(TypedDict):
 
 class YOLOResult(TypedDict):
     """Complete YOLO detection result."""
+
     prediction: str
     confidence: float
     detections: list[YOLOBox]
@@ -42,20 +45,18 @@ class YOLOResult(TypedDict):
 
 class YOLOModel(Protocol):
     """Type protocol for YOLO model interface."""
+
     names: dict[int, str]
 
     def __call__(
-        self,
-        source: Any,
-        conf: float = 0.5,
-        verbose: bool = False,
-        **kwargs: Any
+        self, source: Any, conf: float = 0.5, verbose: bool = False, **kwargs: Any
     ) -> list[Any]: ...
 
 
 # CLIP Analysis Types
 class CLIPResult(TypedDict):
     """CLIP image analysis result."""
+
     prediction: str
     confidence: float
     scores: list[dict[str, Any]]
@@ -80,7 +81,9 @@ class ImagePreprocessor(Protocol):
 class SentenceTransformerModel(Protocol):
     """Type protocol for sentence transformer interface."""
 
-    def encode(self, inputs: list[Union[str, Image.Image]]) -> np.ndarray[Any, np.dtype[np.float32]]: ...
+    def encode(
+        self, inputs: list[Union[str, Image.Image]]
+    ) -> np.ndarray[Any, np.dtype[np.float32]]: ...
 
 
 # GPU Manager safe wrapper functions
@@ -88,6 +91,7 @@ def safe_get_gpu_stats() -> dict[str, Any]:
     """Safely get GPU statistics with type isolation."""
     try:
         import GPUtil  # type: ignore[import]
+
         gpus: list[Any] = GPUtil.getGPUs()  # type: ignore[attr-defined]
         if not gpus:
             return {"available": False, "error": "No GPUs found"}
@@ -110,7 +114,7 @@ def safe_get_gpu_stats() -> dict[str, Any]:
 def safe_yolo_detect(
     model: Any,  # Accept any model and handle safely
     image: Any,  # More flexible for YOLO input
-    confidence: float = 0.5
+    confidence: float = 0.5,
 ) -> YOLOResult:
     """Safely perform YOLO detection with type isolation."""
     try:
@@ -119,7 +123,7 @@ def safe_yolo_detect(
         total_confidence = 0.0
 
         for result in results:
-            if hasattr(result, 'boxes') and result.boxes is not None:
+            if hasattr(result, "boxes") and result.boxes is not None:
                 for box in result.boxes:
                     # Extract data safely with explicit type conversion
                     class_id = int(box.cls[0].item())
@@ -128,11 +132,9 @@ def safe_yolo_detect(
                     coords = box.xyxy[0].cpu().numpy()
                     x1, y1, x2, y2 = map(int, coords)
 
-                    detections.append(YOLOBox(
-                        class_name=class_name,
-                        confidence=conf,
-                        bbox=[x1, y1, x2, y2]
-                    ))
+                    detections.append(
+                        YOLOBox(class_name=class_name, confidence=conf, bbox=[x1, y1, x2, y2])
+                    )
                     total_confidence += conf
 
         if detections:
@@ -150,7 +152,7 @@ def safe_yolo_detect(
             confidence=confidence,
             detections=detections,
             model="YOLOv8n",
-            total_objects=len(detections)
+            total_objects=len(detections),
         )
 
     except Exception:
@@ -159,7 +161,7 @@ def safe_yolo_detect(
             confidence=0.0,
             detections=[],
             model="YOLOv8n",
-            total_objects=0
+            total_objects=0,
         )
 
 
@@ -169,16 +171,11 @@ def safe_clip_analyze(
     processor: Any,
     image: Any,
     text_categories: list[str],
-    device: str = "cpu"
+    device: str = "cpu",
 ) -> CLIPResult:
     """Safely perform CLIP image analysis with type isolation."""
     try:
-        inputs = processor(
-            text=text_categories,
-            images=image,
-            return_tensors="pt",
-            padding=True
-        )
+        inputs = processor(text=text_categories, images=image, return_tensors="pt", padding=True)
         inputs = {k: v.to(device) for k, v in inputs.items()}
 
         with torch.no_grad():
@@ -199,33 +196,21 @@ def safe_clip_analyze(
         for i, category in enumerate(text_categories):
             score_dict: dict[str, Any] = {
                 "category": str(category),
-                "confidence": float(probs[0][i].item())
+                "confidence": float(probs[0][i].item()),
             }
             scores.append(score_dict)
 
         # Sort by confidence
         scores.sort(key=lambda x: float(x["confidence"]), reverse=True)
 
-        return CLIPResult(
-            prediction=prediction,
-            confidence=confidence,
-            scores=scores,
-            model="CLIP"
-        )
+        return CLIPResult(prediction=prediction, confidence=confidence, scores=scores, model="CLIP")
 
     except Exception:
-        return CLIPResult(
-            prediction="analysis_failed",
-            confidence=0.0,
-            scores=[],
-            model="CLIP"
-        )
+        return CLIPResult(prediction="analysis_failed", confidence=0.0, scores=[], model="CLIP")
 
 
 def safe_sentence_transformer_encode(
-    model: Any,
-    inputs: Union[str, list[str], Image.Image, list[Image.Image]],
-    **kwargs: Any
+    model: Any, inputs: Union[str, list[str], Image.Image, list[Image.Image]], **kwargs: Any
 ) -> np.ndarray[Any, np.dtype[np.float32]]:
     """Safely encode inputs with sentence transformer model."""
     try:

@@ -118,7 +118,8 @@ class CrankMeshAuthMiddleware(BaseHTTPMiddleware):
         token = auth_header.split(" ", 1)[1]
         if token != self.api_key:
             return JSONResponse(
-                status_code=401, content={"error": "Invalid API key"},
+                status_code=401,
+                content={"error": "Invalid API key"},
             )
 
         response = await call_next(request)
@@ -160,13 +161,15 @@ class CrankMeshReceiptSystem:
         request: CrankMeshRequest,
         response: CrankMeshResponse,
         start_time: float,
-        auth_context: Optional[dict[str, Any]] = None
+        auth_context: Optional[dict[str, Any]] = None,
     ) -> CrankMeshReceipt:
         """Generate verifiable receipt for any mesh operation."""
         processing_time_ms = int((time.time() - start_time) * 1000)
 
         # Generate unique receipt ID
-        receipt_id = f"crank-mesh-{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{uuid4().hex[:8]}"
+        receipt_id = (
+            f"crank-mesh-{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{uuid4().hex[:8]}"
+        )
 
         # Ensure response has required fields for receipt
         job_id = response.job_id or request.job_id or str(uuid4())
@@ -182,7 +185,7 @@ class CrankMeshReceiptSystem:
             input_hash=self._hash_request(request),
             output_hash=self._hash_response(response),
             processing_time_ms=processing_time_ms,
-            policy_profile=getattr(request, 'policy_profile', 'default'),
+            policy_profile=getattr(request, "policy_profile", "default"),
             mesh_node_id=self.node_id,
             user_id=auth_context.get("user_id") if auth_context else None,
             success=response.success,
@@ -238,7 +241,9 @@ class CrankMeshInterface(ABC):
 
     @abstractmethod
     async def process_request(
-        self, request: CrankMeshRequest, auth_context: dict[str, Any],
+        self,
+        request: CrankMeshRequest,
+        auth_context: dict[str, Any],
     ) -> CrankMeshResponse:
         """Process a mesh request with mandatory security context."""
 
@@ -247,7 +252,7 @@ class CrankMeshInterface(ABC):
         request: CrankMeshRequest,
         response: CrankMeshResponse,
         auth_context: dict[str, Any],
-        start_time: Optional[float] = None
+        start_time: Optional[float] = None,
     ) -> CrankMeshReceipt:
         """Generate mandatory audit receipt for all operations."""
         start_time = start_time or time.time()
@@ -301,7 +306,8 @@ class CrankMeshInterface(ABC):
             token = auth_header.split(" ", 1)[1]
             if token != api_key:
                 return JSONResponse(
-                    status_code=401, content={"error": "Invalid API key"},
+                    status_code=401,
+                    content={"error": "Invalid API key"},
                 )
 
             return await call_next(request)
@@ -338,7 +344,9 @@ class CrankMeshInterface(ABC):
 
         # Main processing endpoint
         @app.post("/v1/process", response_model=CrankMeshResponse)
-        async def process_request_endpoint(request: CrankMeshRequest, http_request: Optional[Request] = None):
+        async def process_request_endpoint(
+            request: CrankMeshRequest, http_request: Optional[Request] = None
+        ):
             """Process request through Crank Mesh Interface."""
             start_time = time.time()
 
@@ -346,7 +354,9 @@ class CrankMeshInterface(ABC):
             auth_context = {
                 "user_id": "authenticated_user",  # Would extract from JWT in production
                 "permissions": ["read", "write"],  # Would come from auth system
-                "request_ip": http_request.client.host if http_request and http_request.client else "unknown",
+                "request_ip": http_request.client.host
+                if http_request and http_request.client
+                else "unknown",
             }
 
             # Validate request

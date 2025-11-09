@@ -15,6 +15,7 @@ This directory contains the implementation of the Crank Platform mesh interface 
 │   Mesh          │    │   Document      │    │   Email         │
 │   Interface     │    │   Processing    │    │   Processing    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
+
 ```
 
 ## 📋 Services
@@ -22,26 +23,35 @@ This directory contains the implementation of the Crank Platform mesh interface 
 ### Gateway (`gateway.py`)
 
 - **Port**: 8080
+
 - **Purpose**: Unified entry point for all mesh services
+
 - **Features**: Request routing, service discovery, health aggregation
 
 ### CrankDoc Mesh Service (`crankdoc_mesh.py`)
 
 - **Port**: 8000
+
 - **Purpose**: Document conversion and processing
+
 - **Operations**: `convert`, `validate`, `analyze`
+
 - **Formats**: Markdown, DOCX, PDF, HTML, LaTeX, TXT
 
 ### CrankEmail Mesh Service (`crankemail_mesh.py`)
 
 - **Port**: 8001
+
 - **Purpose**: Email parsing and classification
+
 - **Operations**: `parse`, `classify`, `analyze`, `extract`
+
 - **Formats**: MBOX, EML, MSG, TXT
 
 ### Mesh Interface (`mesh_interface.py`)
 
 - **Purpose**: Universal base class for all mesh services
+
 - **Features**: Authentication, policy enforcement, receipts, health checks
 
 ## 🚀 Quick Start
@@ -50,31 +60,38 @@ This directory contains the implementation of the Crank Platform mesh interface 
 
 ```bash
 pip install -r requirements.txt
+
 ```
 
 ### 2. Run Services Locally
 
 ```bash
 # Terminal 1: CrankDoc service
+
 python crankdoc_mesh.py
 
 # Terminal 2: CrankEmail service
+
 python crankemail_mesh.py
 
 # Terminal 3: Gateway
+
 python gateway.py
+
 ```
 
 ### 3. Test Services
 
 ```bash
 python test_mesh.py
+
 ```
 
 ### 4. Run with Docker Compose
 
 ```bash
 docker-compose up --build
+
 ```
 
 ## 📡 API Reference
@@ -90,10 +107,15 @@ Process a request through the mesh service.
 **Form Parameters:**
 
 - `service_type`: Service to use (`document`, `email`)
+
 - `operation`: Operation to perform (`convert`, `parse`, `classify`, etc.)
+
 - `job_id`: Optional job identifier
+
 - `policy_profile`: Policy profile to apply (default: `default`)
+
 - `parameters`: JSON string with operation-specific parameters
+
 - `file`: File to process (multipart upload)
 
 **Response:**
@@ -109,6 +131,7 @@ Process a request through the mesh service.
   "processing_time_ms": 123,
   "mesh_node_id": "node-id"
 }
+
 ```
 
 #### GET `/v1/capabilities`
@@ -132,7 +155,9 @@ Detailed readiness check including dependencies.
 ### Environment Variables
 
 - `MESH_SERVICE_TYPE`: Type of service (`document`, `email`)
+
 - `MESH_NODE_ID`: Unique node identifier
+
 - `MESH_GATEWAY`: Set to `true` for gateway mode
 
 ### Authentication
@@ -142,6 +167,7 @@ Services use Bearer token authentication:
 ```bash
 curl -H "Authorization: Bearer dev-mesh-key" \
      http://localhost:8080/v1/capabilities
+
 ```
 
 ## 🧪 Testing
@@ -150,6 +176,7 @@ curl -H "Authorization: Bearer dev-mesh-key" \
 
 ```bash
 # Test document validation
+
 curl -X POST http://localhost:8080/v1/process \
   -H "Authorization: Bearer dev-mesh-key" \
   -F "service_type=document" \
@@ -158,26 +185,33 @@ curl -X POST http://localhost:8080/v1/process \
   -F "file=@test.md"
 
 # Test email classification
+
 curl -X POST http://localhost:8080/v1/process \
   -H "Authorization: Bearer dev-mesh-key" \
   -F "service_type=email" \
   -F "operation=classify" \
   -F "parameters={}" \
   -F "file=@receipt.eml"
+
 ```
 
 ### Automated Testing
 
 ```bash
 python test_mesh.py
+
 ```
 
 ## 🔒 Security Features
 
 - **Authentication**: Bearer token authentication on all endpoints
+
 - **Authorization**: Policy-based access control (OPA integration planned)
+
 - **Audit**: Verifiable receipts for all processing
+
 - **Isolation**: Container-based service isolation
+
 - **Non-root**: All services run as non-root users
 
 ## 📊 Monitoring
@@ -185,14 +219,19 @@ python test_mesh.py
 ### Health Checks
 
 - **Liveness**: Basic service availability
+
 - **Readiness**: Service and dependency health
+
 - **Gateway**: Aggregated health of all services
 
 ### Metrics (Planned)
 
 - Request count and latency
+
 - Processing time per operation
+
 - Error rates by service
+
 - Queue length and throughput
 
 ## 🛠️ Development
@@ -200,12 +239,19 @@ python test_mesh.py
 ### Adding a New Service
 
 1. Create service class inheriting from `MeshInterface`
+
 2. Implement required methods:
+
    - `handle_request()`
+
    - `get_service_capabilities()`
+
    - `get_processing_receipt()`
+
    - `check_readiness()`
+
 3. Add service to gateway registry
+
 4. Create Dockerfile and update docker-compose.yml
 
 ### Example Service
@@ -219,6 +265,7 @@ class MyMeshService(MeshInterface):
 
     async def handle_request(self, request: MeshRequest, file) -> MeshResponse:
         # Implement your processing logic
+
         return MeshResponse(
             job_id=request.job_id,
             service_type=self.service_type,
@@ -228,6 +275,7 @@ class MyMeshService(MeshInterface):
         )
 
     # Implement other required methods...
+
 ```
 
 ## 🚀 Deployment
@@ -236,42 +284,59 @@ class MyMeshService(MeshInterface):
 
 ```bash
 docker-compose up
+
 ```
 
 ### Production (Azure Container Apps)
 
 ```bash
 # TODO: Add Azure deployment instructions
+
 ```
 
 ### Kubernetes
 
 ```bash
 # TODO: Add Kubernetes manifests
+
 ```
 
 ## 🔮 Roadmap
 
 - [ ] **Policy Engine**: OPA/Rego integration for governance
+
 - [ ] **Service Discovery**: Automatic service registration
+
 - [ ] **Load Balancing**: Multiple instances per service type
+
 - [ ] **Metrics**: Prometheus/Grafana monitoring
+
 - [ ] **Tracing**: Distributed tracing with Jaeger
+
 - [ ] **Message Queue**: Async processing with Redis/RabbitMQ
+
 - [ ] **AI Integration**: Direct AI model serving
+
 - [ ] **Mesh Networking**: Service mesh with Istio/Linkerd
 
 ## 🤝 Contributing
 
 1. Fork the repository
+
 2. Create a feature branch
+
 3. Implement your changes
+
 4. Add tests
+
 5. Create a pull request
 
 ## 📚 Related Documentation
 
 - [Platform Vision](../README.md)
+
 - [Mesh Interface Design](../mesh-interface-design.md)
+
 - [CrankDoc Documentation](../../crankdoc/README.md)
+
 - [Email Parser Documentation](../../parse-email-archive/README.md)

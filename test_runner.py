@@ -38,16 +38,14 @@ from pathlib import Path
 from typing import Any, Optional
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class TestSuite:
     """Test suite configuration for different testing scenarios."""
+
     name: str
     markers: list[str]
     description: str
@@ -62,14 +60,14 @@ TEST_SUITES = {
         name="Unit Tests",
         markers=["unit"],
         description="Fast, isolated tests with no external dependencies",
-        timeout=60
+        timeout=60,
     ),
     "smoke": TestSuite(
         name="Smoke Tests",
         markers=["smoke"],
         description="Critical path validation and service health checks",
         timeout=120,
-        requires_docker=True
+        requires_docker=True,
     ),
     "integration": TestSuite(
         name="Integration Tests",
@@ -77,34 +75,34 @@ TEST_SUITES = {
         description="Multi-service tests requiring full platform",
         timeout=600,
         requires_docker=True,
-        requires_network=True
+        requires_network=True,
     ),
     "performance": TestSuite(
         name="Performance Tests",
         markers=["performance"],
         description="Performance benchmarks and load tests",
-        timeout=900
+        timeout=900,
     ),
     "security": TestSuite(
         name="Security Tests",
         markers=["security"],
         description="Security validation and certificate tests",
         timeout=300,
-        requires_docker=True
+        requires_docker=True,
     ),
     "ci": TestSuite(
         name="CI Pipeline Tests",
         markers=["unit", "smoke"],
         description="Fast tests for continuous integration",
         timeout=180,
-        requires_docker=True
+        requires_docker=True,
     ),
     "pr": TestSuite(
         name="Pull Request Tests",
         markers=["unit", "smoke", "not slow"],
         description="Tests for pull request validation",
         timeout=300,
-        requires_docker=True
+        requires_docker=True,
     ),
     "release": TestSuite(
         name="Release Tests",
@@ -112,8 +110,8 @@ TEST_SUITES = {
         description="Comprehensive tests for release validation",
         timeout=1200,
         requires_docker=True,
-        requires_network=True
-    )
+        requires_network=True,
+    ),
 }
 
 
@@ -132,10 +130,7 @@ class UnifiedTestRunner:
         if suite.requires_docker:
             try:
                 result = subprocess.run(
-                    ["docker", "--version"],
-                    capture_output=True,
-                    text=True,
-                    timeout=10
+                    ["docker", "--version"], capture_output=True, text=True, timeout=10
                 )
                 if result.returncode != 0:
                     logger.error("❌ Docker is required but not available")
@@ -149,10 +144,7 @@ class UnifiedTestRunner:
         if suite.requires_network:
             try:
                 result = subprocess.run(
-                    ["ping", "-c", "1", "8.8.8.8"],
-                    capture_output=True,
-                    text=True,
-                    timeout=10
+                    ["ping", "-c", "1", "8.8.8.8"], capture_output=True, text=True, timeout=10
                 )
                 if result.returncode != 0:
                     logger.warning("⚠️ Network connectivity test failed")
@@ -170,7 +162,7 @@ class UnifiedTestRunner:
         coverage_html: bool = False,
         verbose: bool = False,
         parallel: bool = False,
-        xml_output: Optional[Path] = None
+        xml_output: Optional[Path] = None,
     ) -> list[str]:
         """Build pytest command with appropriate options."""
 
@@ -190,11 +182,7 @@ class UnifiedTestRunner:
 
         # Add coverage options
         if coverage:
-            cmd.extend([
-                "--cov=services",
-                "--cov=tests",
-                "--cov-report=term-missing"
-            ])
+            cmd.extend(["--cov=services", "--cov=tests", "--cov-report=term-missing"])
 
             if coverage_html:
                 cmd.extend(["--cov-report=html:htmlcov"])
@@ -207,16 +195,22 @@ class UnifiedTestRunner:
         if parallel and suite.name in ["Unit Tests", "Smoke Tests"]:
             try:
                 # Check if pytest-xdist is available
-                subprocess.run(["uv", "run", "python", "-c", "import pytest_xdist"],
-                             check=True, capture_output=True)
+                subprocess.run(
+                    ["uv", "run", "python", "-c", "import pytest_xdist"],
+                    check=True,
+                    capture_output=True,
+                )
                 cmd.extend(["-n", "auto"])
             except subprocess.CalledProcessError:
                 logger.info("pytest-xdist not available, running sequentially")
 
         # Add timeout (only if pytest-timeout is available)
         try:
-            subprocess.run(["uv", "run", "python", "-c", "import pytest_timeout"],
-                         check=True, capture_output=True)
+            subprocess.run(
+                ["uv", "run", "python", "-c", "import pytest_timeout"],
+                check=True,
+                capture_output=True,
+            )
             cmd.extend(["--timeout", str(suite.timeout)])
         except subprocess.CalledProcessError:
             logger.info("pytest-timeout not available, running without timeout")
@@ -230,7 +224,7 @@ class UnifiedTestRunner:
         coverage_html: bool = False,
         verbose: bool = False,
         parallel: bool = False,
-        xml_output: Optional[Path] = None
+        xml_output: Optional[Path] = None,
     ) -> tuple[bool, float, dict[str, Any]]:
         """Run a pytest test suite and return results."""
 
@@ -254,11 +248,7 @@ class UnifiedTestRunner:
 
         try:
             result = subprocess.run(
-                cmd,
-                cwd=self.workspace_root,
-                capture_output=True,
-                text=True,
-                timeout=suite.timeout
+                cmd, cwd=self.workspace_root, capture_output=True, text=True, timeout=suite.timeout
             )
 
             duration = time.time() - start_time
@@ -270,7 +260,7 @@ class UnifiedTestRunner:
                 "return_code": result.returncode,
                 "stdout": result.stdout,
                 "stderr": result.stderr,
-                "command": " ".join(cmd)
+                "command": " ".join(cmd),
             }
 
             success = result.returncode == 0
@@ -288,21 +278,21 @@ class UnifiedTestRunner:
         except subprocess.TimeoutExpired:
             duration = time.time() - start_time
             logger.error(f"⏱️ {suite.name} timed out after {duration:.1f}s")
-            return False, duration, {
-                "suite": suite.name,
-                "error": "timeout",
-                "duration": duration,
-                "timeout": suite.timeout
-            }
+            return (
+                False,
+                duration,
+                {
+                    "suite": suite.name,
+                    "error": "timeout",
+                    "duration": duration,
+                    "timeout": suite.timeout,
+                },
+            )
 
         except Exception as e:
             duration = time.time() - start_time
             logger.error(f"💥 {suite.name} failed with exception: {e}")
-            return False, duration, {
-                "suite": suite.name,
-                "error": str(e),
-                "duration": duration
-            }
+            return False, duration, {"suite": suite.name, "error": str(e), "duration": duration}
 
     async def run_smoke_tests_integration(self) -> tuple[bool, dict[str, Any]]:
         """Run existing smoke tests in pytest framework."""
@@ -312,7 +302,7 @@ class UnifiedTestRunner:
         smoke_tests = [
             "tests/enhanced_smoke_test.py",
             "tests/test_streaming_basic.py",
-            "tests/quick_validation_test.py"
+            "tests/quick_validation_test.py",
         ]
 
         results: dict[str, Any] = {}
@@ -329,7 +319,7 @@ class UnifiedTestRunner:
                         cwd=self.workspace_root,
                         capture_output=True,
                         text=True,
-                        timeout=300
+                        timeout=300,
                     )
 
                     success = result.returncode == 0
@@ -337,7 +327,7 @@ class UnifiedTestRunner:
                         "success": success,
                         "returncode": result.returncode,
                         "stdout": result.stdout[:500] if result.stdout else "",
-                        "stderr": result.stderr[:500] if result.stderr else ""
+                        "stderr": result.stderr[:500] if result.stderr else "",
                     }
 
                     if success:
@@ -358,9 +348,7 @@ class UnifiedTestRunner:
         return all_passed, results
 
     def generate_ci_report(
-        self,
-        results: list[tuple[bool, float, dict[str, Any]]],
-        output_file: Optional[Path] = None
+        self, results: list[tuple[bool, float, dict[str, Any]]], output_file: Optional[Path] = None
     ) -> dict[str, Any]:
         """Generate CI/CD compatible test report."""
 
@@ -375,18 +363,18 @@ class UnifiedTestRunner:
                 "passed_suites": passed_suites,
                 "failed_suites": total_suites - passed_suites,
                 "total_duration": total_duration,
-                "success": passed_suites == total_suites
+                "success": passed_suites == total_suites,
             },
             "suites": [r[2] for r in results],
             "environment": {
                 "python_version": sys.version,
                 "platform": os.name,
-                "cwd": str(self.workspace_root)
-            }
+                "cwd": str(self.workspace_root),
+            },
         }
 
         if output_file:
-            with open(output_file, 'w') as f:
+            with open(output_file, "w") as f:
                 json.dump(report, f, indent=2)
             logger.info(f"📊 Test report written to {output_file}")
 
@@ -398,7 +386,7 @@ async def main() -> int:
     parser = argparse.ArgumentParser(
         description="Unified Test Runner for Crank Platform",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__
+        epilog=__doc__,
     )
 
     # Test suite selection (mutually exclusive)
@@ -407,16 +395,20 @@ async def main() -> int:
         suite_group.add_argument(
             f"--{suite_name}",
             action="store_true",
-            help=f"Run {TEST_SUITES[suite_name].name}: {TEST_SUITES[suite_name].description}"
+            help=f"Run {TEST_SUITES[suite_name].name}: {TEST_SUITES[suite_name].description}",
         )
 
     suite_group.add_argument("--all", action="store_true", help="Run all test suites")
 
     # Test options
     parser.add_argument("--coverage", action="store_true", help="Generate coverage report")
-    parser.add_argument("--coverage-html", action="store_true", help="Generate HTML coverage report")
+    parser.add_argument(
+        "--coverage-html", action="store_true", help="Generate HTML coverage report"
+    )
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
-    parser.add_argument("--parallel", "-j", action="store_true", help="Run tests in parallel when possible")
+    parser.add_argument(
+        "--parallel", "-j", action="store_true", help="Run tests in parallel when possible"
+    )
     parser.add_argument("--xml-output", type=Path, help="Generate XML output for CI/CD")
     parser.add_argument("--json-report", type=Path, help="Generate JSON test report")
     parser.add_argument("--include-legacy", action="store_true", help="Include legacy smoke tests")
@@ -456,7 +448,7 @@ async def main() -> int:
             coverage_html=args.coverage_html,
             verbose=args.verbose,
             parallel=args.parallel,
-            xml_output=args.xml_output
+            xml_output=args.xml_output,
         )
 
         results.append((success, duration, result_data))

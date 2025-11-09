@@ -3,12 +3,15 @@
 ## 💡 The Original Vision vs Reality
 
 ### What Agentic AI Should Have Been
+
 When "agentic AI" emerged, the obvious interpretation was **distributed agents at the edge** - a way of offloading massive energy requirements from nuclear-powered datacenters. Intelligent IoT powered by low-power mobile processors doing mostly inference. Think of it as a very smart swarm of devices, each specialized for specific tasks.
 
 ### What We Got Instead
+
 Multi-billion parameter transformers running on NVIDIA supercomputing platforms, making HTTP requests and pretending to be human. The energy requirements grew exponentially instead of shrinking. The "agents" became centralized behemoths, not distributed intelligence.
 
 ### What We're Building
+
 **True distributed AI agents** - specialized, efficient, and running where the work actually happens. From gaming laptops to edge devices to mobile processors. The AI revolution should make computing more efficient, not less.
 
 ## 🎯 The Core Insight
@@ -59,9 +62,11 @@ The Crank Platform serves as the **PaaS layer** in a clean three-tier architectu
 ## 🌍 The Economic Vision
 
 ### The Agent Economy
+
 We're building the infrastructure for machines to discover, negotiate for, and pay for services automatically. Think of it as AWS for AI agents - but instead of just providing compute, we provide specialized business logic services that agents can compose into workflows.
 
 ### Why This Matters
+
 - **Energy Efficiency**: Small, specialized services vs. massive general-purpose models
 - **Economic Inclusion**: Anyone can contribute a useful Python script and earn from it
 - **Scalability**: Services scale independently based on actual demand
@@ -74,6 +79,7 @@ We're building the infrastructure for machines to discover, negotiate for, and p
 Even when no one is looking, especially when no one is looking, maintain the same standards you would for the most visible code. This isn't about perfection - it's about respect for the craft and the people who will inherit your work.
 
 ### What This Means in Practice
+
 - Every architectural decision is documented with reasoning
 - Code is written for clarity and maintainability
 - Dependencies are chosen carefully and documented

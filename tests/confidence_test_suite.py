@@ -435,7 +435,9 @@ class ConfidenceTestSuite:
         return all_apis_working
 
     async def test_service_health_api(
-        self, client: httpx.AsyncClient, service: ServiceConfig,
+        self,
+        client: httpx.AsyncClient,
+        service: ServiceConfig,
     ) -> bool:
         """Test service health endpoint"""
         try:

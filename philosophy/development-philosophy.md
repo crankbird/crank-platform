@@ -34,6 +34,7 @@ Even when no one is looking, especially when no one is looking, maintain the sam
 ### Code for the Future
 
 Write code as if:
+
 - You're going to maintain it for 10 years
 - Someone else will need to understand it at 3 AM during an outage
 - The requirements will change (they always do)
@@ -56,6 +57,7 @@ Documentation should explain **why**, not **what**. The code already shows what 
 ### Architectural Documentation
 
 Every major component should have:
+
 1. **Purpose**: Why does this exist?
 2. **Constraints**: What limits its design?
 3. **Tradeoffs**: What alternatives were considered and why were they rejected?
@@ -66,6 +68,7 @@ Every major component should have:
 ### 1. Understand Before You Code
 
 Before writing any code:
+
 - Read the existing code to understand the patterns
 - Check for similar problems already solved
 - Understand the constraints and requirements
@@ -76,6 +79,7 @@ Before writing any code:
 ### 2. Design for Change
 
 Assume that:
+
 - Requirements will evolve
 - The team will grow
 - The system will need to scale
@@ -115,6 +119,7 @@ Gary is the meta-mascot who ensures the other mascots' wisdom is preserved for f
 ### Code Reviews as Teaching Moments
 
 Gary approaches code reviews as opportunities to:
+
 - Share knowledge about the codebase
 - Explain the reasoning behind architectural decisions
 - Help new team members understand the patterns
@@ -149,6 +154,7 @@ raise ValueError(
 ### Not All Debt is Bad
 
 Like financial debt, technical debt can be strategic:
+
 - **Good Debt**: Shortcuts that let you learn faster and deliver value sooner
 - **Bad Debt**: Shortcuts that compound into bigger problems
 
@@ -197,6 +203,7 @@ Each directory should have a README explaining its purpose and organization.
 ## 🎯 Gary's Success Metrics
 
 Gary measures success by:
+
 - **Context Preservation**: Can new team members understand the code?
 - **Change Velocity**: How quickly can we make changes without breaking things?
 - **Error Recovery**: How gracefully does the system handle failures?

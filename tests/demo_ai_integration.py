@@ -63,7 +63,9 @@ def simulate_ai_agent_call(prompt: str, context: str = "") -> dict:
 
 
 async def demo_single_mascot_ai_review(
-    orchestrator: MascotTestOrchestrator, target_file: str, mascot: MascotType,
+    orchestrator: MascotTestOrchestrator,
+    target_file: str,
+    mascot: MascotType,
 ):
     """Demonstrate AI-powered single mascot review"""
 
@@ -106,7 +108,9 @@ async def demo_single_mascot_ai_review(
 
 
 async def demo_collaboration_ai_review(
-    orchestrator: MascotTestOrchestrator, target_file: str, mascots: list[MascotType],
+    orchestrator: MascotTestOrchestrator,
+    target_file: str,
+    mascots: list[MascotType],
 ):
     """Demonstrate AI-powered mascot collaboration"""
 

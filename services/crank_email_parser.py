@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 # FastAPI dependency defaults - create at module level to avoid evaluation in defaults
 _DEFAULT_FILE_UPLOAD = File(...)
 
+
 # Worker registration model
 class WorkerRegistration(BaseModel):
     """Model for worker registration with platform."""
@@ -291,7 +292,9 @@ class CrankEmailParserService:
         )
 
     async def _analyze_archive(
-        self, file: UploadFile, request: EmailParseRequest,
+        self,
+        file: UploadFile,
+        request: EmailParseRequest,
     ) -> dict[str, Any]:
         """Analyze email archive for patterns and statistics."""
         # First parse the archive
@@ -453,7 +456,9 @@ class CrankEmailParserService:
         }
 
     def _get_top_senders(
-        self, messages: list[dict[str, Any]], limit: int = 5,
+        self,
+        messages: list[dict[str, Any]],
+        limit: int = 5,
     ) -> list[dict[str, Any]]:
         """Get top senders by message count."""
         sender_counts: dict[str, int] = {}

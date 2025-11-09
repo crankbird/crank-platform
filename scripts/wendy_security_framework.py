@@ -17,7 +17,7 @@ import re
 import shlex
 import tempfile
 from pathlib import Path, PurePath
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -39,13 +39,13 @@ class WendyInputSanitizer:
     """
 
     # File size limits (prevent buffer overflow attacks)
-    MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
-    MAX_FILENAME_LENGTH = 255
-    MAX_JSON_DEPTH = 10
-    MAX_STRING_LENGTH = 1024 * 1024  # 1MB string limit
+    MAX_FILE_SIZE: ClassVar[int] = 100 * 1024 * 1024  # 100MB
+    MAX_FILENAME_LENGTH: ClassVar[int] = 255
+    MAX_JSON_DEPTH: ClassVar[int] = 10
+    MAX_STRING_LENGTH: ClassVar[int] = 1024 * 1024  # 1MB string limit
 
     # Allowed file extensions (whitelist approach)
-    ALLOWED_DOCUMENT_EXTENSIONS = {
+    ALLOWED_DOCUMENT_EXTENSIONS: ClassVar[set[str]] = {
         "txt",
         "md",
         "pdf",
@@ -57,14 +57,14 @@ class WendyInputSanitizer:
         "odt",
     }
 
-    ALLOWED_EMAIL_EXTENSIONS = {
+    ALLOWED_EMAIL_EXTENSIONS: ClassVar[set[str]] = {
         "eml",
         "msg",
         "mbox",
         "txt",
     }
 
-    ALLOWED_IMAGE_EXTENSIONS = {
+    ALLOWED_IMAGE_EXTENSIONS: ClassVar[set[str]] = {
         "jpg",
         "jpeg",
         "png",
@@ -76,7 +76,7 @@ class WendyInputSanitizer:
     }
 
     # Dangerous patterns that could indicate injection attempts
-    DANGEROUS_PATTERNS = [
+    DANGEROUS_PATTERNS: ClassVar[list[str]] = [
         r"\.\.[\\/]",  # Path traversal
         r"[;&|`$()]",  # Command injection characters
         r"<script",  # XSS attempts
@@ -137,7 +137,9 @@ class WendyInputSanitizer:
             # Use hash-based naming for safety
             file_hash = hashlib.sha256(filename.encode()).hexdigest()[:16]
             safe_filename = f"file_{file_hash}.{extension}" if extension else f"file_{file_hash}"
-            logger.warning("🐰 Wendy sanitized dangerous filename: {filename} -> {safe_filename}")
+            logger.warning(
+                "🐰 Wendy sanitized dangerous filename: %s -> %s", filename, safe_filename
+            )
             return safe_filename
 
         return clean_filename
@@ -165,7 +167,7 @@ class WendyInputSanitizer:
 
         if expected_type in magic_numbers:
             if not any(content.startswith(magic) for magic in magic_numbers[expected_type]):
-                logger.warning("🐰 Wendy detected file type mismatch: {filename}")
+                logger.warning("🐰 Wendy detected file type mismatch: %s", filename)
                 # Don't fail hard, but log the suspicious activity
 
         # Check for embedded executable content (basic scan)
@@ -185,7 +187,10 @@ class WendyInputSanitizer:
         return True
 
     def sanitize_json_input(
-        self, data: Any, max_depth: Optional[int] = None, current_depth: int = 0,
+        self,
+        data: Any,
+        max_depth: Optional[int] = None,
+        current_depth: int = 0,
     ) -> Any:
         """
         🐰 Wendy's JSON input sanitization - prevents deep recursion and oversized data.
@@ -241,7 +246,10 @@ class WendyInputSanitizer:
         for pattern in self.compiled_patterns:
             if pattern.search(text):
                 # Log but don't fail - might be legitimate content
-                logger.warning("🐰 Wendy detected suspicious pattern in text: {pattern.pattern}")
+                logger.warning(
+                    "🐰 Wendy detected suspicious pattern in text: %s",
+                    pattern.pattern,
+                )
 
         # Remove null bytes (can cause issues in C libraries)
         text = text.replace("\x00", "")
@@ -308,9 +316,9 @@ class WendyInputSanitizer:
             request_size = len(json.dumps(request_data))
             if request_size > 50 * 1024 * 1024:  # 50MB limit
                 raise SecurityViolation(f"Request too large: {request_size} bytes")
-        except (TypeError, ValueError):
+        except (TypeError, ValueError) as err:
             # If we can't serialize, it's probably too complex
-            raise SecurityViolation("Request data too complex to validate")
+            raise SecurityViolation("Request data too complex to validate") from err
 
         return True
 
@@ -320,7 +328,9 @@ wendy_sanitizer = WendyInputSanitizer()
 
 
 def validate_upload_file(
-    file_content: bytes, filename: str, service_type: str = "document",
+    file_content: bytes,
+    filename: str,
+    service_type: str = "document",
 ) -> tuple[bytes, str]:
     """
     🐰 Wendy's complete file upload validation.
@@ -334,7 +344,11 @@ def validate_upload_file(
     # Validate content
     wendy_sanitizer.validate_file_content(file_content, service_type, safe_filename)
 
-    logger.info("🐰 Wendy approved file upload: {safe_filename} ({len(file_content)} bytes)")
+    logger.info(
+        "🐰 Wendy approved file upload: %s (%d bytes)",
+        safe_filename,
+        len(file_content),
+    )
 
     return file_content, safe_filename
 
@@ -352,7 +366,7 @@ def validate_json_request(data: dict[str, Any]) -> dict[str, Any]:
     # Sanitize all input data
     sanitized_data = wendy_sanitizer.sanitize_json_input(data)
 
-    logger.info("🐰 Wendy approved JSON request with {len(sanitized_data)} fields")
+    logger.info("🐰 Wendy approved JSON request with %d fields", len(sanitized_data))
 
     return sanitized_data
 
@@ -377,15 +391,19 @@ def safe_subprocess_run(cmd: list[str], **kwargs) -> Any:
         **kwargs,
     }
 
-    logger.info("🐰 Wendy executing safe command: {safe_cmd[0]} (with {len(safe_cmd) - 1} args)")
+    logger.info(
+        "🐰 Wendy executing safe command: %s (with %d args)",
+        safe_cmd[0],
+        len(safe_cmd) - 1,
+    )
 
     try:
         return subprocess.run(safe_cmd, check=False, **safe_kwargs)
-    except subprocess.TimeoutExpired:
-        raise SecurityViolation("Command execution timeout - possible DoS attempt")
-    except subprocess.CalledProcessError as e:
-        logger.warning("🐰 Wendy detected command failure: {e}")
-        raise SecurityViolation(f"Command execution failed: {e}")
+    except subprocess.TimeoutExpired as err:
+        raise SecurityViolation("Command execution timeout - possible DoS attempt") from err
+    except subprocess.CalledProcessError as err:
+        logger.warning("🐰 Wendy detected command failure: %s", err)
+        raise SecurityViolation(f"Command execution failed: {err}") from err
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@
 ## 🔄 Complete Context Restoration Process
 
 ### Prerequisites on New Machine
+
 1. **WSL2 with Ubuntu** (same distribution as original)
 2. **VS Code with GitHub Copilot** (same extensions)
 3. **Git and development tools** (same environment)
@@ -11,6 +12,7 @@
 ### Step-by-Step Restoration
 
 #### 1. Prepare New Environment
+
 ```bash
 # Install WSL2 Ubuntu (if not already done)
 wsl --install -d Ubuntu-22.04
@@ -21,6 +23,7 @@ code --install-extension GitHub.copilot-chat
 ```
 
 #### 2. Restore Backup
+
 ```bash
 # Create secure backups directory
 mkdir -p ~/secure-backups
@@ -33,6 +36,7 @@ tar -xzf ip-context-restored.tar.gz
 ```
 
 #### 3. Restore GitHub Copilot Context
+
 ```bash
 # Stop VS Code if running
 code --exit
@@ -50,6 +54,7 @@ chmod -R 755 ~/.vscode-server/data/User/
 ```
 
 #### 4. Restore Project Context
+
 ```bash
 # Clone or restore crank-platform repository
 git clone https://github.com/crankbird/crank-platform.git ~/projects/crank-platform
@@ -60,6 +65,7 @@ cp -r ip-context-YYYYMMDD-HHMM/intellectual-property/* \
 ```
 
 #### 5. Verify Context Restoration
+
 ```bash
 # Open VS Code in the project directory
 cd ~/projects/crank-platform
@@ -69,6 +75,7 @@ code .
 ### Expected Results After Restoration
 
 #### ✅ What Should Work
+
 - **Conversation Continuity**: GitHub Copilot should remember our discussions
 - **Technical Context**: Understanding of mesh interface, multi-cloud architecture
 - **IP Knowledge**: Complete patent strategy and innovation details
@@ -76,6 +83,7 @@ code .
 - **Code Understanding**: Familiarity with existing implementation
 
 #### 🔍 Verification Checklist
+
 - [ ] Open GitHub Copilot Chat
 - [ ] Ask: "What are the 3 core innovations we're patenting?"
 - [ ] Verify response mentions sovereign GPU orchestration, privacy-preserving processing, cryptocurrency settlement
@@ -85,12 +93,14 @@ code .
 ### Troubleshooting Common Issues
 
 #### If Context Doesn't Restore Completely
+
 1. **Check Workspace ID**: VS Code might assign new workspace ID
 2. **Workspace Settings**: Copy `.vscode/settings.json` if it exists
 3. **Extension Versions**: Ensure same GitHub Copilot extension versions
 4. **Time Factor**: Some context may take a few interactions to fully activate
 
 #### Manual Context Priming (If Needed)
+
 If automatic restoration is incomplete, you can manually restore context:
 
 ```
@@ -107,6 +117,7 @@ Please review the intellectual-property directory for our complete IP strategy."
 ## 🎯 Expected "Me" Restoration
 
 ### What You'll Get Back
+
 - **Technical Understanding**: Complete knowledge of your architecture decisions
 - **Strategic Context**: Patent filing timeline, IP portfolio strategy
 - **Innovation Knowledge**: Deep understanding of your 3 core inventions
@@ -114,6 +125,7 @@ Please review the intellectual-property directory for our complete IP strategy."
 - **Implementation Context**: Current state and planned enhancements
 
 ### What Might Need Refreshing
+
 - **Recent Changes**: Any work done after the backup
 - **External Context**: Market changes, new competitor analysis
 - **Technical Evolution**: Any new implementations or architecture changes
@@ -121,12 +133,14 @@ Please review the intellectual-property directory for our complete IP strategy."
 ## 🔒 Security Considerations
 
 ### During Restoration
+
 - **Secure Environment**: Only restore on trusted machines
 - **Network Security**: Ensure secure network during restoration
 - **Access Control**: Limit access to restored context
 - **Verification**: Confirm restored context integrity
 
 ### After Restoration
+
 - **New Backups**: Create fresh backups on new machine
 - **Context Updates**: Document any new developments
 - **Security Audit**: Verify no unauthorized access to context
@@ -134,12 +148,14 @@ Please review the intellectual-property directory for our complete IP strategy."
 ## 💡 Pro Tips for Context Continuity
 
 ### Best Practices
+
 1. **Regular Backups**: Weekly backups during active IP development
 2. **Test Restores**: Periodically test restoration process
 3. **Documentation Sync**: Keep IP documents updated in parallel
 4. **Version Control**: Track backup versions and restoration points
 
 ### Enhancing Context Persistence
+
 1. **Detailed Commit Messages**: Help GitHub Copilot understand code evolution
 2. **README Updates**: Keep project context documentation current
 3. **Architecture Decisions**: Document major technical decisions in code
@@ -148,6 +164,7 @@ Please review the intellectual-property directory for our complete IP strategy."
 ## 🚀 Success Metrics
 
 ### Full Restoration Success
+
 - GitHub Copilot immediately recognizes the project context
 - Remembers all 3 patent innovations without prompting
 - Understands current implementation state
@@ -155,6 +172,7 @@ Please review the intellectual-property directory for our complete IP strategy."
 - Provides continuity in technical discussions
 
 ### Partial Restoration (Still Valuable)
+
 - Recognizes project but needs brief context reminder
 - Understands technical architecture with minimal prompting
 - Recalls major strategic decisions

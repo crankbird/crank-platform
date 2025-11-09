@@ -18,6 +18,9 @@ WORKDIR /app
 COPY services/requirements-crank-doc-converter.txt .
 RUN pip install --no-cache-dir -r requirements-crank-doc-converter.txt
 
+# Copy shared platform code (for crank_platform.security imports)
+COPY src/ src/
+
 # Copy worker code and metadata
 COPY services/crank_doc_converter.py ./crank_doc_converter.py
 
@@ -43,6 +46,9 @@ EXPOSE 8100
 # Health check for HTTPS-only mode
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
     CMD curl -k -f https://localhost:${DOC_CONVERTER_HTTPS_PORT:-8100}/health || exit 1
+
+# Set PYTHONPATH to include src directory
+ENV PYTHONPATH="/app/src:/app"
 
 # Run worker with in-process certificate initialization
 CMD ["python", "run_worker.py"]

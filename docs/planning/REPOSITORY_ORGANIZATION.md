@@ -21,6 +21,7 @@ crank-platform/
 ├── requirements.txt
 ├── pyproject.toml
 └── README.md
+
 ```
 
 ### **crank-infrastructure/** (DevOps & Infrastructure)
@@ -89,6 +90,7 @@ crank-infrastructure/
     ├── playbooks/
     ├── roles/
     └── inventory/
+
 ```
 
 ## 🎯 **Why This Structure?**
@@ -96,24 +98,31 @@ crank-infrastructure/
 ### **Separation of Concerns**
 
 - **crank-platform**: Focus on application code, features, and business logic
+
 - **crank-infrastructure**: Focus on deployment, operations, and DevOps
 
 ### **Team Scalability**
 
 - **Developers** primarily work in `crank-platform`
+
 - **DevOps/SRE** primarily work in `crank-infrastructure`
+
 - **Clear ownership** and responsibility boundaries
 
 ### **Deployment Independence**
 
 - Application releases don't require infrastructure changes
+
 - Infrastructure updates don't affect application CI/CD
+
 - Different teams can move at different speeds
 
 ### **Multi-Environment Support**
 
 - Easy to add new cloud providers
+
 - Environment-specific configurations isolated
+
 - Consistent deployment patterns across platforms
 
 ## 🚀 **Migration Plan**
@@ -122,9 +131,11 @@ crank-infrastructure/
 
 ```bash
 # 1. Create crank-infrastructure repository
+
 git clone <new-crank-infrastructure-repo>
 
 # 2. Move infrastructure files
+
 cp -r .github/workflows/build-and-deploy.yml → crank-infrastructure/.github/workflows/
 cp dev-universal.sh → crank-infrastructure/development-environments/
 cp docker-compose.*.yml → crank-infrastructure/development-environments/
@@ -132,23 +143,33 @@ cp deploy-azure.sh → crank-infrastructure/deployment/azure/
 cp .env.*.template → crank-infrastructure/development-environments/
 
 # 3. Update crank-platform
+
 # Keep only: src/, tests/, docs/, basic Dockerfiles, app-specific CI
+
 ```
 
 ### **Phase 2: Enhance Infrastructure**
 
 - Add monitoring stack (Prometheus/Grafana)
+
 - Implement Terraform for infrastructure as code
+
 - Add security scanning and compliance
+
 - Create backup/restore automation
 
 ### **Phase 3: Multi-Cloud Support**
 
 - AWS deployment scripts
+
 - GCP deployment scripts
+
 - Kubernetes manifests
+
 - Helm charts for container orchestration
+
 - Kubernetes manifests
+
 - Helm charts for container orchestration
 
 ## 📋 **Cross-Platform Compatibility Matrix**
@@ -164,9 +185,13 @@ cp .env.*.template → crank-infrastructure/development-environments/
 ### **Key Improvements in dev-universal.sh:**
 
 1. **Platform Detection**: Automatically detects macOS/Linux/WSL2
+
 2. **Adaptive Installation Instructions**: Platform-specific guidance
+
 3. **Flexible Docker Compose**: Supports both `docker-compose` and `docker compose`
+
 4. **Graceful Degradation**: Works even without optional tools like `watch`
+
 5. **Universal Error Messages**: No platform-specific assumptions
 
 ## 🎉 **Benefits of This Approach**
@@ -174,27 +199,37 @@ cp .env.*.template → crank-infrastructure/development-environments/
 ### **For Developers**
 
 - **Simple setup**: One script works everywhere
+
 - **Consistent experience**: Same commands across all platforms
+
 - **Clear documentation**: Platform-specific guidance when needed
 
 ### **For DevOps**
 
 - **Centralized infrastructure**: All deployment logic in one place
+
 - **Version controlled**: Infrastructure changes tracked like code
+
 - **Reusable patterns**: Deploy to multiple clouds with same patterns
 
 ### **For Organization**
 
 - **Scalable**: Easy to add new environments and teams
+
 - **Maintainable**: Clear separation reduces complexity
+
 - **Secure**: Dedicated security and compliance workflows
 
 ## 🚀 **Next Steps**
 
 1. **Create `crank-infrastructure` repository**
+
 2. **Move `dev-universal.sh` to infrastructure repo**
+
 3. **Update documentation with new repository structure**
+
 4. **Test cross-platform compatibility on different Linux distros**
+
 5. **Implement infrastructure CI/CD pipeline**
 
 This structure sets you up for **enterprise-scale growth** while maintaining **developer productivity**! 🎯

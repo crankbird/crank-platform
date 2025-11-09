@@ -17,14 +17,16 @@ def run_unit_tests(coverage: bool = True, verbose: bool = True) -> int:
     cmd = ["uv", "run", "pytest", "tests/", "-v"]
 
     if coverage:
-        cmd.extend([
-            "--cov=services",
-            "--cov=src",
-            "--cov=tests",
-            "--cov-report=term-missing",
-            "--cov-report=html:htmlcov",
-            "--cov-fail-under=60"  # Require 60% coverage minimum
-        ])
+        cmd.extend(
+            [
+                "--cov=services",
+                "--cov=src",
+                "--cov=tests",
+                "--cov-report=term-missing",
+                "--cov-report=html:htmlcov",
+                "--cov-fail-under=60",  # Require 60% coverage minimum
+            ]
+        )
 
     if verbose:
         cmd.append("-v")
@@ -40,10 +42,13 @@ def run_integration_tests(verbose: bool = True) -> int:
     import subprocess
 
     cmd = [
-        "uv", "run", "pytest",
+        "uv",
+        "run",
+        "pytest",
         "tests/",
-        "-m", "integration",  # Run only tests marked as integration
-        "-v" if verbose else ""
+        "-m",
+        "integration",  # Run only tests marked as integration
+        "-v" if verbose else "",
     ]
 
     print("🔗 Running integration tests...")
@@ -55,10 +60,13 @@ def run_performance_tests(verbose: bool = True) -> int:
     import subprocess
 
     cmd = [
-        "uv", "run", "pytest",
+        "uv",
+        "run",
+        "pytest",
         "tests/",
-        "-m", "performance",  # Run only tests marked as performance
-        "-v" if verbose else ""
+        "-m",
+        "performance",  # Run only tests marked as performance
+        "-v" if verbose else "",
     ]
 
     print("⚡ Running performance tests...")
@@ -70,10 +78,13 @@ def run_security_tests(verbose: bool = True) -> int:
     import subprocess
 
     cmd = [
-        "uv", "run", "pytest",
+        "uv",
+        "run",
+        "pytest",
         "tests/",
-        "-m", "security",  # Run only tests marked as security
-        "-v" if verbose else ""
+        "-m",
+        "security",  # Run only tests marked as security
+        "-v" if verbose else "",
     ]
 
     print("🔒 Running security tests...")

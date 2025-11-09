@@ -14,18 +14,14 @@ This validates:
 import sys
 from pathlib import Path
 
+import pytest
+
 # Add src directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent / "src"))
 
-try:
-    import torch
+torch = pytest.importorskip("torch", reason="GPU tests require torch; skipping on non-GPU/macOS env")
 
-    from gpu_manager import UniversalGPUManager
-except ImportError as e:
-    print(f"❌ Import error: {e}")
-    print("💡 Make sure to activate the virtual environment:")
-    print("   source .venv/bin/activate")
-    sys.exit(1)
+from gpu_manager import UniversalGPUManager  # noqa: E402
 
 
 def test_basic_detection() -> None:

@@ -5,20 +5,24 @@ This directory contains the foundational thinking, requirements, and design phil
 ## 📚 Document Organization
 
 ### 🎯 Core Philosophy
+
 - **[system-vision.md](system-vision.md)** - The original vision and core insights about distributed AI
 - **[architecture-philosophy.md](architecture-philosophy.md)** - JEMM principle, hybrid approaches, and design rationale
 - **[development-philosophy.md](development-philosophy.md)** - Craftsmanship, methodical approaches, and being a good ancestor
 
 ### 📋 Requirements and Specifications
+
 - **[platform-requirements.md](platform-requirements.md)** - Comprehensive technical requirements
 - **[protocol-innovation.md](protocol-innovation.md)** - Universal protocol support strategy
 - **[security-requirements.md](security-requirements.md)** - Security and compliance specifications
 
 ### 🎭 Architectural Governance
+
 - **[mascot-framework-philosophy.md](mascot-framework-philosophy.md)** - Why we use architectural mascots
 - **[quality-principles.md](quality-principles.md)** - Evidence-based patterns and anti-pattern prevention
 
 ### 🌱 Future Direction
+
 - **[enhancement-roadmap.md](enhancement-roadmap.md)** - Long-term platform evolution
 - **[economic-vision.md](economic-vision.md)** - The agent economy and business model
 - **[sustainability-principles.md](sustainability-principles.md)** - Energy efficiency and environmental responsibility

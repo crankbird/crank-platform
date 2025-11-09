@@ -17,7 +17,7 @@ import json
 import time
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Annotated, Any, Optional
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, Request
@@ -25,10 +25,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
-
-# =============================================================================
-# CORE MESH MODELS - Type-safe and consistent
-# =============================================================================
 
 
 class MeshRequest(BaseModel):
@@ -40,7 +36,7 @@ class MeshRequest(BaseModel):
     policies: list[str] = Field(default_factory=list, description="Security policies to apply")
     metadata: dict[str, Any] = Field(default_factory=dict, description="Request metadata")
     job_id: str = Field(
-        default_factory=lambda: f"job_{uuid4().hex[:8]}", description="Unique job identifier",
+        default_factory=lambda: f"job_{uuid4().hex[:8]}", description="Unique job identifier"
     )
 
 
@@ -64,10 +60,10 @@ class MeshCapability(BaseModel):
     input_schema: dict[str, Any] = Field(..., description="JSON schema for input validation")
     output_schema: dict[str, Any] = Field(..., description="JSON schema for output validation")
     policies_required: list[str] = Field(
-        default_factory=list, description="Required security policies",
+        default_factory=list, description="Required security policies"
     )
     limits: dict[str, Any] = Field(
-        default_factory=dict, description="Operation limits and constraints",
+        default_factory=dict, description="Operation limits and constraints"
     )
 
 
@@ -91,11 +87,6 @@ class MeshReceipt(BaseModel):
     signature: Optional[str] = Field(None, description="Cryptographic signature for verification")
 
 
-# =============================================================================
-# AUTHENTICATION MIDDLEWARE
-# =============================================================================
-
-
 class MeshAuthMiddleware(BaseHTTPMiddleware):
     """Universal authentication middleware for mesh services."""
 
@@ -105,38 +96,18 @@ class MeshAuthMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         """Authenticate all requests except health checks."""
-        # Skip auth for health endpoints
         if request.url.path.startswith("/health/"):
             return await call_next(request)
-
-        # Check for API key
         auth_header = request.headers.get("authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
             return JSONResponse(
-                status_code=401,
-                content={"error": "Missing or invalid authorization header"},
+                status_code=401, content={"error": "Missing or invalid authorization header"}
             )
-
         token = auth_header.split(" ", 1)[1]
         if token != self.api_key:
-            return JSONResponse(
-                status_code=401,
-                content={"error": "Invalid API key"},
-            )
-
-        # Add auth context to request state
-        request.state.auth_context = {
-            "user_id": "dev-user",  # In production, derive from token
-            "authenticated": True,
-            "token": token,
-        }
-
+            return JSONResponse(status_code=401, content={"error": "Invalid API key"})
+        request.state.auth_context = {"user_id": "dev-user", "authenticated": True, "token": token}
         return await call_next(request)
-
-
-# =============================================================================
-# RECEIPT GENERATION SYSTEM
-# =============================================================================
 
 
 class MeshReceiptGenerator:
@@ -157,7 +128,6 @@ class MeshReceiptGenerator:
         receipt_id = (
             f"receipt_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{uuid4().hex[:8]}"
         )
-
         receipt = MeshReceipt(
             receipt_id=receipt_id,
             job_id=request.job_id,
@@ -173,8 +143,6 @@ class MeshReceiptGenerator:
             policy_profile=",".join(request.policies) if request.policies else "none",
             errors=response.errors,
         )
-
-        # Generate cryptographic signature
         receipt.signature = self._sign_receipt(receipt)
         return receipt
 
@@ -182,22 +150,14 @@ class MeshReceiptGenerator:
         """Generate consistent hash for any data."""
         if data is None:
             return "null"
-
-        # Convert to JSON string with consistent ordering
         json_str = json.dumps(data, sort_keys=True, ensure_ascii=True)
         return hashlib.sha256(json_str.encode("utf-8")).hexdigest()[:16]
 
     def _sign_receipt(self, receipt: MeshReceipt) -> str:
         """Generate cryptographic signature for receipt verification."""
-        # Exclude signature field from signing
         receipt_data = receipt.model_dump(exclude={"signature"})
         receipt_json = json.dumps(receipt_data, sort_keys=True, default=str)
         return hashlib.sha256(receipt_json.encode("utf-8")).hexdigest()
-
-
-# =============================================================================
-# BASE MESH INTERFACE
-# =============================================================================
 
 
 class MeshInterface(ABC):
@@ -217,10 +177,9 @@ class MeshInterface(ABC):
         self.node_id = node_id or f"{service_type}-{uuid4().hex[:8]}"
         self.receipt_generator = MeshReceiptGenerator(self.node_id)
 
-    # Abstract methods that implementations must provide
     @abstractmethod
     async def process_request(
-        self, request: MeshRequest, auth_context: dict[str, Any],
+        self, request: MeshRequest, auth_context: dict[str, Any]
     ) -> MeshResponse:
         """Process a mesh request and return response."""
 
@@ -228,16 +187,10 @@ class MeshInterface(ABC):
     def get_capabilities(self) -> list[MeshCapability]:
         """Return list of service capabilities."""
 
-    # Concrete methods provided by the base class
     def _get_auth_context(self, request: Request) -> dict[str, Any]:
         """Extract authentication context from request."""
         return getattr(
-            request.state,
-            "auth_context",
-            {
-                "user_id": "unknown",
-                "authenticated": False,
-            },
+            request.state, "auth_context", {"user_id": "unknown", "authenticated": False}
         )
 
     def _enrich_request_metadata(self, request: MeshRequest, auth_context: dict[str, Any]) -> None:
@@ -248,7 +201,7 @@ class MeshInterface(ABC):
                 "user_id": auth_context.get("user_id", "unknown"),
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "service_type": self.service_type,
-            },
+            }
         )
 
     def create_app(self, api_key: str = "dev-mesh-key") -> FastAPI:
@@ -258,8 +211,6 @@ class MeshInterface(ABC):
             description=f"Security-hardened {self.service_type} service",
             version="1.0.0",
         )
-
-        # CORS middleware
         app.add_middleware(
             CORSMiddleware,
             allow_origins=["http://localhost:3000", "http://localhost:8080"],
@@ -267,85 +218,56 @@ class MeshInterface(ABC):
             allow_methods=["GET", "POST"],
             allow_headers=["Authorization", "Content-Type"],
         )
-
-        # Authentication middleware
         app.add_middleware(MeshAuthMiddleware, api_key=api_key)
-
-        # Add routes
         self._add_mesh_routes(app)
-
         return app
 
     def _add_mesh_routes(self, app: FastAPI):
         """Add standardized mesh routes."""
 
         @app.get("/v1/capabilities")
-        async def get_capabilities(auth_context: dict = Depends(self._get_auth_context)):
+        async def get_capabilities(auth_context: Annotated[dict, Depends(self._get_auth_context)]):
             """Get service capabilities (secured)."""
             return self.get_capabilities()
 
         @app.post("/v1/process")
         async def process_mesh_request(
-            request: MeshRequest,
-            auth_context: dict = Depends(self._get_auth_context),
+            request: MeshRequest, auth_context: Annotated[dict, Depends(self._get_auth_context)]
         ) -> MeshResponse:
             """Process mesh request (secured)."""
             start_time = time.time()
-
             try:
-                # Enrich request metadata
                 self._enrich_request_metadata(request, auth_context)
-
-                # Process the request
                 response = await self.process_request(request, auth_context)
-
-                # Generate receipt
                 receipt = self.receipt_generator.generate_receipt(
-                    request,
-                    response,
-                    auth_context,
-                    start_time,
+                    request, response, auth_context, start_time
                 )
-
-                # Finalize response
                 response.receipt_id = receipt.receipt_id
                 response.processing_time_ms = receipt.processing_time_ms
                 response.mesh_node_id = self.node_id
-
                 return response
-
             except Exception as e:
-                # Generate error response with receipt
                 error_response = MeshResponse(
                     success=False,
                     result=None,
-                    receipt_id="",  # Will be set below
+                    receipt_id="",
                     errors=[str(e)],
                     metadata={"error_type": type(e).__name__},
-                    processing_time_ms=0,  # Will be set below
+                    processing_time_ms=0,
                     mesh_node_id=self.node_id,
                 )
-
-                # Generate receipt for failed operation
                 receipt = self.receipt_generator.generate_receipt(
-                    request,
-                    error_response,
-                    auth_context,
-                    start_time,
+                    request, error_response, auth_context, start_time
                 )
-
                 error_response.receipt_id = receipt.receipt_id
                 error_response.processing_time_ms = receipt.processing_time_ms
-
                 return error_response
 
         @app.get("/v1/receipts/{receipt_id}")
         async def get_receipt(
-            receipt_id: str,
-            auth_context: dict = Depends(self._get_auth_context),
+            receipt_id: str, auth_context: Annotated[dict, Depends(self._get_auth_context)]
         ):
             """Get audit receipt (secured)."""
-            # In production, this would query a receipt store
             return {
                 "receipt_id": receipt_id,
                 "status": "found",
@@ -353,7 +275,6 @@ class MeshInterface(ABC):
                 "note": "Receipt retrieval not yet implemented",
             }
 
-        # Health checks (unsecured)
         @app.get("/health/live")
         async def health_live():
             return {"status": "live", "service": f"crank{self.service_type}-mesh"}

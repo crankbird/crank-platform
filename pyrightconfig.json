@@ -2,7 +2,8 @@
     "include": [
         "src",
         "services",
-        "tests"
+        "tests",
+        "wendy_security_framework.py"
     ],
     "exclude": [
         "**/.venv",
@@ -48,6 +49,9 @@
         {
             "root": "tests",
             "typeCheckingMode": "basic",
+            "extraPaths": [
+                "."
+            ],
             "reportMissingTypeStubs": "none",
             "reportUnknownMemberType": "none",
             "reportUnknownArgumentType": "none",

@@ -1,59 +1,9 @@
 {
-    "python.defaultInterpreterPath": "./.venv/bin/python",
-    "python.terminal.activateEnvironment": true,
-    "python.linting.enabled": true,
-    "python.linting.pylintEnabled": false,
-    "python.linting.ruffEnabled": true,
-    "python.formatting.provider": "black",
-    // Strict Type Checking for Security & Platform Code
-    "python.analysis.typeCheckingMode": "strict",
-    "python.analysis.autoImportCompletions": true,
-    "python.analysis.autoSearchPaths": true,
-    "python.analysis.extraPaths": [
-        "./src",
-        "./services",
-        "./tests"
-    ],
-    // Markdown: Suppress formatting noise to focus on code quality
-    // Rationale: 300+ cosmetic markdown issues hide real problems
-    // Review: Quarterly check if team wants to enable formatting
-    "markdownlint.config": {
-        "MD022": false, // Headings surrounded by blank lines
-        "MD032": false, // Lists surrounded by blank lines
-        "MD031": false, // Fenced code blocks surrounded by blank lines
-        "MD040": false // Fenced code blocks language specification
-    },
-    // ML Package Indexing Configuration
-    "python.analysis.packageIndexDepths": [
-        {
-            "name": "sklearn",
-            "depth": 2
-        },
-        {
-            "name": "nltk",
-            "depth": 2
-        },
-        {
-            "name": "torch",
-            "depth": 2
-        }
-    ],
-    "[python]": {
-        "editor.formatOnSave": true,
-        "editor.codeActionsOnSave": {
-            "source.organizeImports": "explicit"
-        }
-    },
-    "files.associations": {
-        "*.py": "python"
-    },
-    "mypy-type-checker.importStrategy": "fromEnvironment",
-    "ruff.importStrategy": "fromEnvironment",
-    "python-envs.pythonProjects": [
-        {
-            "path": "",
-            "envManager": "ms-python.python:system",
-            "packageManager": "ms-python.python:pip"
-        }
-    ]
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": [
+    "tests"
+  ],
+  "python.terminal.activateEnvironment": true,
+  "terminal.integrated.defaultProfile.osx": "zsh"
 }

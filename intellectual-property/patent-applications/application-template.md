@@ -11,22 +11,29 @@
 ## PROVISIONAL PATENT APPLICATION
 
 ### TITLE OF INVENTION
+
 [Insert descriptive title - max 500 characters]
 
 ### FIELD OF INVENTION
+
 This invention relates to [field description], and more particularly to [specific technical area].
 
 ### BACKGROUND OF THE INVENTION
+
 [Describe the technical problem, current solutions, and their limitations]
 
 ### SUMMARY OF THE INVENTION
+
 [Provide a concise summary of the technical solution and key advantages]
 
 ### BRIEF DESCRIPTION OF THE DRAWINGS
+
 [If applicable - list and describe any technical diagrams or flowcharts]
 
 ### DETAILED DESCRIPTION OF THE INVENTION
+
 [Comprehensive technical description including:]
+
 - System architecture
 - Method steps
 - Technical implementation details
@@ -34,6 +41,7 @@ This invention relates to [field description], and more particularly to [specifi
 - Example implementations
 
 ### CLAIMS
+
 [Numbered list of specific patent claims - start broad, get more specific]
 
 1. A method for [primary innovation], comprising:
@@ -51,6 +59,7 @@ This invention relates to [field description], and more particularly to [specifi
 [Continue with additional claims...]
 
 ### APPLICANT DETAILS
+
 **Name**: [Your name]
 **Address**: [Your address]
 **Country**: Australia
@@ -62,12 +71,14 @@ This invention relates to [field description], and more particularly to [specifi
 ## Key Filing Requirements for Australian Patents
 
 ### Provisional Application Checklist
+
 - [ ] Completed Form 1 (Request for grant of patent)
 - [ ] Technical specification (unlimited pages)
 - [ ] Payment of $400 AUD filing fee
 - [ ] Small entity declaration (if applicable)
 
 ### Technical Specification Requirements
+
 - Title of invention
 - Field of invention
 - Background art
@@ -77,12 +88,14 @@ This invention relates to [field description], and more particularly to [specifi
 - Claims (at least one claim required)
 
 ### Important Deadlines
+
 - **Priority Date**: Established on filing of provisional application
 - **Convention Period**: 12 months from priority date to file complete application
 - **Publication**: 18 months from earliest priority date
 - **Examination**: Must be requested within 5 years of filing date
 
 ### Small Entity Benefits
+
 - 50% reduction in most fees
 - Applies to individuals, small businesses (<100 employees), educational institutions
 - Must declare small entity status to receive benefits
@@ -90,6 +103,7 @@ This invention relates to [field description], and more particularly to [specifi
 ## Self-Filing Tips
 
 ### Writing Strong Claims
+
 1. Start with broad independent claims
 2. Include dependent claims with additional limitations
 3. Use precise technical language
@@ -97,6 +111,7 @@ This invention relates to [field description], and more particularly to [specifi
 5. Consider method, system, and computer program product claims
 
 ### Technical Description Best Practices
+
 1. Provide sufficient detail for person skilled in the art to implement
 2. Include multiple embodiments where possible
 3. Explain advantages over prior art
@@ -104,6 +119,7 @@ This invention relates to [field description], and more particularly to [specifi
 5. Include technical diagrams where helpful
 
 ### Common Mistakes to Avoid
+
 1. Insufficient technical detail
 2. Claims too broad or too narrow
 3. Inconsistent terminology
@@ -111,6 +127,7 @@ This invention relates to [field description], and more particularly to [specifi
 5. Inadequate description of novel aspects
 
 ## Next Steps After Filing
+
 1. Receive filing receipt and application number
 2. Conduct thorough prior art search
 3. Prepare complete application within 12 months

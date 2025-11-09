@@ -7,6 +7,7 @@ This directory contains encrypted backups of GitHub Copilot conversation context
 ## 🗂️ Backup Files
 
 ### Current Backups
+
 - `context-YYYYMMDD.gpg` - Weekly encrypted snapshots of complete IP development context
 - Each backup contains:
   - GitHub Copilot conversation history
@@ -18,6 +19,7 @@ This directory contains encrypted backups of GitHub Copilot conversation context
 ## 🔓 Decryption Instructions
 
 ### To Restore Context on New Machine
+
 ```bash
 # 1. Decrypt the backup (you'll be prompted for password)
 gpg --decrypt context-20251030.gpg > context-20251030.tar.gz
@@ -30,6 +32,7 @@ tar -xzf context-20251030.tar.gz
 ```
 
 ### Password Management
+
 - **Use a strong, memorable password** that you won't lose
 - **Consider using a password manager** for secure storage
 - **Don't store the password in this repository** or any git repo
@@ -38,13 +41,16 @@ tar -xzf context-20251030.tar.gz
 ## 🛡️ Security Features
 
 ### Encryption Details
+
 - **Algorithm**: AES-256 symmetric encryption
 - **Compression**: GZIP compression before encryption (smaller files)
 - **Integrity**: GPG includes integrity checking
 - **No Metadata Leakage**: Only encrypted blob is stored
 
 ### What's Protected
+
 ✅ **Completely Safe in Git**:
+
 - Encrypted conversation context
 - Technical innovation discussions  
 - Patent strategy development
@@ -52,6 +58,7 @@ tar -xzf context-20251030.tar.gz
 - Competitive analysis notes
 
 ❌ **Still Never Put in Git**:
+
 - Decryption passwords
 - Unencrypted temporary files
 - Raw conversation exports
@@ -59,12 +66,14 @@ tar -xzf context-20251030.tar.gz
 ## 📅 Backup Schedule
 
 ### Recommended Frequency
+
 - **Weekly**: During active IP development
 - **Before Major Milestones**: Patent filings, commercial launches
 - **After Significant Discussions**: Major technical or strategic decisions
 - **Before Machine Changes**: System upgrades, new development environments
 
 ### Retention Policy
+
 - **Keep Last 4 Weekly Backups**: Rolling monthly retention
 - **Permanent Snapshots**: Before patent filings, major releases
 - **Archive Annually**: Move old backups to long-term storage
@@ -72,12 +81,14 @@ tar -xzf context-20251030.tar.gz
 ## 🚀 Automation Options
 
 ### Automated Backup Creation
+
 ```bash
 # Add to crontab for weekly automated backups
 0 2 * * 0 /home/johnr/projects/crank-platform/intellectual-property/backup-ip-context.sh --for-git
 ```
 
 ### Git Integration
+
 ```bash
 # Automated commit of new encrypted backups
 git add intellectual-property/encrypted-backups/
@@ -88,12 +99,14 @@ git push
 ## ⚠️ Important Warnings
 
 ### Security Considerations
+
 - **Password Strength**: Use a password with 12+ characters, mixed case, numbers, symbols
 - **Password Backup**: Store password securely separate from this repository
 - **Access Control**: Only give repository access to trusted parties
 - **Regular Testing**: Periodically test decryption to ensure backups are valid
 
 ### Operational Notes
+
 - **File Size**: Encrypted backups are typically 10-50MB depending on context size
 - **Git LFS**: Consider using Git LFS for large backup files (>100MB)
 - **Branch Strategy**: Consider dedicated backup branch to keep main branch clean
@@ -102,18 +115,21 @@ git push
 ## 🎯 Benefits of This Approach
 
 ### For Distributed Development
+
 - ✅ Access context backups from any machine with repo access
 - ✅ No dependency on external backup services
 - ✅ Version controlled backup history
 - ✅ Integrated with existing development workflow
 
 ### For IP Security
+
 - ✅ Strong encryption protects sensitive IP discussions
 - ✅ No plaintext exposure in git history
 - ✅ Control over access through repository permissions
 - ✅ Audit trail of backup creation and access
 
 ### for Business Continuity
+
 - ✅ Disaster recovery through distributed git storage
 - ✅ Team member can access context with proper credentials
 - ✅ No single point of failure for critical IP context

@@ -1,8 +1,9 @@
 # Secure IP Context Backup Strategy
 
-## ⚠️ CRITICAL: Never Put Copilot Context in Git!
+## ⚠️ CRITICAL: Never Put Copilot Context in Git
 
 GitHub Copilot conversation context contains:
+
 - Complete patent strategy discussions
 - Technical innovation details
 - Competitive analysis and prior art research
@@ -14,6 +15,7 @@ GitHub Copilot conversation context contains:
 ## 🔒 Recommended Backup Approaches
 
 ### Option 1: Encrypted Local Backups
+
 ```bash
 # Create encrypted backup
 tar -czf - ~/.vscode-server/data/User/workspaceStorage/ \
@@ -24,6 +26,7 @@ gpg --symmetric --cipher-algo AES256 --output copilot-context-$(date +%Y%m%d).ta
 ```
 
 ### Option 2: WSL Export/Import
+
 ```bash
 # Export entire WSL distribution
 wsl --export Ubuntu-22.04 D:\WSL-Backups\ubuntu-crank-$(date +%Y%m%d).tar
@@ -33,7 +36,9 @@ wsl --import Ubuntu-Restored D:\WSL-Restored\ D:\WSL-Backups\ubuntu-crank-202510
 ```
 
 ### Option 3: Selective Context Preservation
+
 Only backup the documented IP strategy (safe for git):
+
 - ✅ intellectual-property/ directory (documented strategy)
 - ✅ Source code and technical implementations
 - ❌ Copilot conversation context (keep local only)
@@ -41,6 +46,7 @@ Only backup the documented IP strategy (safe for git):
 ## 🛡️ What's Safe vs. Unsafe for Git
 
 ### ✅ Safe for Remote Git
+
 - Patent application drafts (before filing)
 - Technical implementation code
 - Strategic timelines and plans
@@ -48,6 +54,7 @@ Only backup the documented IP strategy (safe for git):
 - Business validation data
 
 ### ❌ NEVER Put in Git
+
 - ~/.vscode-server/ copilot context
 - Raw conversation transcripts
 - Unfiltered brainstorming sessions
@@ -65,6 +72,7 @@ Only backup the documented IP strategy (safe for git):
 ## 🎯 For Your Crank Platform
 
 Current structure is perfect:
+
 ```
 crank-platform/
 ├── intellectual-property/          # ✅ Safe for git (strategic docs)
@@ -79,6 +87,7 @@ crank-platform/
 ## 💡 Best Practice Implementation
 
 1. **Add .gitignore entries**:
+
 ```
 # Never commit copilot context
 .vscode-server/
@@ -88,6 +97,7 @@ crank-platform/
 ```
 
 2. **Create backup script**:
+
 ```bash
 #!/bin/bash
 # backup-ip-context.sh
@@ -105,6 +115,7 @@ echo "⚠️  Keep this backup secure and encrypted!"
 ## 🏆 Security Benefits of Current Setup
 
 Your current local-only approach provides:
+
 - ✅ Complete IP confidentiality
 - ✅ No inadvertent exposure risk
 - ✅ Full control over sensitive discussions
