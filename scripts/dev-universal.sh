@@ -5,8 +5,13 @@
 # Cross-platform script for local development environment management
 # Compatible with: macOS, Linux (Ubuntu/Debian/RHEL/Alpine), WSL2
 # 
+# ⚠️  ARCHITECTURE REFACTOR IN PROGRESS (Nov 2025)
+# This script manages the OLD platform-centric architecture (archived).
+# See docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md for new controller/worker model.
+# Will be updated during Phase 2-3 to support controller/worker deployment.
+#
 # This script helps manage local development environments including:
-# - Docker container orchestration
+# - Docker container orchestration (OLD: platform-centric, NEW: controller-centric)
 # - Azure Container Registry integration  
 # - Multi-platform image support (ARM64/AMD64)
 # - Health monitoring and testing
@@ -188,6 +193,33 @@ get_compose_command() {
 
 setup_local_env() {
     echo_info "Setting up local development environment for $PLATFORM..."
+    
+    # Check for Python virtual environment
+    if [ ! -d ".venv" ]; then
+        echo_warning "No Python virtual environment found."
+        echo_info "Setting up venv with uv (required for Phase 0+ development)..."
+        
+        if command -v uv &> /dev/null; then
+            uv venv --python 3.11
+            echo_success "Created .venv with Python 3.11"
+            echo_info "Activate with: source .venv/bin/activate"
+            echo_info "Then run: uv sync --all-extras"
+        else
+            echo_warning "uv not found. Install with:"
+            case $PLATFORM in
+                "macOS")
+                    echo "  brew install uv"
+                    ;;
+                "Linux"|"WSL2")
+                    echo "  curl -LsSf https://astral.sh/uv/install.sh | sh"
+                    ;;
+            esac
+            echo_info "After installing uv, run: uv venv --python 3.11 && uv sync --all-extras"
+        fi
+    else
+        echo_success "Python virtual environment exists at .venv"
+        echo_info "Remember to: source .venv/bin/activate && uv sync --all-extras"
+    fi
     
     # Copy local environment file
     if [ ! -f "$ENV_FILE" ]; then
