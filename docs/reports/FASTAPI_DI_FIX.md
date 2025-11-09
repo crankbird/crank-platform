@@ -7,6 +7,7 @@
 ## Problem Summary
 
 FastAPI runtime validation was failing on service startup with assertion errors:
+
 - `Header(None)` pattern caused runtime failure (None not allowed as default inside Annotated)
 - `Form(default)` pattern caused runtime failure (defaults must be at parameter level)
 - Services would pass type checking but crash at runtime
@@ -14,11 +15,13 @@ FastAPI runtime validation was failing on service startup with assertion errors:
 ## Root Cause
 
 FastAPI has stricter runtime validation than static type checkers. The pattern:
+
 ```python
 auth: Annotated[str, Header(None)]  # ❌ WRONG - fails at runtime
 ```
 
 Must be:
+
 ```python
 auth: Annotated[str, Header()] = None  # ✅ CORRECT
 ```
@@ -26,11 +29,13 @@ auth: Annotated[str, Header()] = None  # ✅ CORRECT
 ## Solution Implemented
 
 ### 1. Core Pattern Fix
+
 - Created `services/dependencies.py` with getter functions for all dependencies
 - Updated all services to use `Annotated[Type, Depends(getter)]` pattern
 - Moved all defaults from inside Annotated to parameter level
 
 ### 2. Service Updates
+
 - **Platform service**: Fixed auth header and form data patterns
 - **Email classifier**: Corrected host binding (127.0.0.1 → 0.0.0.0), added cert_store singleton
 - **Image classifier**: Fixed host binding, applied linter corrections
@@ -38,11 +43,13 @@ auth: Annotated[str, Header()] = None  # ✅ CORRECT
 - **Doc converter**: Fixed Dockerfile to include src/ and dependencies.py
 
 ### 3. Architecture Cleanup
+
 - **Deleted services/ml/ directory**: Violated documented three-ring architecture
 - **Consolidated email classifier**: Single canonical file with proper cert patterns
 - **Updated Dockerfiles**: Reference correct file paths after ml/ removal
 
 ### 4. Test Infrastructure Overhaul
+
 - **Fixed 10 PytestReturnNotNoneWarning issues**: Removed `return True/False` from test functions
 - **Corrected service ports**: 8009→8300 (parser), 8004→8200 (classifier), 8011→8500 (streaming)
 - **Fixed protocols**: http→https for all services (HTTP was killed days ago)
@@ -54,6 +61,7 @@ auth: Annotated[str, Header()] = None  # ✅ CORRECT
 
 **Before Fix**: Tests couldn't run (containers wouldn't start)
 **After Fix**:
+
 - ✅ 45 passing unit tests (up from 42)
 - ⏭️ 2 skipped (missing test data - expected)
 - ❌ 3 failing (Azure integration tests - environment issues, not code)
@@ -62,12 +70,14 @@ auth: Annotated[str, Header()] = None  # ✅ CORRECT
 ## Files Modified
 
 ### Core Services
+
 - `services/dependencies.py` (new)
 - `services/crank_platform_app.py`
 - `services/crank_email_classifier.py`
 - `services/relaxed-checking/crank_image_classifier.py`
 
 ### Dockerfiles
+
 - `services/Dockerfile.crank-platform`
 - `services/Dockerfile.crank-email-classifier`
 - `services/Dockerfile.crank-doc-converter`
@@ -76,6 +86,7 @@ auth: Annotated[str, Header()] = None  # ✅ CORRECT
 - `image-classifier-gpu/Dockerfile`
 
 ### Tests
+
 - `tests/quick_validation_test.py`
 - `tests/test_certificate_fix.py`
 - `tests/test_port_config.py`
@@ -84,6 +95,7 @@ auth: Annotated[str, Header()] = None  # ✅ CORRECT
 - `pytest.ini`
 
 ### Deleted
+
 - `services/ml/crank_email_classifier.py` (obsolete duplicate)
 - `services/ml/pyrightconfig.json` (obsolete)
 
@@ -94,6 +106,7 @@ auth: Annotated[str, Header()] = None  # ✅ CORRECT
 ## Verification
 
 All 7 Docker containers healthy:
+
 ```bash
 ✅ crank-platform-dev (8443)
 ✅ crank-cert-authority-dev (9090)

@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # 🚀 Crank Platform Development Manager
-# 
+#
 # Cross-platform script for local development environment management
 # Compatible with: macOS, Linux (Ubuntu/Debian/RHEL/Alpine), WSL2
-# 
+#
 # ⚠️  ARCHITECTURE REFACTOR IN PROGRESS (Nov 2025)
 # This script manages the OLD platform-centric architecture (archived).
 # See docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md for new controller/worker model.
@@ -12,7 +12,7 @@
 #
 # This script helps manage local development environments including:
 # - Docker container orchestration (OLD: platform-centric, NEW: controller-centric)
-# - Azure Container Registry integration  
+# - Azure Container Registry integration
 # - Multi-platform image support (ARM64/AMD64)
 # - Health monitoring and testing
 
@@ -46,12 +46,12 @@ detect_platform() {
         CYGWIN*)    PLATFORM="Windows" ;;
         *)          PLATFORM="Unknown" ;;
     esac
-    
+
     # Check if running in WSL
     if [[ -n "${WSL_DISTRO_NAME:-}" ]] || grep -q Microsoft /proc/version 2>/dev/null; then
         PLATFORM="WSL2"
     fi
-    
+
     echo_info "Detected platform: $PLATFORM"
 }
 
@@ -85,7 +85,7 @@ show_help() {
 
 check_requirements() {
     echo_info "Checking requirements for $PLATFORM..."
-    
+
     # Check Docker
     if ! command -v docker &> /dev/null; then
         case $PLATFORM in
@@ -109,7 +109,7 @@ check_requirements() {
         esac
         exit 1
     fi
-    
+
     # Check Docker Compose (handle both old and new syntax)
     if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
         case $PLATFORM in
@@ -124,7 +124,7 @@ check_requirements() {
         esac
         exit 1
     fi
-    
+
     # Check if Docker is running
     if ! docker info &> /dev/null; then
         case $PLATFORM in
@@ -139,14 +139,14 @@ check_requirements() {
         esac
         exit 1
     fi
-    
+
     # Check for required utilities
     missing_utils=()
-    
+
     if ! command -v curl &> /dev/null; then
         missing_utils+=("curl")
     fi
-    
+
     # Check for watch command (optional for monitor function)
     if ! command -v watch &> /dev/null; then
         echo_warning "Warning: 'watch' command not found. Monitor function will be limited."
@@ -161,7 +161,7 @@ check_requirements() {
                 ;;
         esac
     fi
-    
+
     if [ ${#missing_utils[@]} -ne 0 ]; then
         echo_error "Missing required utilities: ${missing_utils[*]}"
         case $PLATFORM in
@@ -175,7 +175,7 @@ check_requirements() {
         esac
         exit 1
     fi
-    
+
     echo_success "All requirements satisfied for $PLATFORM"
 }
 
@@ -193,12 +193,12 @@ get_compose_command() {
 
 setup_local_env() {
     echo_info "Setting up local development environment for $PLATFORM..."
-    
+
     # Check for Python virtual environment
     if [ ! -d ".venv" ]; then
         echo_warning "No Python virtual environment found."
         echo_info "Setting up venv with uv (required for Phase 0+ development)..."
-        
+
         if command -v uv &> /dev/null; then
             uv venv --python 3.11
             echo_success "Created .venv with Python 3.11"
@@ -206,7 +206,7 @@ setup_local_env() {
             echo_info "Installing dependencies: uv sync --all-extras"
             uv sync --all-extras
             echo_success "Dependencies installed"
-            
+
             # Install package in editable mode for import resolution
             echo_info "Installing crank package in editable mode..."
             source .venv/bin/activate
@@ -228,7 +228,7 @@ setup_local_env() {
     else
         echo_success "Python virtual environment exists at .venv"
         echo_info "To update dependencies: source .venv/bin/activate && uv sync --all-extras"
-        
+
         # Check if editable install exists
         if [ -f ".venv/bin/python" ]; then
             if ! .venv/bin/python -c "import crank" 2>/dev/null; then
@@ -242,7 +242,7 @@ setup_local_env() {
             fi
         fi
     fi
-    
+
     # Copy local environment file
     if [ ! -f "$ENV_FILE" ]; then
         if [ -f ".env.local" ]; then
@@ -264,7 +264,7 @@ EOF
     else
         echo_warning ".env file already exists, keeping current configuration"
     fi
-    
+
     # Try to login to Azure Container Registry
     echo_info "Attempting to login to Azure Container Registry..."
     if command -v az &> /dev/null && az account show &> /dev/null; then
@@ -289,28 +289,28 @@ EOF
                 ;;
         esac
     fi
-    
+
     echo_success "Local environment setup complete for $PLATFORM"
 }
 
 start_services() {
     local profile=""
     local compose_cmd=$(get_compose_command)
-    
+
     if [ "$1" = "minimal" ]; then
         profile="--profile minimal"
         echo_info "Starting minimal services (excluding resource-intensive ML/CV services)..."
     else
         echo_info "Starting all services..."
     fi
-    
+
     $compose_cmd -f "$COMPOSE_FILE" $profile up -d
-    
+
     if [ $? -eq 0 ]; then
         echo_success "Services started successfully!"
         echo_info "Platform will be available at: https://localhost:8443"
         echo_info "Run '$0 status' to check service health"
-        
+
         # Platform-specific post-start info
         case $PLATFORM in
             "macOS")
@@ -353,10 +353,10 @@ show_status() {
     local compose_cmd=$(get_compose_command)
     echo_info "Service Status:"
     $compose_cmd -f "$COMPOSE_FILE" ps
-    
+
     echo ""
     echo_info "Quick Health Check:"
-    
+
     services=(
         "platform:8443:/health/live"
         "doc-converter:8101:/health"
@@ -364,7 +364,7 @@ show_status() {
         "email-parser:8301:/health"
         "streaming:8501:/health"
     )
-    
+
     for service in "${services[@]}"; do
         IFS=':' read -r name port endpoint <<< "$service"
         if curl -k -s --max-time 5 "https://localhost:$port$endpoint" > /dev/null 2>&1; then
@@ -379,20 +379,20 @@ update_images() {
     local compose_cmd=$(get_compose_command)
     echo_info "Pulling latest images..."
     $compose_cmd -f "$COMPOSE_FILE" pull
-    
+
     echo_info "Restarting services with updated images..."
     restart_services
-    
+
     echo_success "Update complete!"
 }
 
 test_endpoints() {
     echo_info "Testing all service endpoints..."
-    
+
     # Wait for services to be ready
     echo_info "Waiting for services to be ready..."
     sleep 10
-    
+
     services=(
         "Platform API:https://localhost:8443/health/live"
         "Document Converter:https://localhost:8101/health"
@@ -400,18 +400,18 @@ test_endpoints() {
         "Email Parser:https://localhost:8301/health"
         "Streaming Service:https://localhost:8501/health"
     )
-    
+
     for service in "${services[@]}"; do
         IFS=':' read -r name url <<< "$service"
         echo_info "Testing $name..."
-        
+
         if curl -k -s --max-time 10 -w "Status: %{http_code}\n" "$url" | grep -q "200\|healthy"; then
             echo_success "$name is working correctly"
         else
             echo_error "$name failed health check"
         fi
     done
-    
+
     # Test worker registration
     echo_info "Testing worker registration..."
     auth_token=$(grep PLATFORM_AUTH_TOKEN .env 2>/dev/null | cut -d= -f2 || echo "local-dev-key-secure")
@@ -440,7 +440,7 @@ clean_environment() {
 monitor_services() {
     local compose_cmd=$(get_compose_command)
     echo_info "Monitoring services (Ctrl+C to exit)..."
-    
+
     if command -v watch &> /dev/null; then
         watch -n 2 "$compose_cmd -f $COMPOSE_FILE ps && echo '' && docker stats --no-stream"
     else
@@ -465,7 +465,7 @@ monitor_services() {
 main() {
     # Detect platform first
     detect_platform
-    
+
     case "${1:-help}" in
         setup)
             check_requirements

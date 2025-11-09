@@ -1,6 +1,6 @@
 # Pre-Controller Architecture Archive
 
-**Date**: November 9, 2025  
+**Date**: November 9, 2025
 **Reason**: Architectural refactor from platform-centric to controller/worker model
 
 ## What's Archived Here
@@ -30,6 +30,7 @@ This directory contains a snapshot of the **working platform-centric architectur
 ## Working State at Archive Time
 
 ✅ **All services were healthy and functional**:
+
 - Platform (8443)
 - Cert Authority (9090)
 - Email Parser (8300)
@@ -56,11 +57,13 @@ The platform-centric architecture had fundamental issues:
 ## New Architecture (Post-Refactor)
 
 See:
+
 - `docs/planning/crank-taxonomy-and-deployment.md` - Architectural vision
 - `docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md` - Implementation plan
 - GitHub Issues #27-#31 - Phased migration
 
 **Key Changes**:
+
 - Workers use shared `src/crank/worker_runtime/` base classes
 - Capabilities defined in `src/crank/capabilities/schema.py`
 - Controller-per-node instead of monolithic platform

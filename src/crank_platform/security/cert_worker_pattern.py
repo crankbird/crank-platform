@@ -24,7 +24,7 @@ Usage:
 import asyncio
 import logging
 import os
-from typing import TYPE_CHECKING, Optional, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from fastapi import FastAPI

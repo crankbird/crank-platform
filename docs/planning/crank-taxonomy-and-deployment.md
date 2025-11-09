@@ -2,7 +2,7 @@
 
 _Last updated: (fill date)_
 
-This document defines the shared terminology and architecture primitives used across the Crank ecosystem.  
+This document defines the shared terminology and architecture primitives used across the Crank ecosystem.
 It ensures consistent language for workers, controller, nodes, jobs, and capabilities, independent of deployment method.
 
 ---
@@ -31,16 +31,16 @@ Crank-Node
 
 ## 2. Design Principles
 
-1. **Workers are not containers.**  
+1. **Workers are not containers.**
    Workers are _logical service providers_. Containers, venvs, NPUs, pods, mobile apps are just execution strategies.
 
-2. **Capabilities are the source of truth.**  
+2. **Capabilities are the source of truth.**
    Capability definitions determine worker interchangeability and routing correctness.
 
-3. **The Controller is the only privileged component on a node.**  
+3. **The Controller is the only privileged component on a node.**
    Workers run as restricted processes, often without shell.
 
-4. **The Mesh coordinates state, not execution.**  
+4. **The Mesh coordinates state, not execution.**
    Actual work remains local to a node unless intentionally routed across nodes.
 
 ---

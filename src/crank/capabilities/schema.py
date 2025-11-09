@@ -22,7 +22,7 @@ from pydantic import BaseModel, Field, field_validator
 class CapabilityVersion(BaseModel):
     """
     Semantic version for capability definitions.
-    
+
     Breaking changes require MAJOR bump.
     Backward-compatible additions require MINOR bump.
     Bug fixes require PATCH bump.
@@ -60,7 +60,7 @@ class CapabilityVersion(BaseModel):
 class ErrorCode(BaseModel):
     """
     Structured error code with description.
-    
+
     Workers declare what errors they can produce, allowing controllers
     to handle failures appropriately.
     """
@@ -80,7 +80,7 @@ class ErrorCode(BaseModel):
 class IOContract(BaseModel):
     """
     Input/output contract for a capability.
-    
+
     Uses JSON Schema for validation. Defines:
     - What inputs the capability accepts
     - What outputs it produces
@@ -115,7 +115,7 @@ class IOContract(BaseModel):
 class CapabilityDefinition(BaseModel):
     """
     Complete capability definition.
-    
+
     This is the source of truth for what a worker can do. Controllers
     use this to:
     - Validate worker registrations
