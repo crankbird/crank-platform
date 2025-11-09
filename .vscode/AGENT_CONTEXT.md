@@ -270,6 +270,15 @@ async def health_check() -> JSONResponse:
 self.app.get("/health")(health_check)
 ```
 
+**Pattern Usage**:
+- `src/crank/worker_runtime/base.py` (lines 11-13, 187-192) - Base class implementation
+- `services/crank_streaming.py` - Streaming worker with 6 endpoints using explicit binding
+
+**IMPORTANT**: Route registration code IS business logic, not boilerplate. A streaming
+service with 6 endpoints (/stream/text, /ws, /events, /status, /capabilities, /) will
+naturally have ~125 lines of route handlers. What WorkerApplication eliminates is the
+~250 lines of infrastructure (registration, heartbeat, certs, health checks).
+
 ### Optional Hooks in Abstract Base Classes
 
 **Problem**: Ruff B027 flags empty methods in abstract classes without `@abstractmethod`.

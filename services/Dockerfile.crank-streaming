@@ -21,20 +21,12 @@ RUN pip install --no-cache-dir -r requirements-crank-streaming.txt
 COPY src/ src/
 
 # Copy service files
-COPY services/crank_streaming.py ./crank_streaming_simple.py
-
-# Copy certificate initialization script (needed for in-process initialization)
-COPY services/crank_cert_initialize.py ./scripts/
+COPY services/crank_streaming.py .
 
 # Create certificates directory with proper ownership
 RUN mkdir -p /etc/certs && chown worker:worker /etc/certs
 
-# Create simplified startup script - NO subprocess initialization
-RUN echo '#!/usr/bin/env python3' > run_worker.py && \
-    echo '# Simple direct startup - certificate initialization in main()' >> run_worker.py && \
-    echo 'import crank_streaming_simple' >> run_worker.py && \
-    echo 'crank_streaming_simple.main()' >> run_worker.py && \
-    chmod +x run_worker.py
+# No startup script needed - main() handles everything
 
 # Security hardening
 USER worker
@@ -49,5 +41,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
 # Set PYTHONPATH to include src directory
 ENV PYTHONPATH="/app/src:/app"
 
-# Run simplified startup script
-CMD ["python", "run_worker.py"]
+# Run streaming worker directly
+CMD ["python", "crank_streaming.py"]
