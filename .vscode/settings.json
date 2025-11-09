@@ -5,5 +5,13 @@
     "tests"
   ],
   "python.terminal.activateEnvironment": true,
-  "terminal.integrated.defaultProfile.osx": "zsh"
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  // CRITICAL: The crank.* package lives under src/
+  // This setting tells VS Code's Python language server (Pylance) where to find it.
+  // Without this, imports like "from crank.capabilities.schema import ..." will show
+  // reportMissingImports errors even though pyrightconfig.json has extraPaths set.
+  // Both configs are needed: pyrightconfig.json for CLI/Pyright, this for VS Code editor.
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/src"
+  ]
 }

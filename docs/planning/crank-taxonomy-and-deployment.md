@@ -1,4 +1,5 @@
 # Crank Platform — Core Taxonomy & Deployment Model
+
 _Last updated: (fill date)_
 
 This document defines the shared terminology and architecture primitives used across the Crank ecosystem.  
@@ -10,7 +11,7 @@ It ensures consistent language for workers, controller, nodes, jobs, and capabil
 
 | Term | Meaning | Notes |
 |---|---|---|
-| **Crank-Node** | A host environment capable of running workers and a controller. | A node is *software-defined*, not tied to physical hardware. Laptops, servers, phones, and Raspberry Pi devices can all be nodes. |
+| **Crank-Node** | A host environment capable of running workers and a controller. | A node is _software-defined_, not tied to physical hardware. Laptops, servers, phones, and Raspberry Pi devices can all be nodes. |
 | **Crank-Controller** | The supervisory process on each node that manages workers, trust, routing, workload coordination, and participation in the mesh. | One per node. Privileged. Previously named `crank-platform`. |
 | **Crank-Worker** | A runtime component that performs work. Provides one or more **capabilities**. | Workers may run in a container, venv, mobile runtime, etc. |
 | **Crank-Capability** | A declared function a worker provides, including input/output format. | Example: `convert_document(pdf → text)`, `classify_image`, `sign_csr`. Capabilities are how the system routes work. |
@@ -19,7 +20,7 @@ It ensures consistent language for workers, controller, nodes, jobs, and capabil
 
 ### Structural Relationship
 
-```
+```text
 Crank-Node
    ├── Crank-Controller   (manages routing, governance, trust)
    └── Crank-Workers      (provide capabilities to fulfill jobs)
@@ -31,7 +32,7 @@ Crank-Node
 ## 2. Design Principles
 
 1. **Workers are not containers.**  
-   Workers are *logical service providers*. Containers, venvs, NPUs, pods, mobile apps are just execution strategies.
+   Workers are _logical service providers_. Containers, venvs, NPUs, pods, mobile apps are just execution strategies.
 
 2. **Capabilities are the source of truth.**  
    Capability definitions determine worker interchangeability and routing correctness.
@@ -60,11 +61,13 @@ Crank-Node
 ## 4. Strategic Insight
 
 This architecture **decouples**:
+
 - Capability descriptions
 - Execution environment
 - Deployment packaging
 
 This ensures:
+
 - Workers remain replaceable
 - Different hardware stays interoperable
 - System scales from embedded devices to cloud clusters

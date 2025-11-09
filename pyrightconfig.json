@@ -12,6 +12,14 @@
         "**/__pycache__",
         "tests/test_gpu_integration_pattern.py"
     ],
+    // CRITICAL: src/ contains the crank.* package namespace
+    // This extraPaths setting tells Pylance/Pyright to treat src/ as an import root
+    // so that "from crank.capabilities.schema import ..." resolves correctly.
+    // Each execution environment (src, tests, services) may also need this in their
+    // own extraPaths - see the tests environment below for example.
+    "extraPaths": [
+        "src"
+    ],
     "typeCheckingMode": "strict",
     // Core production code (src/) - strict settings
     "strict": [
@@ -47,9 +55,15 @@
             "reportUnknownVariableType": "none"
         },
         {
+            // Test files need to import from crank.* package
+            // CRITICAL: extraPaths must include "src" so Pylance can resolve
+            // "from crank.capabilities.schema import ..." when analyzing test files.
+            // Without this, you'll see reportMissingImports errors even though
+            // the global extraPaths is set - execution environments need their own.
             "root": "tests",
             "typeCheckingMode": "basic",
             "extraPaths": [
+                "src",
                 "."
             ],
             "reportMissingTypeStubs": "none",

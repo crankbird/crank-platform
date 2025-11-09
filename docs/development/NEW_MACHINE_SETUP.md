@@ -22,7 +22,7 @@ code mascots/kevin/kevin_agent_prompt.txt
 
 Copy-paste this into chat with Copilot/Codex:
 
-```
+```text
 This codebase uses a mascot-driven architecture framework:
 
 🐰 WENDY - Security (OWASP, Bobby Tables prevention, NIST compliance)
@@ -33,7 +33,6 @@ This codebase uses a mascot-driven architecture framework:
 Bobby Tables is a vulnerability pattern under Wendy's security domain, not a separate mascot.
 
 When reviewing code, apply the relevant mascot's standards and concerns.
-
 ```
 
 ## 🎯 **Test AI Understanding**
@@ -51,10 +50,36 @@ Ask your AI assistant:
 Open `crank-platform-mascots.code-workspace` for:
 
 - Pre-configured tasks for mascot testing
-
 - Recommended extensions
-
 - Integrated terminal commands
+
+## 🐍 **Python Import Resolution**
+
+The `crank.*` package lives under `src/`. Import resolution is already configured, but if you see Pylance errors like `"Import 'crank.capabilities.schema' could not be resolved"`:
+
+**Quick Fix**: Restart the Python language server
+
+- Command Palette → "Python: Restart Language Server"
+- Or reload the VS Code window
+
+**If that doesn't work**, verify these configurations exist:
+
+1. `pyrightconfig.json` has `"extraPaths": ["src"]` (global + tests execution environment)
+2. `.vscode/settings.json` has `"python.analysis.extraPaths": ["${workspaceFolder}/src"]`
+3. Python interpreter is set to `.venv/bin/python` (check status bar)
+
+**Runtime**: For running tests/scripts, either:
+
+```bash
+# Option A: Editable install (recommended)
+uv pip install -e .
+
+# Option B: PYTHONPATH export
+export PYTHONPATH=src
+pytest
+```
+
+See inline comments in `pyrightconfig.json` and `.vscode/settings.json` for why both configs are needed.
 
 ## ✅ **Success Indicators**
 

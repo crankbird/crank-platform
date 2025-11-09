@@ -203,7 +203,16 @@ setup_local_env() {
             uv venv --python 3.11
             echo_success "Created .venv with Python 3.11"
             echo_info "Activate with: source .venv/bin/activate"
-            echo_info "Then run: uv sync --all-extras"
+            echo_info "Installing dependencies: uv sync --all-extras"
+            uv sync --all-extras
+            echo_success "Dependencies installed"
+            
+            # Install package in editable mode for import resolution
+            echo_info "Installing crank package in editable mode..."
+            source .venv/bin/activate
+            uv pip install -e .
+            echo_success "Editable install complete - crank.* imports will now resolve"
+            echo_info "See pyrightconfig.json and .vscode/settings.json for import path config"
         else
             echo_warning "uv not found. Install with:"
             case $PLATFORM in
@@ -214,11 +223,24 @@ setup_local_env() {
                     echo "  curl -LsSf https://astral.sh/uv/install.sh | sh"
                     ;;
             esac
-            echo_info "After installing uv, run: uv venv --python 3.11 && uv sync --all-extras"
+            echo_info "After installing uv, run: uv venv --python 3.11 && uv sync --all-extras && uv pip install -e ."
         fi
     else
         echo_success "Python virtual environment exists at .venv"
-        echo_info "Remember to: source .venv/bin/activate && uv sync --all-extras"
+        echo_info "To update dependencies: source .venv/bin/activate && uv sync --all-extras"
+        
+        # Check if editable install exists
+        if [ -f ".venv/bin/python" ]; then
+            if ! .venv/bin/python -c "import crank" 2>/dev/null; then
+                echo_warning "crank package not installed in editable mode"
+                echo_info "Installing editable package for import resolution..."
+                source .venv/bin/activate
+                uv pip install -e .
+                echo_success "Editable install complete - crank.* imports will now resolve"
+            else
+                echo_success "crank package is installed and importable"
+            fi
+        fi
     fi
     
     # Copy local environment file

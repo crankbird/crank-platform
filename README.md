@@ -2,8 +2,8 @@
 
 **A distributed capability-based ML execution platform with controller/worker architecture**
 
-> ⚠️ **Major Architecture Refactor in Progress** (Nov 2025)  
-> Migrating from platform-centric to controller/worker model. See `docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md`  
+> ⚠️ **Major Architecture Refactor in Progress** (Nov 2025)
+> Migrating from platform-centric to controller/worker model. See `docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md`
 > Old architecture archived in `archive/2025-11-09-pre-controller-refactor/`
 
 ## Architecture Vision
@@ -27,7 +27,7 @@ Crank Platform implements a **controller + worker + capability** model for distr
 ## Current Capabilities
 
 - Email classification and parsing
-- Document conversion  
+- Document conversion
 - Image classification (CPU and GPU)
 - Streaming data processing
 - Certificate signing (CSR)
@@ -79,7 +79,7 @@ The mascots model our future **controller + specialist** collaboration pattern:
 
 Each represents a **capability domain** that will be provided by human+AI workers coordinated by the controller.
 
-Current implementation: `mascots/` directory with AI prompt engineering  
+Current implementation: `mascots/` directory with AI prompt engineering
 Future implementation: Human specialists with personal fine-tuned models, controller coordinates work
 
 See [Mascot Happiness Report](docs/MASCOT_HAPPINESS_REPORT.md) for current status.
@@ -101,6 +101,15 @@ See [Mascot Happiness Report](docs/MASCOT_HAPPINESS_REPORT.md) for current statu
 git clone https://github.com/crankbird/crank-platform.git
 cd crank-platform
 
+# Set up Python environment (automatically installs editable package)
+./scripts/dev-universal.sh setup
+
+# OR manually:
+uv venv --python 3.11
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv sync --all-extras
+uv pip install -e .  # Install crank.* package in editable mode
+
 # Initialize certificates
 python scripts/initialize-certificates.py
 
@@ -108,11 +117,14 @@ python scripts/initialize-certificates.py
 docker-compose -f docker-compose.development.yml up --build
 ```
 
+**Important**: The `uv pip install -e .` step installs the `crank.*` package in editable mode, which is required for imports to resolve correctly in tests and VS Code. See `pyrightconfig.json` and `.vscode/settings.json` for import path configuration.
+
 ### Running Tests
 
 ```bash
-# Install dependencies
+# Install dependencies (if not already done)
 uv sync --all-extras
+uv pip install -e .
 
 # Run unit tests
 pytest
@@ -171,4 +183,3 @@ This project is undergoing major architectural refactor. If contributing:
 ---
 
 **"The Fat Controller coordinates the workers, but the workers do the real work."** 🚂
-
