@@ -54,6 +54,7 @@ Plain text output or diagrams
 3. **Capabilities MUST be defined** in `src/crank/capabilities/schema.py` (when ready)
 4. **Tests MUST validate** capability-based routing, not direct service calls
 5. **Follow taxonomy** in `docs/planning/crank-taxonomy-and-deployment.md`
+6. **Follow linting patterns** in `docs/development/LINTING_AND_TYPE_CHECKING.md`
 
 ### Architecture Principles (NEW)
 
@@ -248,7 +249,141 @@ pytest
 
 ---
 
-## �📦 Development Environment Setup
+## 🔍 CODE QUALITY PATTERNS (Pylance/Mypy/Ruff)
+
+### FastAPI Route Handlers
+
+**Problem**: Pylance flags nested route handlers as "not accessed" when using decorators.
+
+**Solution**: Use explicit binding instead of decorators:
+
+```python
+# ❌ Avoid - Pylance can't see decorator usage
+@self.app.get("/health")
+async def health_check() -> JSONResponse:
+    return JSONResponse(...)
+
+# ✅ Correct - Explicit binding
+async def health_check() -> JSONResponse:
+    return JSONResponse(...)
+
+self.app.get("/health")(health_check)
+```
+
+### Optional Hooks in Abstract Base Classes
+
+**Problem**: Ruff B027 flags empty methods in abstract classes without `@abstractmethod`.
+
+**Solution**: Add explicit `return None` for optional hooks:
+
+```python
+# ❌ Avoid - Ruff sees this as missing implementation
+async def on_startup(self) -> None:
+    """Optional startup hook."""
+
+# ✅ Correct - Explicit return
+async def on_startup(self) -> None:
+    """Optional startup hook."""
+    return None
+```
+
+### Enum String Comparisons
+
+**Problem**: Comparing enum members directly to strings fails type checking.
+
+**Solution**: Use `.value` to access the string representation:
+
+```python
+# ❌ Avoid - Type mismatch
+assert HealthStatus.HEALTHY == "healthy"
+
+# ✅ Correct - Compare enum value
+assert HealthStatus.HEALTHY.value == "healthy"
+```
+
+### Type Narrowing After Assertions
+
+**Problem**: Pylance narrows types after assertions, causing false "non-overlapping" errors.
+
+**Solution**: Re-fetch or add explicit type annotation:
+
+```python
+# ❌ Avoid - Type narrowed to literal after first assert
+manager.set_status(HealthStatus.HEALTHY)
+assert manager.status == HealthStatus.HEALTHY
+manager.set_status(HealthStatus.STOPPING)
+assert manager.status == HealthStatus.STOPPING  # ❌ Type narrowing issue
+
+# ✅ Correct - Re-fetch with type annotation
+manager.set_status(HealthStatus.HEALTHY)
+assert manager.status == HealthStatus.HEALTHY
+manager.set_status(HealthStatus.STOPPING)
+current_status: HealthStatus = manager.status  # Widen type
+assert current_status == HealthStatus.STOPPING
+```
+
+### Optional Types Require Null Checks
+
+**Problem**: Accessing attributes on `Optional[T]` without guards fails type checking.
+
+**Solution**: Add explicit null checks before attribute access:
+
+```python
+# ❌ Avoid - Task might be None
+assert client.heartbeat_task.done()
+
+# ✅ Correct - Null check first
+assert client.heartbeat_task is not None
+assert client.heartbeat_task.done()
+```
+
+### Callable Type Annotations
+
+**Problem**: Generic `Callable` without parameters triggers "missing type parameters" warnings.
+
+**Solution**: Use type aliases with Union for sync/async callbacks:
+
+```python
+# ❌ Avoid - Missing type parameters
+shutdown_callbacks: list[Callable] = []
+
+# ✅ Correct - Type alias with parameters
+from collections.abc import Awaitable, Callable
+
+ShutdownCallback = Callable[[], None] | Callable[[], Awaitable[None]]
+shutdown_callbacks: list[ShutdownCallback] = []
+```
+
+### FastAPI Lifespan (Modern Pattern)
+
+**Problem**: `@app.on_event()` is deprecated in FastAPI.
+
+**Solution**: Use `lifespan` context manager:
+
+```python
+# ❌ Avoid - Deprecated
+@app.on_event("startup")
+async def startup():
+    pass
+
+# ✅ Correct - Lifespan context manager
+from contextlib import asynccontextmanager
+from collections.abc import AsyncIterator
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    # Startup
+    await startup_logic()
+    yield
+    # Shutdown
+    await shutdown_logic()
+
+app = FastAPI(lifespan=lifespan)
+```
+
+---
+
+## 📦 Development Environment Setup
 
 ### Initial Setup (Phase 0+)
 
