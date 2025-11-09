@@ -1,7 +1,8 @@
 # Controller + Worker Architecture Refactor Plan
 
 **Date**: November 9, 2025
-**Status**: 📋 Planning Phase
+**Last Updated**: November 10, 2025
+**Status**: 🏗️ **Phase 1 In Progress** (Worker Runtime Implementation)
 **Related**: `docs/planning/crank-taxonomy-and-deployment.md`
 
 ## Executive Summary
@@ -17,13 +18,16 @@ This document outlines the migration from the current "platform-mediated service
 ### Problems Identified (Both Human + Codex Analysis)
 
 #### 1. **No Capability Schema** 🚫
+
 - Workers have ad-hoc capability declarations embedded in code
 - `services/crank_streaming.py` (line 138) vs `services/crank_email_classifier.py` (line 205) use different formats
 - No versioning, no validation, no contract enforcement
 - **Impact**: Can't reason about worker compatibility or substitutability
 
 #### 2. **Massive Code Duplication** 🔄
+
 Every worker reimplements:
+
 - `WorkerRegistration` model definitions
 - Heartbeat loops with retry logic
 - Certificate bootstrap logic
@@ -31,6 +35,7 @@ Every worker reimplements:
 - Controller discovery
 
 **Files affected**:
+
 - `services/crank_email_classifier.py` (line 123)
 - `services/crank_streaming.py` (line 28)
 - `services/crank_doc_converter.py` + runner script
@@ -40,6 +45,7 @@ Every worker reimplements:
 **Impact**: Drift in auth, error handling, capability names. Maintenance nightmare.
 
 #### 3. **Platform vs Controller Confusion** 🏢
+
 - `services/crank_platform_service.py` and `services/crank_platform_app.py` treat "platform" as monolith
 - Workers register to `PLATFORM_URL` instead of node-local controller
 - Violates "controller-per-node" principle from taxonomy §1
@@ -51,7 +57,9 @@ Every worker reimplements:
 **Impact**: Prevents mesh-aware routing, scalability issues.
 
 #### 4. **Dockerfile Redundancy** 🐳
+
 Seven near-identical Dockerfiles:
+
 - `services/Dockerfile.crank-email-classifier`
 - `services/Dockerfile.crank-doc-converter`
 - `services/Dockerfile.crank-streaming`
@@ -61,6 +69,7 @@ Seven near-identical Dockerfiles:
 - `image-classifier-gpu/Dockerfile`
 
 All repeat:
+
 - Non-root user setup
 - `apt install` packages
 - Copy `src/`
@@ -72,6 +81,7 @@ All repeat:
 **Impact**: Obscures that "workers are logical providers, not containers". Brittle maintenance.
 
 #### 5. **Certificate Privilege Violation** 🔐
+
 - Certificate initialization bolted onto each worker
 - `services/crank_cert_initialize.py` copied into each image
 - Workers invoke cert generation via generated scripts
@@ -80,6 +90,7 @@ All repeat:
 **Impact**: Security boundary violation, workers have more privilege than they should.
 
 #### 6. **Tests Bypass Capability Routing** 🧪
+
 - `tests/test_email_pipeline.py`
 - `tests/quick_validation_test.py`
 - `tests/test_streaming_basic.py`
@@ -89,9 +100,11 @@ All refer to workers by old service names and hardcoded ports. Don't exercise ca
 **Impact**: Tests won't validate taxonomy concepts once implemented.
 
 #### 7. **dependencies.py is Misplaced** 📦
+
 The `services/dependencies.py` we just created for FastAPI DI is actually **controller-level** concern, not worker concern. It's mixing layers.
 
 #### 8. **CrankMeshInterface is Proto-Controller** 🌐
+
 `services/crank_mesh_interface.py` is actually the seed of what should become the controller. It's trying to emerge but trapped in the old architecture.
 
 ---
@@ -109,6 +122,7 @@ We need to collapse these into the proper controller/worker separation.
 ## Migration Strategy (Phased Approach)
 
 ### **Phase 0: Foundation**
+
 **Timeline**: 1-2 days
 **Risk**: Low (non-breaking)
 **Dependencies**: None
@@ -118,6 +132,7 @@ We need to collapse these into the proper controller/worker separation.
 **Deliverables**:
 
 1. **Create `src/crank/capabilities/schema.py`**
+
    ```python
    # Core types
    - CapabilityDefinition (id, version, io_contract)
@@ -134,7 +149,8 @@ We need to collapse these into the proper controller/worker separation.
    ```
 
 2. **Create `src/crank/worker_runtime/`**
-   ```
+
+   ```text
    worker_runtime/
    ├── __init__.py
    ├── base.py          # WorkerApplication base class
@@ -149,17 +165,22 @@ We need to collapse these into the proper controller/worker separation.
    - Worker runtime base class tests
 
 **Acceptance Criteria**:
-- [ ] Capability schema module exists with all current capabilities cataloged
-- [ ] Worker runtime base class can be imported and subclassed
-- [ ] Tests prove schema validation works
-- [ ] Documentation explains capability schema format
-- [ ] **No existing code is changed** (foundation only)
+
+- [x] Capability schema module exists with all current capabilities cataloged
+- [x] Worker runtime base class can be imported and subclassed
+- [x] Tests prove schema validation works (24 capability + 24 worker runtime = 48 tests passing)
+- [x] Documentation explains capability schema format
+- [x] Code quality patterns documented (LINTING_AND_TYPE_CHECKING.md + AGENT_CONTEXT enhancements)
+- [x] **No existing code is changed** (foundation only)
+
+**Status**: ✅ **COMPLETE** (Nov 10, 2025 - Commits 976dfd9 + ceea5b8)
 
 **Why First**: Creates foundation everything else builds on. Zero risk to running system.
 
 ---
 
 ### **Phase 1: Worker Migration**
+
 **Timeline**: 2-3 days
 **Risk**: Medium (changes one worker, keeps others working)
 **Dependencies**: Phase 0 complete
@@ -173,6 +194,7 @@ We need to collapse these into the proper controller/worker separation.
 **Deliverables**:
 
 1. **Refactor `services/crank_streaming.py`**
+
    ```python
    # BEFORE (current)
    - 207 lines
@@ -199,6 +221,7 @@ We need to collapse these into the proper controller/worker separation.
    - Lessons learned
 
 **Acceptance Criteria**:
+
 - [ ] Streaming worker refactored to use worker_runtime
 - [ ] All existing streaming tests still pass
 - [ ] Docker container still healthy
@@ -206,11 +229,19 @@ We need to collapse these into the proper controller/worker separation.
 - [ ] Code size reduced by >50%
 - [ ] Migration guide written
 
+**Status**: 🏗️ **IN PROGRESS** (Nov 10, 2025)
+
+**Current Progress**:
+- Worker runtime foundation complete and tested (ceea5b8)
+- Ready to begin streaming worker refactor
+- Target: Reduce crank_streaming.py from 207 lines → ~80 lines
+
 **Why Second**: Proves the pattern works. Creates template for migrating others.
 
 ---
 
 ### **Phase 2: Standardize Packaging**
+
 **Timeline**: 1-2 days
 **Risk**: Low (build-time changes only)
 **Dependencies**: Phase 1 complete
@@ -220,6 +251,7 @@ We need to collapse these into the proper controller/worker separation.
 **Deliverables**:
 
 1. **Create `services/Dockerfile.worker-base`**
+
    ```dockerfile
    # Multi-stage base image
    ARG PYTHON_VERSION=3.11
@@ -234,6 +266,7 @@ We need to collapse these into the proper controller/worker separation.
    ```
 
 2. **Refactor ONE Worker Dockerfile**
+
    ```dockerfile
    # services/Dockerfile.crank-streaming
    FROM worker-base:latest
@@ -248,6 +281,7 @@ We need to collapse these into the proper controller/worker separation.
    ```
 
 3. **Create `make worker-install` for macOS**
+
    ```makefile
    # For native execution (macOS Metal GPU workers)
    worker-install:
@@ -262,6 +296,7 @@ We need to collapse these into the proper controller/worker separation.
    - Test native macOS installation
 
 **Acceptance Criteria**:
+
 - [ ] `Dockerfile.worker-base` exists and builds successfully
 - [ ] At least one worker migrated to use base image
 - [ ] Image size reduction measured and documented
@@ -274,6 +309,7 @@ We need to collapse these into the proper controller/worker separation.
 ---
 
 ### **Phase 3: Controller Emergence**
+
 **Timeline**: 3-5 days
 **Risk**: High (core architectural change)
 **Dependencies**: Phases 0, 1, 2 complete
@@ -285,7 +321,8 @@ We need to collapse these into the proper controller/worker separation.
 **Deliverables**:
 
 1. **Rename/Refactor Core Files**
-   ```
+
+   ```text
    services/crank_platform_service.py → services/crank_controller_service.py
    services/crank_platform_app.py     → services/crank_controller_app.py
    ```
@@ -303,6 +340,7 @@ We need to collapse these into the proper controller/worker separation.
    - Service-specific endpoints
 
 4. **Implement Controller-Side Capability Registry**
+
    ```python
    # In controller
    - POST /controller/register (workers register capabilities)
@@ -312,6 +350,7 @@ We need to collapse these into the proper controller/worker separation.
    ```
 
 5. **Update Workers for Controller Discovery**
+
    ```python
    # In each worker
    # BEFORE
@@ -323,6 +362,7 @@ We need to collapse these into the proper controller/worker separation.
    ```
 
 6. **Update Tests**
+
    ```python
    # Create lightweight controller mock
    # Workers test against mock instead of real platform
@@ -330,6 +370,7 @@ We need to collapse these into the proper controller/worker separation.
    ```
 
 **Acceptance Criteria**:
+
 - [ ] Controller files renamed and refactored
 - [ ] Controller exposes capability registry endpoints
 - [ ] Controller validates capabilities against schema
@@ -345,6 +386,7 @@ We need to collapse these into the proper controller/worker separation.
 ---
 
 ### **Phase 4: Validation & Cleanup**
+
 **Timeline**: 1-2 days
 **Risk**: Low (cleanup only)
 **Dependencies**: All previous phases complete
@@ -383,6 +425,7 @@ We need to collapse these into the proper controller/worker separation.
    - Archive migration documentation
 
 **Acceptance Criteria**:
+
 - [ ] Integration test suite passing
 - [ ] Contract tests prove schema compliance
 - [ ] CI pipeline validates all workers
@@ -397,21 +440,25 @@ We need to collapse these into the proper controller/worker separation.
 ## Risk Mitigation
 
 ### **Current System Stability**
+
 We have **7 healthy containers in production right now**. Any refactor must maintain this.
 
 **Strategy**:
+
 1. **Parallel Development**: New patterns exist alongside old ones
 2. **One Worker at a Time**: Migrate incrementally, test thoroughly
 3. **Rollback Plan**: Keep old code until new code proven
 4. **Feature Flags**: Toggle between old/new patterns if needed
 
 ### **Testing Strategy**
+
 - Unit tests for each new module
 - Integration tests before deleting old code
 - Contract tests ensure schema compliance
 - Smoke tests run on every change
 
 ### **Deployment Strategy**
+
 - Phase 0-2: No deployment changes (foundation only)
 - Phase 3: Blue-green deployment (new controller alongside old platform)
 - Phase 4: Full cutover after validation
@@ -421,24 +468,28 @@ We have **7 healthy containers in production right now**. Any refactor must main
 ## Success Metrics
 
 ### **Code Quality**
+
 - [ ] Worker code size reduced by >50%
 - [ ] Dockerfile count reduced from 7 to 1 base + 7 thin layers
 - [ ] Code duplication eliminated (measured by DRY analysis)
 - [ ] Type safety improved (all capabilities schema-validated)
 
 ### **Architecture Alignment**
+
 - [ ] Taxonomy document fully implemented
 - [ ] Controller-per-node pattern working
 - [ ] Capability-based routing operational
 - [ ] Hybrid deployment (containers + native) proven
 
 ### **Developer Experience**
+
 - [ ] New worker creation time reduced (template + base image)
 - [ ] Onboarding documentation clear and complete
 - [ ] Tests run faster (mocked controller)
 - [ ] CI pipeline more reliable
 
 ### **Production Readiness**
+
 - [ ] All existing functionality preserved
 - [ ] Performance unchanged or improved
 - [ ] Security posture strengthened (privilege separation)
@@ -476,6 +527,7 @@ We have **7 healthy containers in production right now**. Any refactor must main
 6. **Begin Phase 0** - Start with foundation
 
 **Decision Points**:
+
 - [ ] Plan approved by both reviewers
 - [ ] Open questions answered
 - [ ] GitHub issues created
