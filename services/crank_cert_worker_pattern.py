@@ -24,7 +24,6 @@ Usage:
 import asyncio
 import logging
 import os
-import sys
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
@@ -61,10 +60,8 @@ class WorkerCertificatePattern:
         print(f"🔐 Initializing certificates for {self.service_name} using SECURE CSR pattern...")
 
         try:
-            # Import certificate initialization (add path if needed)
-            sys.path.append("/app/scripts")
-            from crank_cert_initialize import cert_store
-            from crank_cert_initialize import main as init_certificates
+            # Import certificate initialization using package imports
+            from crank_platform.security import cert_store, init_certificates
 
             # Set SERVICE_NAME for individual service certificates
             os.environ["SERVICE_NAME"] = self.service_name
@@ -100,9 +97,8 @@ class WorkerCertificatePattern:
         print("🔐 Using certificates from synchronous initialization")
 
         try:
-            # Import certificate store
-            sys.path.append("/app/scripts")
-            from crank_cert_initialize import cert_store
+            # Import certificate store using package imports
+            from crank_platform.security import cert_store
 
             # Get certificate file paths for uvicorn
             cert_file = cert_store.temp_cert_file

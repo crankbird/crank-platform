@@ -519,8 +519,7 @@ class CrankEmailParserService:
         async def __aenter__(self) -> httpx.AsyncClient:
             try:
                 # Import the CA client to get fresh CA certificate
-                sys.path.append("/app/scripts")
-                from crank_cert_initialize import CertificateAuthorityClient
+                from crank_platform.security.cert_initialize import CertificateAuthorityClient
 
                 # Get CA certificate directly from the Certificate Authority Service
                 ca_client = CertificateAuthorityClient(self.ca_service_url)
@@ -655,9 +654,7 @@ def main() -> None:
         logger.info("🔐 Initializing certificates using SECURE CSR pattern...")
         try:
             # Run secure certificate initialization in the same process
-            sys.path.append("/app/scripts")
-            from crank_cert_initialize import cert_store
-            from crank_cert_initialize import main as init_certificates
+            from crank_platform.security import cert_store, init_certificates
 
             # Run secure certificate initialization
             asyncio.run(init_certificates())

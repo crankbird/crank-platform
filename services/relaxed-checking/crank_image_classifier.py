@@ -10,7 +10,6 @@ import io
 import logging
 import os
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any, Optional
 from uuid import uuid4
 
@@ -34,22 +33,8 @@ logger = logging.getLogger(__name__)
 
 # Import for GPU checks
 try:
-    # Add path for UniversalGPUManager (flexible import for host and container)
-    import sys
-    from pathlib import Path
-
-    # Try multiple possible paths for gpu_manager
     # Import GPU manager directly - no path manipulation needed
-    try:
-        from gpu_manager import UniversalGPUManager
-    except ImportError:
-        # Fallback import if not in path 
-        import sys
-        from pathlib import Path
-        # Add src directory to path temporarily
-        src_path = Path(__file__).parent.parent.parent / "src"
-        sys.path.insert(0, str(src_path))
-        from gpu_manager import UniversalGPUManager
+    from gpu_manager import UniversalGPUManager
 
     # 🚨 WSL2 GPU COMPATIBILITY CRITICAL ISSUE - See docs/WSL2-GPU-CUDA-COMPATIBILITY.md
     #
@@ -164,7 +149,7 @@ class CrankImageClassifier:
         async def health_check() -> dict[str, Any]:
             """Health check endpoint with security status."""
             security_status = {}
-            if hasattr(self, "cert_store"):
+            if hasattr(self, "cert_store") and self.cert_store is not None:
                 security_status = {
                     "ssl_enabled": self.cert_store.platform_cert is not None,
                     "ca_cert_available": self.cert_store.ca_cert is not None,
@@ -474,7 +459,7 @@ class CrankImageClassifier:
 
     def _create_client(self) -> httpx.AsyncClient:
         """Create HTTP client with certificate verification."""
-        if hasattr(self.cert_store, "ca_cert") and self.cert_store.ca_cert:
+        if hasattr(self, "cert_store") and self.cert_store is not None and hasattr(self.cert_store, "ca_cert") and self.cert_store.ca_cert:
             # Use CA certificate for verification
             return httpx.AsyncClient(verify=False)  # Simplified for now
         return httpx.AsyncClient(verify=False)
@@ -554,6 +539,8 @@ def main() -> None:
     https_only = os.getenv("HTTPS_ONLY", "true").lower() == "true"
     ca_service_url = os.getenv("CA_SERVICE_URL")
 
+    cert_store = None  # Initialize certificate store
+
     if https_only and ca_service_url:
         print("🔐 Initializing certificates using SECURE CSR pattern...")
         try:
@@ -561,19 +548,20 @@ def main() -> None:
             import asyncio
 
             try:
-                from crank_platform.security import cert_store
-                from crank_platform.security import init_certificates
+                from crank_platform.security import cert_store, init_certificates
 
                 # Run secure certificate initialization
                 asyncio.run(init_certificates())
-            except ImportError:
-                logger.warning("Certificate initialization not available")
 
-            # Check if certificates were loaded
-            if cert_store.platform_cert is None:
-                raise RuntimeError(
-                    "🚫 Certificate initialization completed but no certificates in memory",
-                )
+                # Check if certificates were loaded
+                if cert_store.platform_cert is None:
+                    raise RuntimeError(
+                        "🚫 Certificate initialization completed but no certificates in memory",
+                    )
+
+            except ImportError:
+                logger.error("Certificate initialization not available")
+                raise RuntimeError("Certificate initialization failed") from None
 
             print("✅ Certificates loaded successfully using SECURE CSR pattern")
             print("🔒 SECURITY: Private keys generated locally and never transmitted")

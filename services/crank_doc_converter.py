@@ -68,10 +68,7 @@ class CrankDocumentConverter:
             self.cert_store = cert_store
         else:
             logger.info("🔐 Creating empty certificate store (fallback)")
-            import sys
-
-            sys.path.append("/app/scripts")
-            from crank_cert_initialize import SecureCertificateStore
+            from crank_platform.security import SecureCertificateStore
 
             self.cert_store = SecureCertificateStore()
 
@@ -407,13 +404,9 @@ def main() -> None:
         print("🔐 Initializing certificates using SECURE CSR pattern...")
         try:
             # Run secure certificate initialization in the same process
-            import sys
-
-            sys.path.append("/app/scripts")
             import asyncio
 
-            from crank_cert_initialize import cert_store
-            from crank_cert_initialize import main as init_certificates
+            from crank_platform.security import cert_store, init_certificates
 
             # Run secure certificate initialization
             asyncio.run(init_certificates())
@@ -455,10 +448,7 @@ def main() -> None:
 
         # Create SSL context from in-memory certificates (SECURE CSR pattern)
         try:
-            import sys
-
-            sys.path.append("/app/scripts")
-            from crank_cert_initialize import cert_store
+            from crank_platform.security import cert_store
 
             cert_store.get_ssl_context()
 

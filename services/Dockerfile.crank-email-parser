@@ -19,6 +19,7 @@ COPY services/requirements-crank-email-parser.txt .
 RUN pip install --no-cache-dir -r requirements-crank-email-parser.txt
 
 # Copy worker code and metadata
+COPY src/ src/
 COPY services/crank_email_parser.py .
 COPY services/security_config.py .
 COPY services/crank-email-parser.plugin.yaml ./plugin.yaml
@@ -40,6 +41,9 @@ RUN echo '#!/usr/bin/env python3' > run_worker.py && \
 
 # Security hardening
 USER worker
+
+# Set Python path to include package structure
+ENV PYTHONPATH="/app/src:/app"
 
 # Expose worker HTTPS port
 EXPOSE 8300

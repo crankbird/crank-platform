@@ -20,6 +20,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy all service files and dependencies
 COPY *.py ./
+COPY src/ src/
 COPY services/crank_platform_app.py ./scripts/
 COPY services/crank_platform_service.py ./
 COPY services/mesh_diagnostics_v2.py ./
@@ -76,7 +77,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
 EXPOSE 8443
 
 # Set environment variables
-ENV PYTHONPATH=/app
+ENV PYTHONPATH="/app/src:/app"
 # SECURITY: Auth tokens must be provided at runtime via environment variables
 # Do NOT hardcode sensitive values in Docker images
 

@@ -9,7 +9,6 @@ import asyncio
 import json
 import logging
 import os
-import sys
 import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -483,9 +482,7 @@ def main() -> None:
         # SYNCHRONOUS certificate initialization - PROVEN PATTERN
         logger.info("🔐 Initializing certificates using SECURE CSR pattern...")
 
-        sys.path.append("/app/scripts")
-
-        from crank_cert_initialize import main as init_certificates
+        from crank_platform.security import init_certificates
 
         # Synchronous initialization - this is the PROVEN pattern
         asyncio.run(init_certificates())
