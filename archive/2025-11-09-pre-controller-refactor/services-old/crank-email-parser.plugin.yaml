@@ -1,0 +1,90 @@
+name: "crank-email-parser"
+description: "Bulk email archive parser for mbox and EML files"
+version: "1.0.0"
+type: "email-processing"
+author: "Crank Platform"
+
+# Service configuration
+service:
+  port: 8301
+  protocol: "https"
+  health_endpoint: "/health"
+  
+# mTLS configuration
+security:
+  mTLS: true
+  certificates:
+    server_cert: "/certs/server.crt"
+    server_key: "/certs/server.key"
+    ca_cert: "/certs/ca.crt"
+    client_cert: "/certs/client.crt"
+    client_key: "/certs/client.key"
+
+# API endpoints
+endpoints:
+  - path: "/parse/mbox"
+    method: "POST"
+    description: "Parse mbox email archive files"
+    content_type: "multipart/form-data"
+    parameters:
+      - name: "file"
+        type: "file"
+        required: true
+        description: "mbox file to parse"
+      - name: "request_data"
+        type: "json"
+        required: true
+        description: "Parsing configuration (keywords, limits, etc.)"
+    
+  - path: "/parse/eml"
+    method: "POST"
+    description: "Parse single EML email files"
+    content_type: "multipart/form-data"
+    parameters:
+      - name: "file"
+        type: "file"
+        required: true
+        description: "EML file to parse"
+      - name: "request_data"
+        type: "json"
+        required: true
+        description: "Parsing configuration"
+    
+  - path: "/analyze/archive"
+    method: "POST"
+    description: "Analyze email archive patterns and statistics"
+    content_type: "multipart/form-data"
+
+# Capabilities
+capabilities:
+  - "mbox_parsing"
+  - "eml_parsing" 
+  - "bulk_processing"
+  - "receipt_detection"
+  - "keyword_filtering"
+  - "streaming_processing"
+  - "archive_analysis"
+
+# Resource requirements
+resources:
+  memory: "1Gi"
+  cpu: "500m"
+  storage: "2Gi"  # For temporary file processing
+
+# Environment variables
+environment:
+  CRANK_PLATFORM_URL: "https://platform:8000"
+  CLIENT_CERT_PATH: "/certs/client.crt"
+  CLIENT_KEY_PATH: "/certs/client.key"
+  CA_CERT_PATH: "/certs/ca.crt"
+  SSL_CERTFILE: "/certs/server.crt"
+  SSL_KEYFILE: "/certs/server.key"
+  SSL_CA_CERTS: "/certs/ca.crt"
+
+# Registration with platform
+platform_integration:
+  auto_register: true
+  service_type: "email-parser"
+  mesh_compatible: true
+  health_check_interval: 30
+  registration_retry_count: 3

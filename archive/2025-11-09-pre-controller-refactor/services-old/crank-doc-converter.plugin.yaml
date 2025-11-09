@@ -1,0 +1,50 @@
+# Crank Document Converter Plugin
+name: crank-doc-converter
+version: 1.0.0
+description: Real document format conversion powered by pandoc
+author: Crank Platform Team
+platform_version_min: "0.1.0"
+platform_version_max: "1.0.0"
+
+# Service Configuration
+service:
+  port: 8002
+  health_endpoint: "/health"
+  base_path: "/convert"
+
+# Conversion Capabilities
+capabilities:
+  - operation: "convert_document"
+    description: "Convert documents between formats using pandoc"
+    input_formats: ["markdown", "html", "latex", "docx", "odt", "rtf"]
+    output_formats: ["html", "latex", "pdf", "docx", "odt", "epub"]
+    max_file_size: "10MB"
+    timeout: 30
+
+# Dependencies
+dependencies:
+  system:
+    - pandoc
+    - texlive-latex-base  # For PDF generation
+  python:
+    - fastapi
+    - uvicorn
+    - python-multipart
+
+# Resource Requirements
+resources:
+  memory_min: "256MB"
+  memory_max: "1GB"
+  cpu_min: "0.1"
+  cpu_max: "1.0"
+
+# Security Configuration
+security:
+  requires_https: true
+  requires_mtls: true
+  certificate_path: "/app/certs"
+
+# Development Metadata
+repository: "https://github.com/crankbird/crank-doc-converter"
+documentation: "https://docs.crankplatform.com/workers/doc-converter"
+license: "MIT"

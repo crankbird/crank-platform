@@ -1,0 +1,30 @@
+# Crank Platform Dependencies
+
+# Core framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+
+# HTTP client for service communication
+httpx>=0.25.0
+aiohttp>=3.8.0
+
+# File processing
+python-multipart>=0.0.6
+
+# Persistence backends (optional)
+redis>=4.5.0
+aiosqlite>=0.19.0
+
+# Email processing (for CrankEmail)
+# Note: These would be imported from the email parser module
+
+# Document processing (for CrankDoc)  
+# Note: These would be imported from the document converter module
+
+# Development dependencies
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+black>=23.0.0
+ruff>=0.1.0
+mypy>=1.7.0

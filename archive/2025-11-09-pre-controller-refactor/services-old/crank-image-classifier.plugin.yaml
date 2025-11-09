@@ -1,0 +1,74 @@
+# Crank Image Classifier Plugin
+name: crank-image-classifier
+version: 1.0.0
+description: Computer vision ML classification for image analysis, object detection, and content recognition
+author: Crank Platform Team
+platform_version_min: "0.1.0"
+platform_version_max: "1.0.0"
+
+# Service Configuration
+service:
+  port: 8005
+  health_endpoint: "/health"
+  base_path: "/classify"
+
+# Image Classification Capabilities
+capabilities:
+  - operation: "classify_image"
+    description: "Classify images using computer vision ML models"
+    classifications:
+      - "object_detection"     # Identify objects in images
+      - "scene_classification" # Indoor/Outdoor/Nature/Urban
+      - "content_safety"       # Safe/Unsafe content detection
+      - "image_quality"        # High/Medium/Low quality assessment
+      - "dominant_colors"      # Extract dominant color palette
+      - "text_detection"       # OCR - detect text in images
+    supported_formats: ["jpg", "jpeg", "png", "bmp", "gif", "webp"]
+    max_image_size: "10MB"
+    max_resolution: "4096x4096"
+    timeout: 15
+    confidence_threshold: 0.6
+
+# Dependencies
+dependencies:
+  system:
+    - python3
+    - libgl1-mesa-glx  # OpenCV requirements
+    - libglib2.0-0
+  python:
+    - fastapi
+    - uvicorn
+    - opencv-python
+    - pillow
+    - numpy
+    - scikit-learn
+    - python-multipart
+    - httpx
+
+# Resource Requirements
+resources:
+  memory_min: "1GB"
+  memory_max: "4GB"
+  cpu_min: "0.5"
+  cpu_max: "2.0"
+  gpu_required: false
+
+# Security Configuration
+security:
+  requires_https: true
+  requires_mtls: true
+  certificate_path: "/app/certs"
+
+# Computer Vision Models
+models:
+  object_detector: "opencv/haarcascades"
+  scene_classifier: "custom/simple_scenes"
+  content_safety: "custom/safety_keywords"
+  quality_assessor: "opencv/blur_detection"
+  color_extractor: "opencv/kmeans_clustering"
+  text_detector: "opencv/east_text_detection"
+
+# Development Metadata
+repository: "https://github.com/crankbird/crank-image-classifier"
+documentation: "https://docs.crankplatform.com/workers/image-classifier"
+license: "MIT"

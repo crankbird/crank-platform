@@ -1,122 +1,174 @@
-# The Crank Platform: Sustainable AI for the Agent Economy
+# Crank Platform
 
-> *"AI doesn't have to be evil. It doesn't have to be wasteful. It just has to be inevitable."*
->
-> **Platform as a Service (PaaS) layer for the Crank ecosystem**
+**A distributed capability-based ML execution platform with controller/worker architecture**
 
-## Meet Our Architectural Menagerie
+> ⚠️ **Major Architecture Refactor in Progress** (Nov 2025)  
+> Migrating from platform-centric to controller/worker model. See `docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md`  
+> Old architecture archived in `archive/2025-11-09-pre-controller-refactor/`
 
-Our platform is guided by architectural mascots who ensure quality and consistency:
+## Architecture Vision
 
-| Mascot | Role | Code References | Mission |
-|--------|------|-----------------|---------|
-| 🐰 **Wendy** | Zero-Trust Security Bunny | `*security*`, `*mTLS*`, `*auth*`, `*certs*` | Ensures encrypted communication and service isolation |
-| 🦙 **Kevin** | Portability Llama | `*runtime*`, `*kevin*`, `container_runtime.py` | Provides container runtime abstraction across Docker/Podman |
-| 🐩 **Bella** | Modularity Poodle | `*separation*`, `*modular*`, `*plugin*` | Maintains clean service boundaries and separation readiness |
-| 🦅 **Oliver** | Anti-Pattern Eagle | `*pattern*`, `*review*`, code reviews | Prevents architectural anti-patterns and technical debt |
-| 🐌 **Gary** | Methodical Snail | `*context*`, `*documentation*`, `*maintainability*` | Preserves context and ensures "back of the cabinet craftsmanship" |
+Crank Platform implements a **controller + worker + capability** model for distributed ML workloads:
 
-*When you see mascot names in our code, they represent architectural principles in action! Gary's gentle "meow" reminds us to slow down and think methodically.*
+- **Crank-Node**: Host environment capable of running workers + controller
+- **Crank-Controller**: Supervisory process managing workers, trust, routing (one per node)
+- **Crank-Worker**: Runtime component providing capabilities
+- **Crank-Capability**: Declared function a worker provides (routing key)
+- **Crank-Job**: Request for work routed by capability
+- **Mesh**: Distributed network of controllers sharing capability/health/load info
 
----
+### Design Principles
 
-## Architecture Role
+1. **Workers are not containers** - Logical providers; execution strategy varies (containers, native, hybrid)
+2. **Capabilities are source of truth** - Routing correctness over service discovery
+3. **Controller is the only privileged component** - Workers operate in restricted sandbox
+4. **Mesh coordinates state, not execution** - Work stays local unless explicitly routed
 
-The Crank Platform serves as the **PaaS layer** in a clean three-tier architecture:
+## Current Capabilities
 
-- **🏗️ IaaS**: [crank-infrastructure](https://github.com/crankbird/crank-infrastructure) - Environment provisioning, containers, VMs
-- **🕸️ PaaS**: **crank-platform** (this repo) - Service mesh, security, governance patterns
-- **📱 SaaS**: [crankdoc](https://github.com/crankbird/crankdoc), [parse-email-archive](https://github.com/crankbird/parse-email-archive) - Business logic services
+- Email classification and parsing
+- Document conversion  
+- Image classification (CPU and GPU)
+- Streaming data processing
+- Certificate signing (CSR)
 
-## Quick Start
+All services communicate over HTTPS with mutual TLS (mTLS) for enhanced security.
 
-### Prerequisites
+## Current Status (Phase 0)
 
-```bash
-# Check your environment is ready
-./scripts/validate-host-environment.sh
+**Active Development**: Controller/Worker architecture refactor in progress
 
-# Quick dependency check for services
-make deps-check
-
-# Validate test organization
-make test-org
-```
-
-### Development
-
-```bash
-# Start development environment
-./dev-universal.sh
-
-# Quick testing (unified test runner)
-uv run python test_runner.py --unit
-
-# Run comprehensive tests
-uv run python test_runner.py --integration
-
-# CI/CD pipeline validation
-uv run python test_runner.py --ci
-```
+- ✅ Old architecture archived and functional
+- ✅ Migration plan documented ([CONTROLLER_WORKER_REFACTOR_PLAN.md](docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md))
+- 🔄 **Phase 0**: Building capability schema + worker runtime foundation (Issue #27)
+- ⏳ **Phase 1**: Migrate first worker (streaming) to shared runtime (Issue #28)
+- ⏳ **Phase 2**: Create base worker image + hybrid deployment (Issue #29)
+- ⏳ **Phase 3**: Extract controller from platform (Issue #30)
+- ⏳ **Phase 4**: Integration tests & documentation (Issue #31)
 
 ## Documentation
 
-- **[🏗️ Architecture](docs/ARCHITECTURE.md)** - Platform architecture, JEMM principles, GPU strategy
-- **[🚀 Platform Services](docs/PLATFORM_SERVICES.md)** - Service catalog, universal patterns, deployment
-- **[🌟 Vision & Strategy](docs/VISION.md)** - Economic model, market strategy, long-term vision
-- **[🧪 Testing Strategy](docs/development/testing-strategy.md)** - CI/CD testing approach, unified test runner
-- **[Quick Start Guide](QUICK_START.md)** - Get running in 5 minutes
-- **[Azure Setup Guide](AZURE_SETUP_GUIDE.md)** - Cloud deployment walkthrough
-- **[Universal GPU Dependencies](scripts/QUICK_START.md)** - Automated dependency installation for GPU services
-- **[WSL2 GPU Compatibility](docs/WSL2-GPU-CUDA-COMPATIBILITY.md)** - Critical gaming laptop GPU setup for WSL2
-- **[Enhancement Roadmap](ENHANCEMENT_ROADMAP.md)** - Platform development plan
-- **[Legacy Integration Guide](LEGACY_INTEGRATION.md)** - Industrial & enterprise system integration
-- **[Mesh Interface Design](mesh-interface-design.md)** - Universal service architecture
+### Architecture & Planning
 
-## The Universal Pattern
+- [**Taxonomy & Deployment Model**](docs/planning/crank-taxonomy-and-deployment.md) - Core architectural vision
+- [**Controller Refactor Plan**](docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md) - Detailed implementation roadmap
+- [**Enhancement Roadmap**](docs/planning/ENHANCEMENT_ROADMAP.md) - Feature prioritization
+- [**Philosophy**](philosophy/) - System vision and economic model
 
-Every service follows the same architecture:
+### Development
 
-```python
-@crank_service
-def process_transaction(input_data, policies, context):
-    # Your original Python logic here
-    result = do_something(input_data)
-    return result
+- [**Mascot System**](mascots/README.md) - AI specialist roles (future human+AI collaboration model)
+- [**Quick Start**](QUICK_START.md) - Getting started (will be updated for controller architecture)
+- [**Requirements**](REQUIREMENTS.md) - Dependencies and setup
 
-# Automatically gets
-# - FastAPI endpoint with authentication
-# - Security isolation in containers
-# - Audit logging and receipts
-# - Policy enforcement via OPA/Rego
-# - Chargeback tracking
-# - Multi-deployment options (laptop to cloud)
+### Operations
+
+- [**Security Architecture**](docs/security/) - mTLS, certificates, trust model
+- [**Certificate Authority**](docs/certificate-authority-architecture.md) - PKI infrastructure
+- [**Anti-Fragile mTLS**](docs/anti-fragile-mtls-strategy.md) - Resilience patterns
+
+## The Mascot System (Future Vision)
+
+> *"Each mascot will eventually be replaced by real humans working with fine-tuned AIs rather than the generic pre-prompt we have now"* - Project Vision
+
+The mascots model our future **controller + specialist** collaboration pattern:
+
+- **🐰 Wendy (Security)** - Future: Security engineer + fine-tuned security AI
+- **🦙 Kevin (Portability)** - Future: Platform engineer + fine-tuned deployment AI
+- **🦊 Gary (GPU/Performance)** - Future: Performance engineer + fine-tuned optimization AI
+
+Each represents a **capability domain** that will be provided by human+AI workers coordinated by the controller.
+
+Current implementation: `mascots/` directory with AI prompt engineering  
+Future implementation: Human specialists with personal fine-tuned models, controller coordinates work
+
+See [Mascot Happiness Report](docs/MASCOT_HAPPINESS_REPORT.md) for current status.
+
+## Quick Start (Legacy - Will be Updated)
+
+> ⚠️ Instructions below reference old platform architecture. Will be updated after Phase 3.
+
+### Prerequisites
+
+- Docker and Docker Compose
+- Python 3.11+
+- OpenSSL for certificate generation
+
+### Development Setup
+
+```bash
+# Clone repository
+git clone https://github.com/crankbird/crank-platform.git
+cd crank-platform
+
+# Initialize certificates
+python scripts/initialize-certificates.py
+
+# Start development environment
+docker-compose -f docker-compose.development.yml up --build
 ```
 
-## Core Philosophy
+### Running Tests
 
-### Vision Statement
+```bash
+# Install dependencies
+uv sync --all-extras
 
-The Crank Platform transforms every useful Python script into an enterprise-ready service with built-in security, auditability, and compliance - deployable anywhere from a gaming laptop to a multi-cloud federation. We're building the economic infrastructure for a sustainable AI agent economy.
+# Run unit tests
+pytest
 
-### The Core Insight
+# Run with coverage
+pytest --cov=src --cov-report=html
+```
 
-Every time ChatGPT says "I can't do X, but here's some Python code to run in your environment," that represents a **market opportunity**. We wrap that code in enterprise governance and make it available as a service that machines can discover, negotiate for, and pay for automatically.
+## Deployment Models
+
+**Post-refactor** (from taxonomy document):
+
+1. **Containers** (Windows/Linux/Cloud): Controller + workers in Docker
+2. **Hybrid** (macOS): Controller + CPU workers in containers, GPU workers native (Metal support)
+3. **Embedded** (iOS/Android): Controller + workers as native libraries
+4. **Native** (Raspberry Pi): Controller + workers as system services
+
+## Project Structure
+
+```text
+crank-platform/
+├── src/crank/                    # Core platform libraries
+│   ├── capabilities/             # [Phase 0] Capability schema (NEW)
+│   ├── worker_runtime/           # [Phase 0] Shared worker base (NEW)
+│   └── crank_platform/           # Type-safe core (existing)
+├── services/                     # Worker implementations
+│   └── [Phase 1+] Refactored workers using runtime
+├── tests/                        # Test suite
+├── docs/                         # Documentation
+│   ├── planning/                 # Architecture plans
+│   └── architecture/             # Implementation docs
+├── mascots/                      # AI specialist system
+├── philosophy/                   # Vision documents
+├── intellectual-property/        # Patent/IP context
+└── archive/                      # Legacy code archives
+    └── 2025-11-09-pre-controller-refactor/  # Old platform architecture
+```
 
 ## Contributing
 
-1. **Read the docs**: Start with [Architecture](docs/ARCHITECTURE.md) to understand the platform
-2. **Use unified testing**: Run `uv run python test_runner.py --unit` for development validation
-3. **Follow testing strategy**: See [Testing Strategy](docs/development/testing-strategy.md) for comprehensive CI/CD approach
-4. **Check implementation**: Review [Testing Implementation](docs/development/testing-implementation-summary.md) for current status
-5. **Follow mascot guidance**: Our architectural mascots guide code quality and consistency
+This project is undergoing major architectural refactor. If contributing:
 
-## Support
+1. Read [CONTROLLER_WORKER_REFACTOR_PLAN.md](docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md)
+2. Check active Phase in GitHub Issues (#27-#31)
+3. New code should follow controller/worker pattern, not archived patterns
+4. Tests must validate capability-based routing
 
-- **Issues**: [GitHub Issues](https://github.com/crankbird/crank-platform/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/crankbird/crank-platform/discussions)
-- **Documentation**: [docs/](docs/) directory for detailed guides
+## License
+
+[Your License Here]
+
+## Contact
+
+[Your Contact Info]
 
 ---
 
-**Next**: Read [Architecture](docs/ARCHITECTURE.md) to understand the platform design, or [Quick Start](QUICK_START.md) to get running immediately.
+**"The Fat Controller coordinates the workers, but the workers do the real work."** 🚂
+

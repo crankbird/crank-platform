@@ -1,0 +1,40 @@
+{
+    "include": [
+        "./**/*.py"
+    ],
+    "exclude": [],
+    "strictParameterNoneValue": true,
+    "strictDictionaryInference": true,
+    "strictListInference": true,
+    "strictSetInference": true,
+    // Computer Vision Library Accommodations
+    "reportGeneralTypeIssues": "warning",
+    "reportUnknownArgumentType": "none",
+    "reportUnknownLambdaType": "none",
+    "reportUnknownMemberType": "none",
+    "reportUnknownParameterType": "none",
+    "reportUnknownVariableType": "none",
+    "reportMissingTypeArgument": "none",
+    "reportPartiallyUnknownType": "none",
+    // OpenCV Specific Issues (cv2.SIFT_create, dynamic methods)
+    "reportAttributeAccessIssue": "none",
+    "reportOptionalMemberAccess": "warning",
+    "reportOptionalCall": "warning",
+    // NumPy Array Generic Issues
+    "reportIncompatibleVariableOverride": "none",
+    // PIL/Pillow Dynamic Type Issues
+    "reportReturnType": "warning",
+    "reportArgumentType": "none",
+    // FastAPI Handler Registration (keep some checking)
+    "reportUnusedFunction": "none",
+    "reportUnusedVariable": "warning",
+    // Still catch real problems
+    "reportMissingImports": "error",
+    "reportUndefinedVariable": "error",
+    "reportAssertAlwaysTrue": "error",
+    "reportSelfClsParameterName": "error",
+    "reportConstantRedefinition": "error",
+    "reportIncompatibleMethodOverride": "warning",
+    "reportUnreachable": "warning",
+    "reportPrivateUsage": "warning"
+}

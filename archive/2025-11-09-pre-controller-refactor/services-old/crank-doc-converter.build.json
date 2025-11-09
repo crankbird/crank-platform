@@ -1,0 +1,55 @@
+{
+    "service": "crank-doc-converter",
+    "description": "Document conversion worker service",
+    "container_name": "crank-doc-converter",
+    "build_context": ".",
+    "dockerfile": "services/Dockerfile.crank-doc-converter",
+    "dependencies": {
+        "runtime_files": [
+            "services/crank_doc_converter.py",
+            "services/crank_cert_initialize.py"
+        ],
+        "requirements_file": "services/requirements-crank-doc-converter.txt",
+        "configuration_files": [
+            "services/crank-doc-converter.plugin.yaml"
+        ],
+        "shared_dependencies": [
+            "shared/"
+        ]
+    },
+    "environment": {
+        "development": {
+            "CRANK_ENVIRONMENT": "development",
+            "LOG_LEVEL": "DEBUG",
+            "DOC_CONVERTER_HTTPS_PORT": 8100,
+            "CA_SERVICE_URL": "https://crank-cert-authority-dev:9090",
+            "HTTPS_ONLY": "true"
+        },
+        "production": {
+            "CRANK_ENVIRONMENT": "production",
+            "LOG_LEVEL": "INFO",
+            "DOC_CONVERTER_HTTPS_PORT": 8100,
+            "CA_SERVICE_URL": "https://crank-cert-authority:9090",
+            "HTTPS_ONLY": "true"
+        }
+    },
+    "ports": {
+        "https": 8100
+    },
+    "healthcheck": {
+        "endpoint": "/health",
+        "port": "https",
+        "protocol": "https"
+    },
+    "volumes": {
+        "development": [
+            "./services:/app/services:ro",
+            "./shared:/app/shared:ro"
+        ],
+        "production": []
+    },
+    "gpu_required": false,
+    "depends_on": [
+        "crank-platform"
+    ]
+}

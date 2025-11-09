@@ -1,0 +1,49 @@
+{
+    "service": "crank-cert-authority",
+    "description": "Certificate Authority Service for centralized certificate management",
+    "container_name": "crank-cert-authority",
+    "build_context": ".",
+    "dockerfile": "services/Dockerfile.crank-cert-authority",
+    "dependencies": {
+        "runtime_files": [
+            "services/crank_cert_authority_app.py",
+            "services/crank_cert_authority_service.py",
+            "services/security_config.py",
+            "services/crank_cert_initialize.py"
+        ],
+        "requirements_file": "services/requirements-crank-cert-authority.txt",
+        "configuration_files": [],
+        "shared_dependencies": [
+            "shared/"
+        ]
+    },
+    "environment": {
+        "development": {
+            "CRANK_ENVIRONMENT": "development",
+            "LOG_LEVEL": "DEBUG",
+            "CERT_AUTHORITY_PORT": 9090
+        },
+        "production": {
+            "CRANK_ENVIRONMENT": "production",
+            "LOG_LEVEL": "INFO",
+            "CERT_AUTHORITY_PORT": 9090
+        }
+    },
+    "ports": {
+        "https": 9090
+    },
+    "healthcheck": {
+        "endpoint": "/health",
+        "port": "https",
+        "protocol": "https"
+    },
+    "volumes": {
+        "development": [
+            "./services:/app/services:ro",
+            "./shared:/app/shared:ro"
+        ],
+        "production": []
+    },
+    "gpu_required": false,
+    "depends_on": []
+}
