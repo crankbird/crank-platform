@@ -79,11 +79,11 @@ class StreamingWorker(WorkerApplication):
 
     def setup_routes(self) -> None:
         """Set up streaming-specific routes.
-        
+
         IMPORTANT: Use explicit binding pattern self.app.METHOD("/path")(handler)
         instead of @self.app.METHOD decorators to avoid Pylance "not accessed" warnings.
         This gives the language server a concrete reference to the handler function.
-        
+
         Pattern documented in:
         - src/crank/worker_runtime/base.py (lines 11-13, 187-192)
         - .vscode/AGENT_CONTEXT.md (FastAPI Route Handler Pattern section)

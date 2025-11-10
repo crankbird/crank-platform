@@ -268,7 +268,7 @@ We need to collapse these into the proper controller/worker separation.
    ```python
    from crank.worker_runtime import WorkerApplication
    from crank.capabilities.schema import STREAMING_CLASSIFICATION
-   
+
    class StreamingWorker(WorkerApplication):
        def __init__(self):
            super().__init__(
@@ -284,7 +284,7 @@ We need to collapse these into the proper controller/worker separation.
    ```python
    def get_capabilities(self) -> list[CapabilityDefinition]:
        return [STREAMING_CLASSIFICATION]
-   
+
    def setup_routes(self) -> None:
        @self.app.post("/stream/text")
        async def stream_text(request: StreamingRequest):
