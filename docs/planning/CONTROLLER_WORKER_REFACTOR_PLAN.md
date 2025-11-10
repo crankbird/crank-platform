@@ -317,6 +317,21 @@ We need to collapse these into the proper controller/worker separation.
 - Environment variables remain the same (deployment unchanged)
 - Migration is straightforward: ~1 hour per worker
 
+**Beauty Pass (Nov 10, 2025 - Commit 824bb96)**:
+
+After Phase 1 worker migrations validated the pattern, applied code quality improvements:
+
+1. **ShutdownHandler callback metadata** - Named tasks with timeouts/descriptions for better observability
+2. **CertificateBundle dataclass** - Type-safe certificate handling with automatic validation
+3. **Decomposed WorkerApplication.__init__** - Single-responsibility configuration methods
+4. **httpx.AsyncClient lifecycle** - Proper connection pooling and resource cleanup
+
+**Deferred Patterns** (documented in AGENT_CONTEXT.md):
+
+- Route registration helper - Waiting for 5+ core routes before abstracting
+- ControllerSession context manager - Linear startup flow is already clear
+- Full clock injection - Optional _now parameter sufficient for testing
+
 **Why Second**: Proves the pattern works. Creates template for migrating others.
 
 ---

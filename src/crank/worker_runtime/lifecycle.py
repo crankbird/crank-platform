@@ -232,7 +232,15 @@ class HealthCheckManager:
         self.custom_details[key] = value
 
     def get_uptime(self) -> float:
-        """Calculate uptime in seconds."""
+        """
+        Calculate uptime in seconds.
+
+        NOTE: Clock injection via callable (self._clock) is DEFERRED.
+        Current implementation calls datetime.now() directly.
+        For tests requiring deterministic time, add optional _now parameter to get_health_response().
+        Future trigger: If time-dependent logic becomes more complex or multiple methods need mocking.
+        See: AGENT_CONTEXT.md "Code Beauty Philosophy" for rationale.
+        """
         now = datetime.now(timezone.utc)
         uptime = (now - self.start_time).total_seconds()
         return uptime
@@ -240,6 +248,11 @@ class HealthCheckManager:
     def get_health_response(self) -> HealthCheckResponse:
         """
         Generate current health check response.
+
+        TODO: Add optional _now parameter for deterministic testing:
+            def get_health_response(self, _now: Optional[datetime] = None) -> HealthCheckResponse:
+                now = _now or datetime.now(timezone.utc)
+                # Use now throughout to avoid calling datetime.now() 3 times
 
         Returns:
             HealthCheckResponse with current status and details

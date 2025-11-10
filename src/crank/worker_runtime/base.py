@@ -180,7 +180,16 @@ class WorkerApplication(abc.ABC):
     # ========================================================================
 
     def _setup_core_routes(self) -> None:
-        """Set up standard health check and status routes."""
+        """
+        Set up standard health check and status routes.
+
+        NOTE: Route registration uses explicit binding pattern to avoid Pylance warnings.
+        A route helper (_register_route) is DEFERRED until we have 5+ core routes.
+        Current: 2 routes (/health, /status). Future triggers:
+        - Adding /metrics, /debug, /admin endpoints
+        - Need for consistent middleware/tags across routes
+        See: AGENT_CONTEXT.md "Code Beauty Philosophy" for rationale.
+        """
 
         async def health_check() -> JSONResponse:
             """Health check endpoint for container orchestration."""
@@ -208,7 +217,15 @@ class WorkerApplication(abc.ABC):
         self.app.get("/status")(status)
 
     async def _startup_handler(self) -> None:
-        """Handle application startup (called by lifespan)."""
+        """
+        Handle application startup (called by lifespan).
+
+        NOTE: ControllerSession context manager pattern is DEFERRED.
+        Current linear flow (register → heartbeat → work → stop) is explicit and clear.
+        Context manager would add indirection without clarity gain.
+        Future trigger: If startup sequence grows beyond 5 steps or error recovery becomes complex.
+        See: AGENT_CONTEXT.md "Code Beauty Philosophy" for rationale.
+        """
         logger.info("🚀 Worker startup initiated")
 
         # Initialize capabilities and controller client
