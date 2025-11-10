@@ -347,8 +347,8 @@ After code is **working and tested**, consider beauty improvements that:
    - Before: `dict[str, str]` (opaque, no validation)
    - After: `CertificateBundle` (auto-validates, clear errors, typed)
 
-3. **Decomposed __init__** - Single responsibility
-   - Before: 47-line __init__ mixing 5 concerns
+3. **Decomposed `__init__`** - Single responsibility
+   - Before: 47-line `__init__` mixing 5 concerns
    - After: 3 methods, each 6-10 lines with clear purpose
 
 4. **httpx client lifecycle** - Resource efficiency
