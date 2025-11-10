@@ -76,6 +76,21 @@
             "reportUntypedNamedTuple": "none"
         },
         {
+            // E2E BDD tests use pytest-bdd decorators that inject fixtures dynamically.
+            // Static type checking is impractical for these functions.
+            "root": "tests/e2e",
+            "typeCheckingMode": "off",
+            "extraPaths": [
+                "src",
+                "."
+            ],
+            "reportMissingTypeStubs": "none",
+            "reportMissingParameterType": "none",
+            "reportUnknownMemberType": "none",
+            "reportUnknownArgumentType": "none",
+            "reportUnknownVariableType": "none"
+        },
+        {
             "root": "scripts",
             "typeCheckingMode": "off"
         },

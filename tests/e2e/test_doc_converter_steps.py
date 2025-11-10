@@ -17,7 +17,10 @@ Usage:
 
 Note: Type annotations intentionally omitted for pytest-bdd decorated functions.
 Fixtures are injected dynamically by pytest-bdd, making static typing impractical.
+Type checking is disabled for this file via pyrightconfig.json.
 """
+
+# mypy: disable-error-code="no-untyped-def"
 
 from pathlib import Path
 
