@@ -299,6 +299,70 @@ async def on_startup(self) -> None:
 
 ### Enum String Comparisons
 
+**Problem**: Direct string comparison with Enum values fails in assertions.
+
+**Solution**: Use `.value` accessor:
+
+```python
+assert health.status.value == "healthy"  # ✅ Correct
+assert health.status == "healthy"        # ❌ Fails
+```
+
+---
+
+## 🎨 CODE BEAUTY PHILOSOPHY (Nov 2025)
+
+**Principle**: Elegant code > Clean code. Solve real pain, avoid premature abstraction.
+
+### Beauty Pass Guidelines (Commit 824bb96)
+
+After code is **working and tested**, consider beauty improvements that:
+
+1. **Improve observability** - Better logging, clearer error messages
+2. **Add type safety** - Replace dicts with dataclasses, validate on construction
+3. **Enhance readability** - Extract methods when responsibility is unclear
+4. **Fix resource leaks** - Proper lifecycle management for clients/connections
+
+### When to AVOID "improvements"
+
+**Defer abstraction until scale demands it**:
+
+- Route registration helpers: Wait until 5+ routes (currently 2)
+- Service orchestration wrappers: Only if control flow becomes unclear
+- Full dependency injection: Only if testing becomes painful
+
+**Choose simpler patterns when sufficient**:
+
+- Optional test parameters > Clock injection callables
+- Explicit sequences > Context manager orchestration
+- Direct calls > Middleware layers
+
+### Beauty Wins (Implemented)
+
+1. **ShutdownHandler callback metadata** - Logs read like flight recorder
+   - Before: `callback.__name__` (breaks on functools.partial)
+   - After: `ShutdownTask(name="db_cleanup", timeout=10.0, description="...")`
+   
+2. **CertificateBundle dataclass** - Type safety + validation
+   - Before: `dict[str, str]` (opaque, no validation)
+   - After: `CertificateBundle` (auto-validates, clear errors, typed)
+
+3. **Decomposed __init__** - Single responsibility
+   - Before: 47-line __init__ mixing 5 concerns
+   - After: 3 methods, each 6-10 lines with clear purpose
+
+4. **httpx client lifecycle** - Resource efficiency
+   - Before: Fresh client per request, hardcoded `verify=False`
+   - After: Lazy init, connection pooling, configurable SSL
+
+### Deferred (Waiting for Scale)
+
+- Route registration helper (need 5+ routes first)
+- ControllerSession context manager (linear flow is clearer)
+- Full clock injection (optional _now parameter sufficient)
+
+**Source**: Inter-AI design review (Codex + Claude Sonnet) - Nov 2025
+
 **Problem**: Comparing enum members directly to strings fails type checking.
 
 **Solution**: Use `.value` to access the string representation:
