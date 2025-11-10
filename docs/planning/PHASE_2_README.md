@@ -149,10 +149,47 @@ crank-platform/
 │   ├── doc_converter.feature
 │   ├── test_doc_converter_steps.py
 │   ├── conftest.py
-│   └── doc_converter_pickle.json
+│   ├── doc_converter_pickle.json
+│   └── README.md                        # NEW: E2E testing guide
 └── docs/planning/
     ├── PHASE_2_README.md               # This file
     └── REQUIREMENTS_TRACEABILITY.md    # UPDATED: MN-DOC-001 added
+```
+
+## E2E Testing Strategy
+
+**Local-First Approach** (Recommended):
+
+1. **Start MCP server locally**: Run `crank-doc-converter` on your machine
+2. **Point tests at localhost**: Use MCP client fixture connecting to local server
+3. **Fast iteration**: Zero deployment complexity, easy debugging
+4. **See**: `tests/e2e/README.md` for detailed testing guide
+
+**Remote Later**:
+
+1. **Deploy to Azure**: Container Apps, App Service, or AKS with mTLS/token auth
+2. **Update fixtures**: Point MCP client at HTTPS endpoint
+3. **Production validation**: Run same tests against hosted service
+
+**Current State**:
+
+- ✅ Feature file with Gherkin scenarios (`doc_converter.feature`)
+- ✅ pytest-bdd step definitions (`test_doc_converter_steps.py`)
+- ✅ Mock fixtures for offline development (`conftest.py`)
+- ⏳ TODO: Replace mocks with real MCP client, PDF generator, audit reader
+
+**Run Tests**:
+
+```bash
+# Install dependencies
+pip install pytest pytest-bdd
+
+# Run locally (requires MCP server running)
+pytest tests/e2e/test_doc_converter_steps.py -v
+
+# Run with tags
+pytest tests/e2e/ -m sync -v  # Only sync tests
+pytest tests/e2e/ -m latency -v  # Only latency-critical tests
 ```
 
 ## Success Metrics
@@ -180,6 +217,7 @@ crank-platform/
 - **Taxonomy**: `docs/planning/crank-taxonomy-and-deployment.md`
 - **Traceability**: `docs/planning/REQUIREMENTS_TRACEABILITY.md` (MN-DOC-001)
 - **E2E Tests**: `tests/e2e/doc_converter.feature`
+- **Testing Guide**: `tests/e2e/README.md` - Local-first testing strategy, fixture implementation, CI/CD
 
 ## Questions?
 
