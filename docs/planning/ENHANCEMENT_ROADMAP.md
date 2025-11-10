@@ -165,6 +165,12 @@ Following the **JEMM principle** - we use the simplest architecture that solves 
 
 ### Enterprise Features
 
+- [ ] **Audit compliance**: SOX, GDPR, HIPAA support
+  - Immutable audit trails with PII redaction
+  - Data retention and right-to-erasure policies
+  - Compliance reporting and export capabilities
+  - Reference: MN-GOV-001 in `docs/planning/REQUIREMENTS_TRACEABILITY.md`
+
 - [ ] **Multi-tenancy**: Secure isolation between organizations
 
 - [ ] **Federation**: Cross-cloud service mesh
