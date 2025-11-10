@@ -3,7 +3,7 @@
         "src",
         "services",
         "tests",
-        "wendy_security_framework.py"
+        "mascots"
     ],
     "exclude": [
         "**/.venv",

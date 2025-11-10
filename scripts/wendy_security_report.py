@@ -11,6 +11,9 @@ This report addresses Wendy the Zero Security Bunny's concerns about:
 """
 
 
+from mascots.wendy.wendy_security import WendyInputSanitizer, SecurityViolation
+
+
 def run_security_assessment():
     """Run comprehensive security assessment"""
 
@@ -48,7 +51,7 @@ def run_security_assessment():
 
     print("\n✅ WENDY'S SECURITY FRAMEWORK IMPLEMENTED:")
     print("-" * 50)
-    print("   ✅ Comprehensive input sanitization (wendy_security_framework.py)")
+    print("   ✅ Comprehensive input sanitization (mascots/wendy/wendy_security.py)")
     print("   ✅ File upload validation with magic number checking")
     print("   ✅ Filename sanitization with allowlist validation")
     print("   ✅ Command injection prevention via safe subprocess")
@@ -71,7 +74,7 @@ def run_security_assessment():
     print("\n🛡️ SECURITY IMPLEMENTATION PLAN:")
     print("-" * 40)
     print("Phase 1: Input Validation")
-    print("  - Deploy wendy_security_framework.py")
+    print("  - Deploy mascots/wendy/wendy_security.py")
     print("  - Update all file upload endpoints")
     print("  - Add request size validation")
     print("")

@@ -53,8 +53,7 @@ def test_security_framework():
     print("\n🐰 Testing Wendy's Security Framework...")
 
     # Import Wendy's framework
-    sys.path.append(".")
-    from wendy_security_framework import WendyInputSanitizer
+    from mascots.wendy.wendy_security import WendyInputSanitizer
 
     sanitizer = WendyInputSanitizer()
 
