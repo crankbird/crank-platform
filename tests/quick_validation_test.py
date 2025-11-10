@@ -42,7 +42,10 @@ def test_core_functionality() -> None:
     # Test 2: Wendy's Security Framework
     print("\n2. 🐰 Wendy's Security Framework:")
     try:
-        from wendy_security_framework import SecurityViolation, WendyInputSanitizer
+        from scripts.wendy_security_framework import (
+            SecurityViolation,
+            WendyInputSanitizer,
+        )
 
         sanitizer = WendyInputSanitizer()
 

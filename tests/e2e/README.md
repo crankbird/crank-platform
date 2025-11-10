@@ -23,6 +23,7 @@ pytest tests/e2e/test_doc_converter_steps.py -v
 ```
 
 **Benefits**:
+
 - Fast iteration (no network latency)
 - Zero deployment complexity
 - Easy debugging with local logs
@@ -164,13 +165,14 @@ The `doc_converter_pickle.json` file shows the compiled scenario structure:
   "tags": ["@sync", "@small", "@latency"],
   "steps": [
     {"text": "an MCP client is connected to the \"crank-doc-converter\" server"},
-    {"text": "I invoke MCP tool \"convert_document\" with:", 
+    {"text": "I invoke MCP tool \"convert_document\" with:",
      "argument": {"rows":[["input_path","sample-5mb.pdf"],["target","docx"]]}}
   ]
 }
 ```
 
 **Use Cases**:
+
 - Test result visualization tools
 - Coverage analysis (which scenarios ran)
 - CI/CD integration (export results as pickles)
@@ -221,26 +223,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: |
           pip install pytest pytest-bdd reportlab
           pip install -e src/
-      
+
       - name: Start MCP server
         run: |
           python services/crank_doc_converter_mcp_server.py &
           sleep 5  # Wait for startup
-      
+
       - name: Run E2E tests
         run: |
           pytest tests/e2e/ -v --html=e2e-report.html
-      
+
       - name: Upload test results
         uses: actions/upload-artifact@v3
         with:

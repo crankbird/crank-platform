@@ -1,5 +1,4 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Cucumber Pickle Schema",
     "description": "JSON representation of a compiled Gherkin scenario (pickle format)",
     "type": "object",

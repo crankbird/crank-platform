@@ -22,9 +22,17 @@ Type checking is disabled for this file via pyrightconfig.json.
 
 # mypy: disable-error-code="no-untyped-def"
 
+from contextlib import AbstractContextManager
 from pathlib import Path
+from typing import Any, Callable
 
+from pytest import FixtureRequest
 from pytest_bdd import given, parsers, scenarios, then, when  # type: ignore[import-not-found]
+
+PdfFactory = Callable[..., Path]
+TimerContext = AbstractContextManager[Any]
+MCPClient = Any
+AuditSink = Any
 
 # Load all scenarios from the feature file
 scenarios("doc_converter.feature")
@@ -36,13 +44,13 @@ scenarios("doc_converter.feature")
 
 
 @given('an MCP client is connected to the "crank-doc-converter" server')
-def mcp_client_connected(mcp_client):
+def mcp_client_connected(mcp_client: MCPClient) -> None:
     """Verify MCP client has established connection to doc converter server."""
     assert mcp_client.is_connected, "MCP client is not connected to server"
 
 
 @given('the MCP tool "convert_document" is available')
-def tool_available(mcp_client):
+def tool_available(mcp_client: MCPClient) -> None:
     """Verify the convert_document tool is listed in available tools."""
     available_tools = mcp_client.list_tools()
     assert (
@@ -56,7 +64,13 @@ def tool_available(mcp_client):
 
 
 @given(parsers.parse('a {size:d}MB PDF named "{name}"'))
-def have_pdf_fixture(size, name, sample_pdf_factory, tmp_path, request):
+def have_pdf_fixture(
+    size: int,
+    name: str,
+    sample_pdf_factory: PdfFactory,
+    tmp_path: Path,
+    request: FixtureRequest,
+) -> Path:
     """
     Create a sample PDF of specified size.
 
@@ -83,7 +97,13 @@ def have_pdf_fixture(size, name, sample_pdf_factory, tmp_path, request):
 
 
 @when(parsers.parse('I invoke MCP tool "{tool}" with:\n{table}'))
-def invoke_convert_with_table(tool, table, mcp_client, request_timer, request):
+def invoke_convert_with_table(
+    tool: str,
+    table: str,
+    mcp_client: MCPClient,
+    request_timer: TimerContext,
+    request: FixtureRequest,
+) -> dict[str, Any]:
     """
     Invoke MCP tool with parameters from a Gherkin table.
 
@@ -121,7 +141,7 @@ def invoke_convert_with_table(tool, table, mcp_client, request_timer, request):
 
 
 @then(parsers.parse('the MCP result status is "{status}"'))
-def check_status(status, request):
+def check_status(status: str, request: FixtureRequest) -> None:
     """Verify the MCP result has expected status."""
     result = request.config.cache.get("last_result", {})
     actual_status = result.get("status")
@@ -131,7 +151,7 @@ def check_status(status, request):
 
 
 @then(parsers.parse('a file artifact "{name}" is produced'))
-def check_artifact(name, request, tmp_path):
+def check_artifact(name: str, request: FixtureRequest, tmp_path: Path) -> None:
     """Verify the output artifact file exists."""
     result = request.config.cache.get("last_result", {})
     artifact_path = result.get("artifact_path")
@@ -147,7 +167,7 @@ def check_artifact(name, request, tmp_path):
 
 
 @then('the artifact includes a "sha256" field of length 64')
-def check_hash(request):
+def check_hash(request: FixtureRequest) -> None:
     """Verify result includes valid SHA-256 hash."""
     result = request.config.cache.get("last_result", {})
     sha256 = result.get("sha256")
@@ -163,14 +183,14 @@ def check_hash(request):
 
 
 @then(parsers.parse("the elapsed time is <= {seconds:d} seconds (p95 budget)"))
-def check_latency(seconds, request):
+def check_latency(seconds: int, request: FixtureRequest) -> None:
     """Verify request completed within latency budget."""
     elapsed = request.config.cache.get("last_elapsed", float("inf"))
     assert elapsed <= seconds, f"Exceeded p95 budget: {elapsed}s > {seconds}s"
 
 
 @then(parsers.parse("an audit event is recorded with fields:\n{table}"))
-def check_audit_with_table(table, audit_sink):
+def check_audit_with_table(table: str, audit_sink: AuditSink) -> None:
     """
     Verify audit event was recorded with expected fields.
 
@@ -201,7 +221,9 @@ def check_audit_with_table(table, audit_sink):
 
 
 @then(parsers.parse('I receive an "{status}" response with a "{field}"'))
-def check_accepted_with_job_id(status, field, request):
+def check_accepted_with_job_id(
+    status: str, field: str, request: FixtureRequest
+) -> None:
     """Verify async response has expected status and job ID."""
     result = request.config.cache.get("last_result", {})
 
@@ -218,9 +240,11 @@ def check_accepted_with_job_id(status, field, request):
 
 
 @then(parsers.parse("progress events emit at least every {seconds:d} seconds"))
-def check_progress_events(seconds, mcp_client, request):
+def check_progress_events(
+    seconds: int, mcp_client: MCPClient, request: FixtureRequest
+) -> None:
     """Verify progress events arrive at expected intervals."""
-    job_id = request.config.cache.get("current_job_id")
+    job_id = request.config.cache.get("current_job_id", None)
     assert job_id, "No job_id in context"
 
     # Subscribe to progress events
@@ -234,9 +258,11 @@ def check_progress_events(seconds, mcp_client, request):
 
 
 @then(parsers.parse("a callback payload is delivered with:\n{table}"))
-def check_callback_payload(table, mcp_client, request):
+def check_callback_payload(
+    table: str, mcp_client: MCPClient, request: FixtureRequest
+) -> None:
     """Verify async callback contains expected fields."""
-    job_id = request.config.cache.get("current_job_id")
+    job_id = request.config.cache.get("current_job_id", None)
     assert job_id, "No job_id in context"
 
     # Wait for completion callback
@@ -252,14 +278,14 @@ def check_callback_payload(table, mcp_client, request):
 
 
 @then(parsers.parse("the total elapsed time is <= {seconds:d} seconds"))
-def check_total_elapsed(seconds, request):
+def check_total_elapsed(seconds: int, request: FixtureRequest) -> None:
     """Verify total operation time including async wait."""
     elapsed = request.config.cache.get("last_elapsed", float("inf"))
     assert elapsed <= seconds, f"Total time {elapsed}s exceeds {seconds}s budget"
 
 
 @then(parsers.parse('an audit event is recorded with status "{status}"'))
-def check_audit_status(status, audit_sink):
+def check_audit_status(status: str, audit_sink: AuditSink) -> None:
     """Verify audit event has expected status."""
     last_event = audit_sink.get_last_event()
     assert last_event, "No audit event found"

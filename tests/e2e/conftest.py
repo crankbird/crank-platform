@@ -18,7 +18,6 @@ from typing import Any
 
 import pytest
 
-
 # ============================================================================
 # MCP Client Fixture (Mock - Replace with Real Implementation)
 # ============================================================================

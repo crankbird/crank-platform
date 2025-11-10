@@ -323,7 +323,7 @@ After Phase 1 worker migrations validated the pattern, applied code quality impr
 
 1. **ShutdownHandler callback metadata** - Named tasks with timeouts/descriptions for better observability
 2. **CertificateBundle dataclass** - Type-safe certificate handling with automatic validation
-3. **Decomposed WorkerApplication.__init__** - Single-responsibility configuration methods
+3. **Decomposed `WorkerApplication.__init__`** - Single-responsibility configuration methods
 4. **httpx.AsyncClient lifecycle** - Proper connection pooling and resource cleanup
 
 **Deferred Patterns** (documented in AGENT_CONTEXT.md):
