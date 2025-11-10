@@ -1,0 +1,41 @@
+{
+    "scenario": "error",
+    "description": "Shutdown task raises exception - should log and continue",
+    "tasks": [
+        {
+            "name": "failing_cleanup",
+            "description": "Task that raises an exception during cleanup",
+            "timeout_seconds": 5.0,
+            "tags": [
+                "edge-case",
+                "error"
+            ],
+            "expected_duration_ms": 10,
+            "should_succeed": false,
+            "expected_error": "RuntimeError"
+        },
+        {
+            "name": "subsequent_cleanup",
+            "description": "Should still execute after previous error",
+            "timeout_seconds": 3.0,
+            "tags": [
+                "cleanup"
+            ],
+            "expected_duration_ms": 20,
+            "should_succeed": true
+        },
+        {
+            "name": "final_cleanup",
+            "description": "Final task should also execute",
+            "timeout_seconds": 2.0,
+            "tags": [
+                "cleanup"
+            ],
+            "expected_duration_ms": 15,
+            "should_succeed": true
+        }
+    ],
+    "expected_total_duration_ms": 50,
+    "expected_outcome": "partial_success",
+    "notes": "Validates error isolation - one task failure doesn't prevent others"
+}

@@ -7,6 +7,8 @@ Validates:
 - Lifecycle management (startup/shutdown)
 - Health check functionality
 - Certificate management
+
+Uses test data corpus from tests/data/ for comprehensive coverage.
 """
 
 import asyncio
@@ -24,7 +26,7 @@ from crank.worker_runtime import (
     WorkerRegistration,
 )
 from crank.worker_runtime.lifecycle import HealthCheckManager
-from crank.worker_runtime.security import CertificateManager
+from crank.worker_runtime.security import CertificateBundle, CertificateManager
 
 
 class TestWorkerRegistration:
@@ -176,12 +178,84 @@ class TestShutdownHandler:
         # Should be called in reverse order: 3, 2, 1
         assert call_order == [3, 2, 1]
 
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "scenario_file",
+        [
+            "valid/graceful.json",
+            "valid/multi-task.json",
+        ],
+    )
+    async def test_shutdown_scenarios_from_corpus(self, scenario_file: str) -> None:
+        """Test shutdown handler against corpus scenarios."""
+        from tests.data.loader import load_shutdown_scenario
+
+        handler = ShutdownHandler()
+        scenario = load_shutdown_scenario(scenario_file)
+
+        # Track which tasks executed
+        executed_tasks: list[str] = []
+
+        # Register callbacks based on scenario
+        for task_spec in scenario["tasks"]:
+            task_name = task_spec["name"]
+
+            async def task_callback(name: str = task_name) -> None:
+                executed_tasks.append(name)
+                await asyncio.sleep(0.01)  # Simulate some work
+
+            handler.register_shutdown_callback(
+                name=task_spec["name"],
+                callback=task_callback,
+                description=task_spec.get("description"),
+                timeout=task_spec.get("timeout_seconds", 10.0),
+                tags=task_spec.get("tags", []),
+            )
+
+        # Execute shutdown
+        await handler.execute_shutdown()
+
+        # Verify all tasks executed (in reverse order - LIFO)
+        expected_tasks = [t["name"] for t in reversed(scenario["tasks"])]
+        assert executed_tasks == expected_tasks
+
+    @pytest.mark.asyncio
+    async def test_shutdown_task_metadata(self) -> None:
+        """Test ShutdownTask stores metadata correctly."""
+        from tests.data.loader import load_shutdown_scenario
+
+        handler = ShutdownHandler()
+        scenario = load_shutdown_scenario("valid/graceful.json")
+
+        # Register first task with all metadata
+        task_spec = scenario["tasks"][0]
+
+        async def dummy_callback() -> None:
+            pass
+
+        handler.register_shutdown_callback(
+            name=task_spec["name"],
+            callback=dummy_callback,
+            description=task_spec["description"],
+            timeout=task_spec["timeout_seconds"],
+            tags=task_spec["tags"],
+        )
+
+        # Verify ShutdownTask stored metadata
+        assert len(handler.shutdown_tasks) == 1
+        task = handler.shutdown_tasks[0]
+        assert task.name == task_spec["name"]
+        assert task.description == task_spec["description"]
+        assert task.timeout == task_spec["timeout_seconds"]
+        assert task.tags == task_spec["tags"]
+
 
 class TestCertificateManager:
     """Test certificate manager."""
 
     def test_certificate_manager_initialization(self, tmp_path: Path) -> None:
         """Test certificate manager initializes with cert directory."""
+
         manager = CertificateManager("test-worker", cert_dir=tmp_path)
         assert manager.worker_id == "test-worker"
         assert manager.cert_dir == tmp_path
@@ -232,6 +306,69 @@ class TestCertificateManager:
 
         with pytest.raises(FileNotFoundError):
             manager.get_ssl_context()
+
+    def test_certificate_bundle_validation(self) -> None:
+        """Test CertificateBundle validates certificate files on creation."""
+        from tests.data.loader import load_cert_bundle
+
+        # Load valid certificate bundle
+        bundle_info = load_cert_bundle("valid/platform")
+        bundle = CertificateBundle(
+            cert_file=bundle_info["cert_path"],
+            key_file=bundle_info["key_path"],
+            ca_file=bundle_info["cert_path"].parent / "ca.crt",  # Use CA from same dir
+            worker_id="test-worker-corpus",
+        )
+
+        # Verify bundle properties
+        assert bundle.cert_file.exists()
+        assert bundle.key_file.exists()
+        assert bundle.ca_file.exists()
+        assert bundle.cert_file.suffix in (".crt", ".pem")
+        assert bundle.key_file.suffix == ".key"
+
+    @pytest.mark.parametrize(
+        "invalid_cert",
+        [
+            "invalid/truncated-cert.pem",
+            "invalid/empty-cert.pem",
+        ],
+    )
+    def test_certificate_bundle_rejects_invalid(self, invalid_cert: str) -> None:
+        """Test CertificateBundle rejects malformed certificates."""
+        from tests.data.loader import load_cert_bundle
+
+        bundle_info = load_cert_bundle(invalid_cert)
+
+        # Invalid cert should fail validation due to missing files
+        with pytest.raises(FileNotFoundError, match="Missing certificate files"):
+            CertificateBundle(
+                cert_file=bundle_info["cert_path"],
+                key_file=bundle_info.get("key_path", Path("/nonexistent/key")),
+                ca_file=Path("/nonexistent/ca.crt"),
+                worker_id="test-invalid",
+            )
+
+    def test_certificate_bundle_to_uvicorn_config(self) -> None:
+        """Test CertificateBundle.to_uvicorn_config() conversion."""
+        from tests.data.loader import load_cert_bundle
+
+        bundle_info = load_cert_bundle("valid/platform")
+        bundle = CertificateBundle(
+            cert_file=bundle_info["cert_path"],
+            key_file=bundle_info["key_path"],
+            ca_file=bundle_info["cert_path"].parent / "ca.crt",
+            worker_id="test-worker-config",
+        )
+
+        config = bundle.to_uvicorn_config()
+
+        assert "ssl_certfile" in config
+        assert "ssl_keyfile" in config
+        assert "ssl_ca_certs" in config
+        assert config["ssl_certfile"] == str(bundle.cert_file)
+        assert config["ssl_keyfile"] == str(bundle.key_file)
+        assert config["ssl_ca_certs"] == str(bundle.ca_file)
 
 
 class TestControllerClient:

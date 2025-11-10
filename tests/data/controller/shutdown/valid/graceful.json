@@ -1,0 +1,42 @@
+{
+    "scenario": "graceful",
+    "description": "Standard worker shutdown with clean resource cleanup",
+    "tasks": [
+        {
+            "name": "stop_heartbeat",
+            "description": "Stop sending heartbeats to controller",
+            "timeout_seconds": 5.0,
+            "tags": [
+                "controller",
+                "network"
+            ],
+            "expected_duration_ms": 50,
+            "should_succeed": true
+        },
+        {
+            "name": "close_http_client",
+            "description": "Close httpx.AsyncClient connection pool",
+            "timeout_seconds": 3.0,
+            "tags": [
+                "network",
+                "cleanup"
+            ],
+            "expected_duration_ms": 20,
+            "should_succeed": true
+        },
+        {
+            "name": "flush_logs",
+            "description": "Ensure all log messages are written",
+            "timeout_seconds": 2.0,
+            "tags": [
+                "logging",
+                "cleanup"
+            ],
+            "expected_duration_ms": 10,
+            "should_succeed": true
+        }
+    ],
+    "expected_total_duration_ms": 100,
+    "expected_outcome": "success",
+    "notes": "Tests beauty pass improvements: named tasks, metadata, timeouts"
+}

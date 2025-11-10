@@ -1,0 +1,31 @@
+{
+    "scenario": "timeout",
+    "description": "Shutdown task exceeds timeout - should log warning and continue",
+    "tasks": [
+        {
+            "name": "stuck_operation",
+            "description": "Task that takes longer than timeout allows",
+            "timeout_seconds": 2.0,
+            "tags": [
+                "edge-case",
+                "timeout"
+            ],
+            "expected_duration_ms": 5000,
+            "should_succeed": false,
+            "expected_error": "timeout"
+        },
+        {
+            "name": "subsequent_task",
+            "description": "Should still execute after timeout",
+            "timeout_seconds": 3.0,
+            "tags": [
+                "cleanup"
+            ],
+            "expected_duration_ms": 50,
+            "should_succeed": true
+        }
+    ],
+    "expected_total_duration_ms": 2100,
+    "expected_outcome": "partial_success",
+    "notes": "Validates per-task timeout enforcement and shutdown continuation after timeout"
+}

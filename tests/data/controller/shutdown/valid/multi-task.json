@@ -1,0 +1,75 @@
+{
+    "scenario": "multi-task",
+    "description": "Complex shutdown with multiple dependencies and phases",
+    "tasks": [
+        {
+            "name": "pause_new_requests",
+            "description": "Stop accepting new work from controller",
+            "timeout_seconds": 1.0,
+            "tags": [
+                "controller",
+                "phase1"
+            ],
+            "expected_duration_ms": 5,
+            "should_succeed": true
+        },
+        {
+            "name": "finish_active_work",
+            "description": "Complete in-flight classification tasks",
+            "timeout_seconds": 30.0,
+            "tags": [
+                "worker",
+                "phase2"
+            ],
+            "expected_duration_ms": 2000,
+            "should_succeed": true
+        },
+        {
+            "name": "close_websockets",
+            "description": "Gracefully close WebSocket connections",
+            "timeout_seconds": 10.0,
+            "tags": [
+                "network",
+                "phase3"
+            ],
+            "expected_duration_ms": 500,
+            "should_succeed": true
+        },
+        {
+            "name": "unload_ml_model",
+            "description": "Release GPU memory from classification model",
+            "timeout_seconds": 5.0,
+            "tags": [
+                "ml",
+                "phase3"
+            ],
+            "expected_duration_ms": 100,
+            "should_succeed": true
+        },
+        {
+            "name": "stop_heartbeat",
+            "description": "Stop controller heartbeat",
+            "timeout_seconds": 3.0,
+            "tags": [
+                "controller",
+                "phase4"
+            ],
+            "expected_duration_ms": 50,
+            "should_succeed": true
+        },
+        {
+            "name": "close_http_client",
+            "description": "Close httpx.AsyncClient",
+            "timeout_seconds": 2.0,
+            "tags": [
+                "network",
+                "phase4"
+            ],
+            "expected_duration_ms": 20,
+            "should_succeed": true
+        }
+    ],
+    "expected_total_duration_ms": 3000,
+    "expected_outcome": "success",
+    "notes": "Tests phased shutdown with different timeout requirements per task"
+}

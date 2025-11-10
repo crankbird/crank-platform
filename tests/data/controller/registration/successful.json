@@ -1,0 +1,40 @@
+{
+    "exchange": "registration",
+    "description": "Successful worker registration with controller",
+    "request": {
+        "method": "POST",
+        "url": "https://controller:8000/api/workers/register",
+        "json": {
+            "worker_id": "test-worker-1",
+            "service_type": "streaming",
+            "endpoint": "https://worker:8500",
+            "health_url": "https://worker:8500/health",
+            "capabilities": [
+                "streaming.classify"
+            ]
+        },
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "timeout": 10.0,
+        "verify_ssl": true
+    },
+    "response": {
+        "status_code": 200,
+        "json": {
+            "status": "registered",
+            "worker_id": "test-worker-1",
+            "heartbeat_interval": 30
+        },
+        "headers": {
+            "Content-Type": "application/json"
+        }
+    },
+    "expected_client_state": {
+        "http_client_created": true,
+        "connection_pooling": true,
+        "ssl_verify": true,
+        "requests_sent": 1
+    },
+    "notes": "Tests lazy httpx.AsyncClient creation on first request"
+}
