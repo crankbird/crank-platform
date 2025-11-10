@@ -342,7 +342,7 @@ After code is **working and tested**, consider beauty improvements that:
 1. **ShutdownHandler callback metadata** - Logs read like flight recorder
    - Before: `callback.__name__` (breaks on functools.partial)
    - After: `ShutdownTask(name="db_cleanup", timeout=10.0, description="...")`
-   
+
 2. **CertificateBundle dataclass** - Type safety + validation
    - Before: `dict[str, str]` (opaque, no validation)
    - After: `CertificateBundle` (auto-validates, clear errors, typed)

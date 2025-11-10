@@ -1,0 +1,16 @@
+{
+    "id": "test.wrong.types",
+    "name": 12345,
+    "version": "not an object",
+    "description": [
+        "This should be a string",
+        "not an array"
+    ],
+    "contract": {
+        "input_schema": "not an object",
+        "output_schema": {
+            "type": "object"
+        },
+        "error_codes": "should be an array"
+    }
+}

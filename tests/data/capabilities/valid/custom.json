@@ -1,0 +1,58 @@
+{
+    "id": "custom.analytics",
+    "name": "Custom Analytics Service",
+    "version": {
+        "major": 1,
+        "minor": 0,
+        "patch": 0
+    },
+    "description": "Provides custom analytics and reporting capabilities",
+    "contract": {
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "dataset": {
+                    "type": "string",
+                    "description": "Dataset identifier"
+                },
+                "metrics": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Metrics to calculate"
+                }
+            },
+            "required": [
+                "dataset"
+            ]
+        },
+        "output_schema": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "object",
+                    "description": "Calculation results"
+                },
+                "timestamp": {
+                    "type": "string",
+                    "format": "date-time"
+                }
+            },
+            "required": [
+                "results",
+                "timestamp"
+            ]
+        },
+        "error_codes": [
+            {
+                "code": "DATASET_NOT_FOUND",
+                "description": "Specified dataset does not exist"
+            },
+            {
+                "code": "INVALID_METRIC",
+                "description": "One or more metrics are not supported"
+            }
+        ]
+    }
+}

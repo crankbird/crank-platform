@@ -332,3 +332,75 @@ class TestStandardCapabilities:
         assert restored.version.major == original.version.major
         assert restored.name == original.name
         assert restored.contract.input_schema == original.contract.input_schema
+
+
+class TestCapabilitySchemaCorpus:
+    """Test capability schema against corpus fixtures."""
+
+    def test_custom_capability_from_corpus(self) -> None:
+        """
+        Test loading valid custom capability from corpus.
+
+        REQUIREMENT: Capability Schema - Custom capabilities
+        VALIDATES: Custom capability definitions follow schema
+        """
+        from tests.data.loader import load_json_fixture
+
+        fixture = load_json_fixture("capabilities/valid/custom.json")
+        capability = CapabilityDefinition(**fixture)
+
+        assert capability.id == "custom.analytics"
+        assert capability.name == "Custom Analytics Service"
+        assert capability.version.major == 1
+        assert len(capability.contract.error_codes) == 2
+
+    @pytest.mark.parametrize(
+        "invalid_file",
+        [
+            "invalid/missing-required.json",
+            "invalid/wrong-types.json",
+        ],
+    )
+    def test_reject_invalid_capabilities(self, invalid_file: str) -> None:
+        """
+        Test that invalid capability definitions are rejected.
+
+        REQUIREMENT: Quality Assurance - Input validation
+        VALIDATES: Schema validation rejects malformed capabilities
+        """
+        from tests.data.loader import load_json_fixture
+
+        fixture = load_json_fixture(f"capabilities/{invalid_file}")
+
+        with pytest.raises(ValidationError):
+            CapabilityDefinition(**fixture)
+
+    @pytest.mark.parametrize(
+        "adversarial_file",
+        [
+            "adversarial/injection.json",
+            "adversarial/unicode-exploits.json",
+        ],
+    )
+    def test_adversarial_capability_handling(self, adversarial_file: str) -> None:
+        """
+        Test that adversarial inputs are handled safely.
+
+        REQUIREMENT: Security Requirements - Input validation
+        VALIDATES: Malicious capability definitions don't cause crashes or exploits
+        """
+        from tests.data.loader import load_json_fixture
+
+        fixture = load_json_fixture(f"capabilities/{adversarial_file}")
+
+        # Should either validate successfully (strings are sanitized)
+        # or fail gracefully with ValidationError (no crashes/exploits)
+        try:
+            capability = CapabilityDefinition(**fixture)
+            # If it validates, ensure injection attempts are preserved as strings
+            # (not executed as code)
+            assert isinstance(capability.id, str)
+            assert isinstance(capability.name, str)
+        except ValidationError:
+            # Graceful rejection is acceptable
+            pass
