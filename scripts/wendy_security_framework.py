@@ -87,7 +87,7 @@ class WendyInputSanitizer:
         r"%[0-9a-fA-F]{2}",  # URL encoding (potential obfuscation)
     ]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.compiled_patterns = [
             re.compile(pattern, re.IGNORECASE) for pattern in self.DANGEROUS_PATTERNS
         ]
