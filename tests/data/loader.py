@@ -10,7 +10,7 @@ Provides convenient functions for loading test fixtures from tests/data/:
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 # Base directory for test data (this file is in tests/data/loader.py)
 TEST_DATA_DIR = Path(__file__).parent
@@ -70,7 +70,7 @@ def load_controller_exchange(exchange_path: str) -> dict[str, Any]:
         raise FileNotFoundError(f"Exchange fixture not found: {fixture_path}")
 
     with open(fixture_path) as f:
-        return json.load(f)
+        return cast(dict[str, Any], json.load(f))
 
 
 def load_shutdown_scenario(scenario_path: str) -> dict[str, Any]:
@@ -94,7 +94,7 @@ def load_shutdown_scenario(scenario_path: str) -> dict[str, Any]:
         raise FileNotFoundError(f"Shutdown scenario not found: {fixture_path}")
 
     with open(fixture_path) as f:
-        return json.load(f)
+        return cast(dict[str, Any], json.load(f))
 
 
 def list_fixtures(category: str, extension: str = "*") -> list[Path]:
@@ -139,4 +139,4 @@ def load_json_fixture(fixture_path: str) -> dict[str, Any]:
         raise FileNotFoundError(f"JSON fixture not found: {full_path}")
 
     with open(full_path) as f:
-        return json.load(f)
+        return cast(dict[str, Any], json.load(f))

@@ -4,7 +4,7 @@
 
 ## Directory structure
 
-```
+```text
 tests/data/
 ├── README.md                    # This file
 ├── certs/                       # Certificate fixtures (PEM files)
@@ -31,18 +31,22 @@ tests/data/
 All test data in this directory follows strict licensing requirements:
 
 ### License types
+
 - **Generated fixtures**: MIT (same as crank-platform)
 - **Public domain**: Project Gutenberg text samples, NIST reference data
 - **Permissive licensed**: JSON Schema Test Suite (MIT), OWASP FuzzDB (CC-BY)
 - **Original**: mkcert-generated certificates, synthetic payloads
 
 ### External sources
-- **JSON Schema Test Suite**: MIT License - https://github.com/json-schema-org/JSON-Schema-Test-Suite
-- **OWASP FuzzDB**: CC-BY 3.0 - https://github.com/fuzzdb-project/fuzzdb
-- **mkcert**: BSD 3-Clause - https://github.com/FiloSottile/mkcert
+
+- **JSON Schema Test Suite**: MIT License - <https://github.com/json-schema-org/JSON-Schema-Test-Suite>
+- **OWASP FuzzDB**: CC-BY 3.0 - <https://github.com/fuzzdb-project/fuzzdb>
+- **mkcert**: BSD 3-Clause - <https://github.com/FiloSottile/mkcert>
 
 ### Attribution
+
 When using external corpora, each subdirectory contains a `SOURCE.md` documenting:
+
 - Origin URL and version/commit
 - License terms
 - Date fetched
@@ -51,6 +55,7 @@ When using external corpora, each subdirectory contains a `SOURCE.md` documentin
 ## Usage in tests
 
 ### Certificate fixtures
+
 ```python
 from tests.data.loader import load_cert_bundle
 
@@ -63,6 +68,7 @@ with pytest.raises(ValueError):
 ```
 
 ### Controller exchanges
+
 ```python
 from tests.data.loader import load_controller_exchange
 
@@ -72,6 +78,7 @@ assert exchange["request"]["worker_id"] == "test-worker-1"
 ```
 
 ### Parametrization
+
 ```python
 import pytest
 from tests.data.loader import list_fixtures
@@ -92,6 +99,7 @@ def test_certificate_validation(cert_file):
 ## Maintenance
 
 ### Adding new fixtures
+
 1. Place in appropriate subdirectory
 2. Document provenance in `SOURCE.md` if external
 3. Update `tests/data/loader.py` if new category
@@ -99,12 +107,14 @@ def test_certificate_validation(cert_file):
 5. Verify CI size budget (<10 MB total)
 
 ### Regenerating certificates
+
 ```bash
 cd tests/data/certs
 ./generate_fixtures.sh  # Creates fresh mkcert bundles
 ```
 
 ### Corpus refresh
+
 ```bash
 # Fetch external corpora with version pinning
 python scripts/fetch_test_corpus.py --verify-checksums
@@ -113,6 +123,7 @@ python scripts/fetch_test_corpus.py --verify-checksums
 ## Coverage goals
 
 By Phase 4 completion:
+
 - **80% parametrization**: Existing tests use corpus fixtures
 - **10+ adversarial cases**: Each module has attack/edge inputs
 - **0 ad-hoc fixtures**: All test data lives in this directory
@@ -121,6 +132,7 @@ By Phase 4 completion:
 ---
 
 **Related documents**:
+
 - Roadmap: `docs/planning/test-data-corpus-roadmap.md`
 - Issues: GitHub #32-36 (test corpus implementation)
 - Test suite: `tests/test_worker_runtime.py`, `tests/test_capability_schema.py`

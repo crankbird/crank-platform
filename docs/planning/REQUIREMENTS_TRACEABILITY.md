@@ -38,7 +38,7 @@ def test_example(self) -> None:
 | **Stateless Design** | *Pending* | 0% | Need tests for worker state isolation |
 | **Platform Registration** | `test_registration_exchange_from_corpus` | ✅ 100% | Validates registration protocol |
 | **Health Reporting** | `TestHealthCheckManager.*` | ✅ 100% | Full health check test suite (6 tests) |
-| **Graceful Shutdown** | `test_http_client_cleanup_on_close`<br>`TestShutdownHandler.*` | ✅ 100% | Shutdown handler + HTTP cleanup (7 tests) |
+| **Graceful Shutdown** | `test_http_client_cleanup_on_close`, `TestShutdownHandler.*` | ✅ 100% | Shutdown handler + HTTP cleanup (7 tests) |
 | **Resource Efficiency** | `test_http_client_lazy_initialization` | ✅ 100% | Lazy client initialization |
 
 ### 📊 Platform Services Requirements
@@ -47,7 +47,7 @@ def test_example(self) -> None:
 
 | Sub-Requirement | Test(s) | Coverage | Notes |
 |-----------------|---------|----------|-------|
-| **Worker Registration** | `TestControllerClient.test_registration_success`<br>`test_registration_exchange_from_corpus` | ✅ 100% | Registration flow validated |
+| **Worker Registration** | `TestControllerClient.test_registration_success`, `test_registration_exchange_from_corpus` | ✅ 100% | Registration flow validated |
 | **Health Checking** | `TestHealthCheckManager.*` | ✅ 100% | Health status, uptime, custom details |
 | **Load Balancing** | *Pending* | 0% | Need controller routing tests |
 | **Circuit Breakers** | *Pending* | 0% | Need fault tolerance tests |
@@ -91,16 +91,17 @@ These tests validate specific code quality improvements from the beauty pass:
 
 | Improvement | Test(s) | Coverage |
 |------------|---------|----------|
-| **ShutdownTask metadata** | `test_shutdown_task_metadata`<br>`test_shutdown_scenarios_from_corpus[2 scenarios]` | ✅ 100% |
-| **CertificateBundle validation** | `test_certificate_bundle_validation`<br>`test_certificate_bundle_rejects_invalid[2 cases]`<br>`test_certificate_bundle_to_uvicorn_config` | ✅ 100% |
+| **ShutdownTask metadata** | `test_shutdown_task_metadata`, `test_shutdown_scenarios_from_corpus[2 scenarios]` | ✅ 100% |
+| **CertificateBundle validation** | `test_certificate_bundle_validation`, `test_certificate_bundle_rejects_invalid[2 cases]`, `test_certificate_bundle_to_uvicorn_config` | ✅ 100% |
 | **Lazy httpx.AsyncClient** | `test_http_client_lazy_initialization` | ✅ 100% |
 | **Connection pooling** | `test_http_client_reuse_across_requests` | ✅ 100% |
 | **Resource cleanup** | `test_http_client_cleanup_on_close` | ✅ 100% |
-| **Decomposed __init__** | *Pending* | 0% |
+| **Decomposed `__init__`** | *Pending* | 0% |
 
 ## Coverage Summary
 
 ### Overall Statistics
+
 - **Total Requirements**: 35 identified
 - **Requirements with Tests**: 15 (43%)
 - **Fully Covered**: 12 (34%)
@@ -108,6 +109,7 @@ These tests validate specific code quality improvements from the beauty pass:
 - **Not Covered**: 20 (57%)
 
 ### By Category
+
 - **Worker Container Pattern**: 5/5 (100%) ✅
 - **Platform Services**: 3/7 (43%) ⚠️
 - **Security Requirements**: 0/2 (0%) ❌
@@ -131,6 +133,7 @@ These tests validate specific code quality improvements from the beauty pass:
 ### For Requirements Analysis
 
 **Generate coverage report**:
+
 ```bash
 # Extract REQUIREMENT tags from tests
 grep -r "REQUIREMENT:" tests/ | wc -l
@@ -140,6 +143,7 @@ grep -r "REQUIREMENT:" tests/ | wc -l
 ```
 
 **Infer requirements from tests**:
+
 - Parse `REQUIREMENT:` tags from all test files
 - Group by requirement category
 - Identify coverage gaps
@@ -149,6 +153,7 @@ grep -r "REQUIREMENT:" tests/ | wc -l
 ### Automated Traceability
 
 Create a tool to:
+
 1. **Parse test files** for `REQUIREMENT:` and `VALIDATES:` tags
 2. **Parse REQUIREMENTS.md** for all stated requirements
 3. **Generate coverage report** showing:
@@ -171,6 +176,7 @@ def test_worker_graceful_shutdown_timeout():
 ### Bidirectional Inference
 
 Given tests, we should be able to reconstruct:
+
 1. **Functional requirements** - What the system must do
 2. **Quality attributes** - Performance, reliability, security
 3. **Constraints** - Technology choices, protocols
@@ -179,6 +185,7 @@ Given tests, we should be able to reconstruct:
 ---
 
 **Related Documents**:
+
 - Requirements: `REQUIREMENTS.md`
 - Test Suite: `tests/test_worker_runtime.py`, `tests/test_capability_schema.py`
 - Test Corpus: `tests/data/README.md`

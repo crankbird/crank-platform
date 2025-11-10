@@ -21,6 +21,11 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 
+def _empty_tags() -> list[str]:
+    """Factory for empty tag list with explicit type."""
+    return []
+
+
 # Type alias for shutdown callbacks (supports both sync and async)
 # Union type satisfies Pylance/Mypy type parameter requirements for Callable
 # Allows flexibility: def callback() -> None OR async def callback() -> None
@@ -40,7 +45,7 @@ class ShutdownTask:
     callback: ShutdownCallback
     description: str = ""
     timeout: float = 30.0
-    tags: list[str] = field(default_factory=list)  # type: ignore[arg-type]
+    tags: list[str] = field(default_factory=_empty_tags)
 
 
 class HealthStatus(str, Enum):
