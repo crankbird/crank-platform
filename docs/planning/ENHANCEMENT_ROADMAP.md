@@ -92,6 +92,21 @@ Following the **JEMM principle** - we use the simplest architecture that solves 
 
 - [ ] **AI model distillation**: Efficient specialized models
 
+### Security & Authorization (Wendy's Domain 🐰)
+
+- [ ] **Capability Access Policy (CAP)**: Platform-level caller authorization
+  - Worker can only call capabilities it legitimately needs
+  - Compromised worker cannot impersonate other services
+  - Policy-based routing enforcement at platform layer
+  - See: `docs/security/DOCKER_SECURITY_DECISIONS.md` Section 9
+  - Issue: `.github/ISSUE_TEMPLATE/capability-access-policy.md`
+
+- [ ] **Runtime integrity monitoring**: Falco or equivalent for container anomaly detection
+
+- [ ] **Distroless production images**: Ultra-minimal runtime with zero shell/package managers
+
+- [ ] **Automated certificate rotation**: HSM-backed CA with automatic renewal
+
 ### Enterprise Features
 
 - [ ] **Policy engine**: OPA/Rego integration for governance

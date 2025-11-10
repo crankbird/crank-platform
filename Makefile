@@ -80,6 +80,54 @@ worker-clean:
 	@rm -rf .venv-*
 	@echo "✅ Cleaned all worker venvs"
 
+# ============================================================================
+# 🐰 Wendy's Security Scanning Targets
+# ============================================================================
+
+# Scan base worker image for CVEs (informational)
+security-scan:
+	@echo "🐰 Wendy's Security Scan: Checking worker-base for CVEs..."
+	@docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+		aquasec/trivy image --severity CRITICAL,HIGH,MEDIUM \
+		worker-base:latest
+	@echo "✅ Security scan complete"
+
+# Scan and FAIL on CRITICAL/HIGH CVEs (for CI/CD)
+security-scan-ci:
+	@echo "🐰 Wendy's CI Security Scan (fail on CRITICAL/HIGH)..."
+	@docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+		aquasec/trivy image --severity CRITICAL,HIGH --exit-code 1 \
+		worker-base:latest
+	@echo "✅ No CRITICAL/HIGH vulnerabilities found"
+
+# Generate Software Bill of Materials (SBOM)
+security-sbom:
+	@echo "🐰 Generating SBOM for worker-base..."
+	@docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+		aquasec/trivy image --format cyclonedx \
+		--output sbom-worker-base.json \
+		worker-base:latest
+	@echo "✅ SBOM generated: sbom-worker-base.json"
+
+# Scan all worker images
+security-scan-all:
+	@echo "🐰 Scanning all worker images..."
+	@for worker in streaming doc_converter email_parser image_classifier; do \
+		echo ""; \
+		echo "Scanning crank-$$worker..."; \
+		docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+			aquasec/trivy image --severity CRITICAL,HIGH \
+			crank-$$worker:latest 2>/dev/null || echo "⚠️  Image not found: crank-$$worker"; \
+	done
+	@echo "✅ All scans complete"
+
+# Scan Dockerfile for misconfigurations
+security-scan-dockerfile:
+	@echo "🐰 Scanning Dockerfile for security issues..."
+	@docker run --rm -v $(PWD):/src \
+		aquasec/trivy config /src/services/Dockerfile.worker-base
+	@echo "✅ Dockerfile scan complete"
+
 # Help target
 help:
 	@echo "Crank Platform - Development Targets"
@@ -95,7 +143,15 @@ help:
 	@echo "  worker-run        - Run worker natively (WORKER=streaming)"
 	@echo "  worker-clean      - Remove all worker virtual environments"
 	@echo ""
+	@echo "🐰 Wendy's Security Targets:"
+	@echo "  security-scan           - Scan worker-base for CVEs (informational)"
+	@echo "  security-scan-ci        - Scan and FAIL on CRITICAL/HIGH (for CI/CD)"
+	@echo "  security-sbom           - Generate Software Bill of Materials"
+	@echo "  security-scan-all       - Scan all worker images"
+	@echo "  security-scan-dockerfile - Check Dockerfile for misconfigurations"
+	@echo ""
 	@echo "Examples:"
 	@echo "  make worker-install WORKER=streaming"
 	@echo "  make worker-run WORKER=streaming"
 	@echo "  make worker-build WORKER=doc_converter"
+	@echo "  make security-scan-ci  # Run before releases"

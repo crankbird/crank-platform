@@ -1,0 +1,119 @@
+name: 🐰 Wendy's Security Scan
+
+on:
+  pull_request:
+    paths:
+      - 'services/Dockerfile.*'
+      - 'services/*.py'
+      - 'requirements*.txt'
+      - 'src/**'
+  push:
+    branches:
+      - main
+  schedule:
+    # Daily scan at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  scan-base-image:
+    name: Scan Base Worker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write  # For uploading to GitHub Security
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Build worker-base image
+        run: |
+          docker build -f services/Dockerfile.worker-base \
+            -t worker-base:${{ github.sha }} \
+            -t worker-base:latest \
+            .
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'worker-base:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+      
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()  # Upload even if vulnerabilities found
+        with:
+          sarif_file: 'trivy-results.sarif'
+      
+      - name: Run Trivy in table format (for PR comments)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'worker-base:${{ github.sha }}'
+          format: 'table'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+      
+      - name: Fail on CRITICAL/HIGH vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'worker-base:${{ github.sha }}'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true  # Only fail on fixable CVEs
+  
+  scan-dockerfile:
+    name: Scan Dockerfile Configuration
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run Trivy config scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: 'services/'
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+  
+  generate-sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Build worker-base image
+        run: |
+          docker build -f services/Dockerfile.worker-base \
+            -t worker-base:${{ github.sha }} .
+      
+      - name: Generate SBOM
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'worker-base:${{ github.sha }}'
+          format: 'cyclonedx'
+          output: 'sbom-worker-base.json'
+      
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-worker-base-${{ github.sha }}
+          path: sbom-worker-base.json
+          retention-days: 90
+      
+      - name: Generate SBOM summary
+        run: |
+          echo "## 🐰 SBOM Generated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Software Bill of Materials for worker-base:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Artifact:** sbom-worker-base-${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Format:** CycloneDX JSON" >> $GITHUB_STEP_SUMMARY
+          echo "**Retention:** 90 days" >> $GITHUB_STEP_SUMMARY

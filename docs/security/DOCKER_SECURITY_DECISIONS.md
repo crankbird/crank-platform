@@ -163,7 +163,7 @@ This document explains the security architecture of the Crank Platform's contain
    - pip: Requires manual `--hash=sha256:abc123...` in requirements.txt (error-prone)
    - uv: Lockfile generated with `uv pip compile`, hashes enforced automatically
 
-2. **Supply Chain Attack Prevention**: 
+2. **Supply Chain Attack Prevention**:
    - Scenario: Attacker compromises PyPI, replaces `fastapi-0.104.0` with malicious version
    - pip without hashes: Installs malicious version silently
    - pip with hashes: Fails if hash doesn't match (but requires manual hash maintenance)
@@ -510,6 +510,143 @@ This architecture is designed with awareness of:
 **Q2 2026**:
 - Runtime integrity monitoring (Falco)
 - Kubernetes secrets for certificate injection
+- **Capability Access Policy**: Platform-level caller authorization (see Section 9)
+
+---
+
+## 9. Future Architecture: Capability Access Policy (CAP)
+
+### 9.1 Concept
+
+**Current State**: Workers authenticate via mTLS, but any authenticated worker can call any capability.
+
+**Future State**: Platform enforces per-capability caller authorization at the routing layer.
+
+**Example Policy**:
+
+```yaml
+capability_access:
+  summarize:v2:
+    allowed_callers:
+      - crank-ui
+      - crank-doc-converter
+      - system:internal
+    denied_callers:
+      - image-classifier  # This worker should never summarize
+
+  classify-image:v1:
+    allowed_callers:
+      - crank-ui
+      - email-processor
+    max_calls_per_minute: 100
+```
+
+### 9.2 Security Properties
+
+This provides **defense against compromised workers**:
+
+1. **Compromised Worker Cannot Impersonate**: Even if `email-processor` is fully compromised, it cannot call `admin-api:delete-all-data` because the platform controller denies the request at routing time.
+
+2. **Blast Radius Containment**: A worker can only call capabilities it legitimately needs for its job function.
+
+3. **Security as Architecture**: This is not a "check" or "validation"—it's built into the platform's routing fabric.
+
+### 9.3 Implementation Strategy (Future)
+
+**Phase 1: Policy Definition**
+
+- Define capability access policies in YAML configuration
+- Store policies in platform controller's config store
+- Version control policies alongside code
+
+**Phase 2: Routing Enforcement**
+
+- Platform controller parses caller identity from mTLS certificate (CN or SAN)
+- Before routing capability request, check caller against policy
+- Return `403 Forbidden` with audit log entry if denied
+
+**Phase 3: Dynamic Policy Updates**
+
+- Support runtime policy updates without restarting platform
+- Policy change audit trail
+- Emergency "lockdown mode" to restrict all cross-service calls
+
+**Phase 4: Advanced Features**
+
+- Rate limiting per caller+capability
+- Time-based access (e.g., "only during business hours")
+- Conditional access based on request context
+- Integration with external policy engines (OPA)
+
+### 9.4 Why We're NOT Implementing This Now
+
+**Current Priority**: Get container security foundation solid and normal-feeling.
+
+**Deferred Because**:
+
+- Requires stable platform controller routing implementation
+- Policy language and semantics need careful design
+- Need real-world usage data to inform policy granularity
+- Want mTLS foundation to be "boring" before adding policy layer
+
+**What We're Doing to NOT Block This Later**:
+
+1. **Platform controller already does routing** → adding policy checks is additive
+2. **mTLS provides caller identity** → no protocol changes needed
+3. **Capability registry is versioned** → policies can reference `capability:version`
+4. **Audit logging exists** → policy denials will automatically appear in logs
+5. **Service mesh compatible** → CAP can layer on top of Istio/Linkerd if we adopt them
+
+### 9.5 Reference Architecture
+
+```text
+┌─────────────────────────────────────────────────────────┐
+│ Platform Controller (with CAP)                          │
+│                                                         │
+│  1. Receive request: email-processor → summarize:v2    │
+│  2. Extract caller: CN=email-processor (from mTLS)     │
+│  3. Check policy: allowed_callers includes caller?     │
+│  4. ✅ Route request   OR   ❌ Return 403 + audit      │
+└─────────────────────────────────────────────────────────┘
+                            │
+              ┌─────────────┴─────────────┐
+              │                           │
+         ✅ ALLOWED                  ❌ DENIED
+    (continues to worker)      (logged, rejected)
+```
+
+### 9.6 Open Questions (For Future Design)
+
+- **Policy storage**: Config files vs database vs dedicated policy service?
+- **Policy testing**: How to validate policies before deployment?
+- **Emergency overrides**: Break-glass mechanism for incident response?
+- **Policy complexity**: Trade-off between expressiveness and auditability?
+- **Performance**: In-memory policy cache vs policy service latency?
+
+### 9.7 Timeline
+
+- **Q4 2025**: Document capability inventory and natural caller relationships
+- **Q1 2026**: Design policy language and governance model
+- **Q2 2026**: Implement basic CAP in platform controller
+- **Q3 2026**: Production rollout with audit-only mode (log but don't block)
+- **Q4 2026**: Enable enforcement mode for production workloads
+
+---
+
+## 10. Conclusion
+
+This security architecture balances:
+
+- **Immediate Needs**: Deployable, debuggable containers for development
+- **Defense in Depth**: Multiple security layers (mTLS, non-root, minimal runtime)
+- **Clear Roadmap**: Path to ultra-hardened production deployment
+- **Future-Proof**: CAP architecture planned but not blocking current work
+
+**For Security Reviewers**: We know where we are (development-ready), where we're going (distroless + CAP), and why we made each trade-off along the way.
+
+**For Developers**: Security controls should feel normal, not heavy. The current foundation (mTLS + multi-stage builds) is your baseline. Hardening comes incrementally.
+
+**For Wendy** 🐰: This is your security roadmap. Each phase builds on the last. No surprises, just steady progress toward zero-trust architecture.
 - Private PyPI mirror
 - Image signing (Cosign)
 
