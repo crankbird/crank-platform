@@ -15,7 +15,7 @@ import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class SecurityFinding:
 class WendySecurityAnalyzer:
     """🐰 Wendy's Security Analysis Engine"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.findings: list[SecurityFinding] = []
         self.bobby_tables_patterns = self._load_bobby_tables_patterns()
         self.security_standards = self._load_security_standards()
@@ -68,7 +68,7 @@ class WendySecurityAnalyzer:
             ],
         }
 
-    def _load_security_standards(self) -> dict:
+    def _load_security_standards(self) -> dict[str, list[str]]:
         """Load Wendy's security compliance standards"""
         return {
             "owasp_top_10": [
@@ -107,7 +107,7 @@ class WendySecurityAnalyzer:
 
     def analyze_file(self, file_path: Path) -> list[SecurityFinding]:
         """🐰 Wendy's comprehensive file security analysis"""
-        findings = []
+        findings: list[SecurityFinding] = []
 
         if not file_path.exists():
             return findings
@@ -343,7 +343,7 @@ class WendySecurityAnalyzer:
 
         return findings
 
-    def generate_security_report(self, target_path: Path) -> dict:
+    def generate_security_report(self, target_path: Path) -> dict[str, Any]:
         """🐰 Generate comprehensive security report"""
         all_findings = []
 
@@ -448,7 +448,7 @@ class WendySecurityAnalyzer:
         return recommendations[:10]  # Top 10 recommendations
 
 
-def main():
+def main() -> None:
     """🐰 Wendy's Security Test Suite Entry Point"""
     import argparse
 
