@@ -24,7 +24,7 @@ Following the **JEMM principle** - we use the simplest architecture that solves 
 
 - **Mesh Interface Architecture**: Universal base class for all services
 
-- **Core Services**: CrankDoc and CrankEmail mesh implementations  
+- **Core Services**: CrankDoc and CrankEmail mesh implementations
 
 - **Platform Gateway**: Unified routing and service discovery
 
@@ -52,11 +52,36 @@ Following the **JEMM principle** - we use the simplest architecture that solves 
 
 ## 🔮 Short Term (Q1 2026)
 
+### Enterprise Readiness (NEW — High Priority)
+
+- [ ] **SLO Files per Capability**: YAML-based SLO definitions (latency p50/p95/p99, availability, error budgets)
+  - CI checks fail on SLO regression
+  - Dashboard integration (Grafana/Datadog)
+  - Reference: `docs/planning/ENTERPRISE_READINESS_ASSESSMENT.md` Section 1
+
+- [ ] **Idempotency Manager**: Request deduplication in controller
+  - 1-hour TTL for duplicate detection
+  - Result caching for replay
+  - Prevent double-billing on retries
+  - Reference: Assessment Section 2
+
+- [ ] **Back-Pressure Controls**: Queue depth limits and load shedding
+  - 503 responses when queue > threshold
+  - Per-capability queue depth monitoring
+  - Graceful degradation micronarratives
+  - Reference: Assessment Section 4
+
+- [ ] **Rate Limiting**: Per-tenant quotas and token buckets
+  - Requests per minute/hour/day limits
+  - Integration with billing system
+  - Retry-After headers on 429 responses
+  - Reference: Assessment Section 4
+
 ### Production Readiness
 
 - [ ] **Multi-cloud deployment** (Azure, AWS, GCP)
 
-- [ ] **Chaos engineering** suite for resilience testing
+- [ ] **Chaos engineering** suite for resilience testing (Loki the Chaos Llama 🦙)
 
 - [ ] **Performance benchmarks** and SLA definitions
 
@@ -82,6 +107,30 @@ Following the **JEMM principle** - we use the simplest architecture that solves 
 
 ## 🚀 Medium Term (Q2-Q3 2026)
 
+### Observability & Reliability (NEW — Enterprise Requirements)
+
+- [ ] **OpenTelemetry Distributed Tracing**: W3C Trace Context propagation
+  - `traceparent` header in all mesh requests
+  - Span instrumentation for controller and workers
+  - Exemplars linking traces ↔ metrics ↔ logs
+  - Integration with Jaeger/Tempo/Honeycomb
+  - Reference: `docs/planning/ENTERPRISE_READINESS_ASSESSMENT.md` Section 3
+
+- [ ] **Chaos Engineering Platform** (Loki 🦙): Automated resilience testing
+  - Network partition scenarios
+  - Latency injection (10ms - 5s)
+  - Worker crash simulation
+  - Certificate expiration drills
+  - Partition game days with runbooks
+  - Reference: Assessment Section 6
+
+- [ ] **Multi-Node Controller**: Peer-to-peer in single region
+  - 3 controllers in same Azure region
+  - Worker registration from multiple controllers
+  - Quorum/consensus testing
+  - Proves foundation for multi-region
+  - Reference: Assessment Section 7
+
 ### The Mesh Vision
 
 - [ ] **Edge deployment**: Gaming laptops and mobile devices
@@ -101,6 +150,13 @@ Following the **JEMM principle** - we use the simplest architecture that solves 
   - See: `docs/security/DOCKER_SECURITY_DECISIONS.md` Section 9
   - Issue: `.github/ISSUE_TEMPLATE/capability-access-policy.md`
 
+- [ ] **OPA Policy Engine**: Policy-as-code for governance
+  - Rego policies in version control (`policies/`)
+  - Runtime policy enforcement via OPA sidecar
+  - Policy testing framework
+  - Audit trail for policy decisions
+  - Reference: `docs/planning/ENTERPRISE_READINESS_ASSESSMENT.md` Section 5
+
 - [ ] **Runtime integrity monitoring**: Falco or equivalent for container anomaly detection
 
 - [ ] **Distroless production images**: Ultra-minimal runtime with zero shell/package managers
@@ -109,13 +165,16 @@ Following the **JEMM principle** - we use the simplest architecture that solves 
 
 ### Enterprise Features
 
-- [ ] **Policy engine**: OPA/Rego integration for governance
-
-- [ ] **Audit compliance**: SOX, GDPR, HIPAA support
-
 - [ ] **Multi-tenancy**: Secure isolation between organizations
 
 - [ ] **Federation**: Cross-cloud service mesh
+
+- [ ] **Pluggable Schedulers** (NEW): Integrate specialized execution backends
+  - Ray integration for distributed ML training
+  - Dask integration for DataFrame operations
+  - Kubernetes GPU node affinity for inference
+  - Capability declares preferred scheduler
+  - Reference: `docs/planning/ENTERPRISE_READINESS_ASSESSMENT.md` Section 8
 
 ### AI Integration
 
@@ -128,6 +187,21 @@ Following the **JEMM principle** - we use the simplest architecture that solves 
 - [ ] **Prompt engineering**: Template-based AI interactions
 
 ## 🌟 Long Term (Q4 2026+)
+
+### Multi-Region & Global Scale (NEW)
+
+- [ ] **Cross-Region Deployment**: Controllers in multiple Azure regions
+  - Deploy in US-East, US-West, EU-West
+  - Geo-routing (route to nearest controller)
+  - Cross-region worker placement
+  - Failover playbooks and DR testing
+  - Reference: `docs/planning/ENTERPRISE_READINESS_ASSESSMENT.md` Section 7
+
+- [ ] **Global Mesh**: Edge deployment at scale
+  - Edge controllers on gaming laptops/mobile
+  - P2P discovery without central authority
+  - Economic routing across continents
+  - Latency-aware capability placement
 
 ### Agent Economy
 
