@@ -7,33 +7,33 @@ It defines **non-negotiable architectural rules**, **service boundaries**, and *
 
 ## 📝 MARKDOWN FORMATTING RULES
 
-**CRITICAL**: Every fenced code block you write MUST specify a language tag (MD040).
+**CRITICAL**: Every fenced code block you write MUST follow these rules:
 
-Examples:
+1. **Always specify a language tag** (MD040):
+   - Use `python` for Python code
+   - Use `bash` or `zsh` for shell commands
+   - Use `json`, `yaml`, `toml` for config files
+   - Use `text` for plain output or diagrams
+   - Common tags: `python`, `bash`, `zsh`, `json`, `jsonc`, `yaml`, `toml`, `dockerfile`, `sql`, `text`, `markdown`
 
-````markdown
-```python
-def example():
-    pass
-```
+2. **Always surround with blank lines** (MD031/MD032):
+   - Add blank line BEFORE fenced code block
+   - Add blank line AFTER fenced code block
+   - Add blank line BEFORE list
+   - Add blank line AFTER list
 
-```bash
-uv pip install -e .
-```
-
-```json
-{"key": "value"}
-```
+**Example of correct formatting**:
 
 ```text
-Plain text output or diagrams
-```
-````
+Some paragraph text here.
 
-- Never use bare ```` ``` ```` without a language
-- Common languages: `python`, `bash`, `zsh`, `json`, `jsonc`, `yaml`, `toml`, `dockerfile`, `sql`, `text`, `markdown`
-- When showing command output or plain text: use `text`
-- Always include blank lines before/after lists and code blocks (MD031, MD032)
+- First list item
+- Second list item
+
+More text after the list.
+```
+
+**Why this matters**: Proper blank lines ensure markdown renders correctly and passes automated linting checks.
 
 ---
 
