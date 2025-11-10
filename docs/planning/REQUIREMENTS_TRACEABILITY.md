@@ -6,6 +6,88 @@
 
 This document maps test cases to system requirements defined in `REQUIREMENTS.md`. Each requirement should have at least one test validating its implementation.
 
+## Stakeholder (User) Requirements via Micronarratives
+
+> **Why**: Our current matrix focuses on internal/system requirements. This section adds **stakeholder-facing user requirements** expressed as short **micronarratives** (story-like scenarios) and traces them to system capabilities and executable tests. The goal is to ensure we test what real users/agents actually need, not just whether functions return sane values.
+
+### Format
+
+- **Micronarrative (MN-ID)**: One-sentence story (Actor • Context • Intent • Outcome • Value)
+- **User Requirement (UR-ID)**: Verifiable statement derived from the micronarrative
+- **Acceptance Criteria**: Gherkin-style scenarios that become end-to-end tests
+- **Trace Links**: UR → System Requirement(s) (REQ-*) → Test(s)
+
+### Template
+
+| Field | Content |
+|------|---------|
+| **Micronarrative** | *As an <Actor> in <Context>, I want <Intent> so that <Value>.* |
+| **User Requirement** | *The system shall …* (quantified where possible) |
+| **Acceptance Criteria** | Gherkin `Given/When/Then` scenarios |
+| **Trace Links** | UR-→ REQ-… → Test(s) |
+
+### Initial Micronarratives (Draft)
+
+#### MN-OPS-001 — Zero-Downtime Capability Rollout
+- **Micronarrative**: *As a platform operator during business hours, I want to roll out a new capability without dropping requests so that customers experience zero downtime.*
+- **User Requirement (UR-OPS-001)**: The platform shall support **seamless capability activation** with **no 5xx spikes** and **<1% request retries** during rollout windows ≤ **5 minutes**.
+- **Acceptance Criteria**:
+  ```gherkin
+  Feature: Zero-downtime rollout
+    Scenario: Activate new capability without dropping requests
+      Given an idle registered worker for capability "summarize:v2"
+      And production traffic flowing through the controller
+      When the operator activates route "summarize:v2" with weight 10%
+      Then the observed 5xx rate over 5 minutes is 0
+      And the retry rate is < 1%
+      And p95 latency increases by < 20%
+  ```
+- **Trace Links**: UR-OPS-001 → REQ-PLAT-Load Balancing, REQ-PLAT-Request Routing, REQ-SEC-001 (mTLS) → *Pending Tests*: `tests/e2e/test_rollout_zerodowntime.py::TestWeightedRouting` (to be added)
+
+#### MN-CUST-001 — Bounded-Latency Job Completion
+- **Micronarrative**: *As a customer agent submitting a document for conversion, I want a result within a predictable time so that I can provide a synchronous UX.*
+- **User Requirement (UR-CUST-001)**: For inputs ≤ **20MB**, the system shall return results within **3s p95 / 10s p99**, or **emit progress + callback** within **1s**.
+- **Acceptance Criteria**:
+  ```gherkin
+  Feature: Bounded-latency conversion
+    Scenario: Small document returns synchronously
+      Given a 5MB PDF input
+      When I POST to /api/convert?target=docx
+      Then the response status is 200 within 3 seconds (p95)
+      And the payload includes a downloadable artifact
+    Scenario: Large document falls back to async with progress
+      Given a 50MB PDF input
+      When I POST to /api/convert?target=docx
+      Then I receive 202 Accepted within 1 second
+      And a progress endpoint emits events at least every 2 seconds
+  ```
+- **Trace Links**: UR-CUST-001 → REQ-PLAT-Connection Pooling, REQ-QA-Timeout Handling → *Pending Tests*: `tests/e2e/test_conversion_latency.py` (to be added)
+
+#### MN-GOV-001 — Auditability with Redaction
+- **Micronarrative**: *As a governance auditor during quarterly review, I need to trace who invoked which capability with what parameters, without exposing secrets, so that we meet compliance obligations.*
+- **User Requirement (UR-GOV-001)**: The platform shall produce **immutable audit events** for every request, including **caller, capability, decision, latency, status**, with **configurable PII redaction** and **export to JSONL**.
+- **Acceptance Criteria**:
+  ```gherkin
+  Feature: Auditable request trail
+    Scenario: Redacted audit log on success
+      Given redaction rules hide fields ["token", "email"]
+      When an agent calls capability "summarize:v2" with a token and email
+      Then the audit record omits those fields
+      And includes request_id, caller_id, capability, status, latency_ms
+      And the record is written to audit-YYYYMMDD.jsonl
+  ```
+- **Trace Links**: UR-GOV-001 → REQ-SEC-Audit Trail → *Pending Tests*: `tests/e2e/test_audit_redaction.py`
+
+### User Requirements Coverage (New)
+
+| User Requirement | E2E Test(s) | Status |
+|------------------|-------------|--------|
+| UR-OPS-001 | `test_rollout_zerodowntime.py::TestWeightedRouting` | *Pending* |
+| UR-CUST-001 | `test_conversion_latency.py` | *Pending* |
+| UR-GOV-001 | `test_audit_redaction.py` | *Pending* |
+
+> Add more micronarratives as they emerge (operators, customer agents, governance, SREs, billing, privacy). Each UR must trace down to one or more REQ-* rows and executable tests.
+
 ## Traceability Format
 
 Tests use structured docstrings with explicit requirement links:
@@ -118,6 +200,13 @@ These tests validate specific code quality improvements from the beauty pass:
 - **Universal Protocol Support**: 0/4 (0%) ❌
 - **Quality Assurance**: 3/3 (100%) ⚠️ (partial coverage)
 
+### Writing Good Micronarratives (Quick Guide)
+
+1. **Actor** (who) • **Context** (when/where) • **Intent** (what) • **Outcome** (then) • **Value** (why)
+2. Convert the story to a **verifiable User Requirement (UR-ID)** with measurable thresholds.
+3. Express **Acceptance Criteria** in Gherkin for automation.
+4. **Trace** UR → REQ-* → Test(s). If any link is missing, the work isn’t done.
+
 ## How to Use This Matrix
 
 ### For Developers
@@ -189,6 +278,7 @@ Given tests, we should be able to reconstruct:
 **Related Documents**:
 
 - Requirements: `REQUIREMENTS.md`
+- Stakeholder/User Requirements (Micronarratives): `STAKEHOLDER_REQUIREMENTS.md` (optional dedicated doc; this file remains the trace hub)
 - Test Suite: `tests/test_worker_runtime.py`, `tests/test_capability_schema.py`
 - Test Corpus: `tests/data/README.md`
 - Development Philosophy: `.vscode/AGENT_CONTEXT.md`
