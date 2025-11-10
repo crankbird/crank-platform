@@ -26,6 +26,8 @@ def test_example(self) -> None:
 
 | Requirement | Test(s) | Coverage | Notes |
 |------------|---------|----------|-------|
+| **mTLS Authentication (REQ-SEC-001)** | *Pending* | 0% | Need controller↔worker mTLS handshake tests |
+| **Input Validation (REQ-SEC-002)** | `TestCapabilitySchemaCorpus.test_adversarial_capability_handling[2 cases]` | ✅ 100% | SQL injection, XSS, command injection, Unicode exploits validated |
 | Multi-tier Auth | *Pending* | 0% | Need tests for API keys, JWT, RBAC |
 | Audit Trail | *Pending* | 0% | Need request logging tests |
 
@@ -103,16 +105,16 @@ These tests validate specific code quality improvements from the beauty pass:
 ### Overall Statistics
 
 - **Total Requirements**: 35 identified
-- **Requirements with Tests**: 15 (43%)
-- **Fully Covered**: 12 (34%)
+- **Requirements with Tests**: 16 (46%)
+- **Fully Covered**: 13 (37%)
 - **Partially Covered**: 3 (9%)
-- **Not Covered**: 20 (57%)
+- **Not Covered**: 19 (54%)
 
 ### By Category
 
 - **Worker Container Pattern**: 5/5 (100%) ✅
 - **Platform Services**: 3/7 (43%) ⚠️
-- **Security Requirements**: 0/2 (0%) ❌
+- **Security Requirements**: 1/2 (50%) ⚠️  ← **Updated: REQ-SEC-002 now validated**
 - **Universal Protocol Support**: 0/4 (0%) ❌
 - **Quality Assurance**: 3/3 (100%) ⚠️ (partial coverage)
 

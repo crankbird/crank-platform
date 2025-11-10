@@ -155,7 +155,7 @@ class CrankDocumentConverter:
                 if not input_format:
                     input_format = self.detect_format(content, file.filename)
 
-                logger.info("Converting {file.filename} from {input_format} to {output_format}")
+                logger.info(f"Converting {file.filename} from {input_format} to {output_format}")
 
                 # Perform conversion
                 converted_content = self.convert_document(content, input_format, output_format)
@@ -173,7 +173,7 @@ class CrankDocumentConverter:
                 ).model_dump() | {"content": encoded_content}
 
             except Exception as e:
-                logger.exception("Conversion failed: {e}")
+                logger.exception(f"Conversion failed: {e}")
                 raise HTTPException(status_code=500, detail=str(e)) from e
 
         @self.app.get("/formats")
@@ -333,8 +333,8 @@ class CrankDocumentConverter:
                         f"❌ Registration failed: {response.status_code} - {response.text}",
                     )
 
-        except Exception:
-            logger.exception("❌ Registration error: {e}")
+        except Exception as e:
+            logger.exception(f"❌ Registration error: {e}")
 
     def _create_client(self) -> httpx.AsyncClient:
         """Create HTTP client with certificate verification."""
