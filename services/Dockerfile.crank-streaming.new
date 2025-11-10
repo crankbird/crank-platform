@@ -1,0 +1,49 @@
+# ============================================================================
+# Dockerfile.crank-streaming (Refactored - Using Base Image)
+# ============================================================================
+# Streaming classification worker - refactored to use worker-base.
+#
+# Before (Original):
+#   - 45+ lines of Dockerfile
+#   - Duplicated user creation, apt-get, pip installs
+#   - Copied src/crank multiple times
+#
+# After (This File):
+#   - ~15 lines of worker-specific configuration
+#   - Base image handles all common setup
+#   - Only copies worker code and dependencies
+#
+# Build:
+#   docker build -f services/Dockerfile.crank-streaming \
+#                -t crank-streaming:latest .
+#
+# Run:
+#   docker run -p 8500:8500 \
+#              -v $(pwd)/certs:/app/certs:ro \
+#              crank-streaming:latest
+# ============================================================================
+
+FROM worker-base:latest
+
+# Copy worker-specific code
+COPY --chown=crank:crank services/crank_streaming.py /app/
+
+# Copy worker-specific dependencies
+COPY --chown=crank:crank requirements-streaming.txt /app/
+
+# Install worker-specific packages
+# (common packages already in base image)
+USER root
+RUN pip install --no-cache-dir -r requirements-streaming.txt
+USER crank
+
+# Expose streaming worker port
+EXPOSE 8500
+
+# Set worker-specific environment
+ENV HTTPS_PORT=8500
+ENV SERVICE_NAME=crank-streaming
+
+# Run the worker
+# WorkerApplication.run() handles all infrastructure
+CMD ["python", "crank_streaming.py"]

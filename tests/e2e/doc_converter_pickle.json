@@ -1,0 +1,227 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Cucumber Pickle Schema",
+    "description": "JSON representation of a compiled Gherkin scenario (pickle format)",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "Unique identifier for the scenario (e.g., MN-DOC-001-sync-happy-path)"
+        },
+        "uri": {
+            "type": "string",
+            "description": "Path to the feature file containing the scenario"
+        },
+        "name": {
+            "type": "string",
+            "description": "Human-readable scenario name"
+        },
+        "language": {
+            "type": "string",
+            "description": "Language code (e.g., 'en' for English)",
+            "default": "en"
+        },
+        "tags": {
+            "type": "array",
+            "description": "Gherkin tags applied to the scenario",
+            "items": {
+                "type": "string",
+                "pattern": "^@[a-zA-Z0-9_-]+$"
+            }
+        },
+        "steps": {
+            "type": "array",
+            "description": "Ordered list of scenario steps",
+            "items": {
+                "$ref": "#/$defs/step"
+            }
+        }
+    },
+    "required": [
+        "id",
+        "uri",
+        "name",
+        "steps"
+    ],
+    "$defs": {
+        "step": {
+            "type": "object",
+            "properties": {
+                "text": {
+                    "type": "string",
+                    "description": "Step text without Given/When/Then keyword"
+                },
+                "argument": {
+                    "oneOf": [
+                        {
+                            "$ref": "#/$defs/dataTable"
+                        },
+                        {
+                            "$ref": "#/$defs/docString"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "text"
+            ]
+        },
+        "dataTable": {
+            "type": "object",
+            "properties": {
+                "rows": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "required": [
+                "rows"
+            ]
+        },
+        "docString": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "mediaType": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "content"
+            ]
+        }
+    },
+    "examples": [
+        {
+            "id": "MN-DOC-001-sync-happy-path",
+            "uri": "tests/e2e/doc_converter.feature",
+            "name": "Small document returns synchronously with hash and audit",
+            "language": "en",
+            "tags": [
+                "@sync",
+                "@small",
+                "@latency"
+            ],
+            "steps": [
+                {
+                    "text": "an MCP client is connected to the \"crank-doc-converter\" server"
+                },
+                {
+                    "text": "the MCP tool \"convert_document\" is available"
+                },
+                {
+                    "text": "a 5MB PDF named \"sample-5mb.pdf\""
+                },
+                {
+                    "text": "I invoke MCP tool \"convert_document\" with:",
+                    "argument": {
+                        "rows": [
+                            [
+                                "input_path",
+                                "sample-5mb.pdf"
+                            ],
+                            [
+                                "target",
+                                "docx"
+                            ]
+                        ]
+                    }
+                },
+                {
+                    "text": "the MCP result status is \"ok\""
+                },
+                {
+                    "text": "a file artifact \"sample-5mb.docx\" is produced"
+                },
+                {
+                    "text": "the artifact includes a \"sha256\" field of length 64"
+                },
+                {
+                    "text": "the elapsed time is <= 3 seconds (p95 budget)"
+                },
+                {
+                    "text": "an audit event is recorded with fields:",
+                    "argument": {
+                        "rows": [
+                            [
+                                "request_id",
+                                "tool",
+                                "status",
+                                "duration_ms"
+                            ]
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "id": "MN-DOC-001-async-large-doc",
+            "uri": "tests/e2e/doc_converter.feature",
+            "name": "Large document falls back to async with progress and callback",
+            "language": "en",
+            "tags": [
+                "@async",
+                "@large",
+                "@progress"
+            ],
+            "steps": [
+                {
+                    "text": "an MCP client is connected to the \"crank-doc-converter\" server"
+                },
+                {
+                    "text": "the MCP tool \"convert_document\" is available"
+                },
+                {
+                    "text": "a 50MB PDF named \"sample-50mb.pdf\""
+                },
+                {
+                    "text": "I invoke MCP tool \"convert_document\" with:",
+                    "argument": {
+                        "rows": [
+                            [
+                                "input_path",
+                                "sample-50mb.pdf"
+                            ],
+                            [
+                                "target",
+                                "docx"
+                            ]
+                        ]
+                    }
+                },
+                {
+                    "text": "I receive an \"accepted\" response with a \"job_id\""
+                },
+                {
+                    "text": "progress events emit at least every 2 seconds"
+                },
+                {
+                    "text": "a callback payload is delivered with:",
+                    "argument": {
+                        "rows": [
+                            [
+                                "job_id",
+                                "status",
+                                "artifact_path",
+                                "sha256"
+                            ]
+                        ]
+                    }
+                },
+                {
+                    "text": "the total elapsed time is <= 120 seconds"
+                },
+                {
+                    "text": "an audit event is recorded with status \"ok\""
+                }
+            ]
+        }
+    ]
+}

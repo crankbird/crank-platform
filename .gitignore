@@ -61,6 +61,12 @@ __pycache__/
 .Python
 *.pyc
 
+# Python virtual environments
+.venv/
+.venv-*/
+venv/
+env/
+
 # Coverage reports
 .coverage
 .coverage.*

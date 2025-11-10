@@ -87,6 +87,39 @@ This document maps test cases to system requirements defined in `REQUIREMENTS.md
 
 - **Trace Links**: UR-GOV-001 → REQ-SEC-Audit Trail → *Pending Tests*: `tests/e2e/test_audit_redaction.py`
 
+#### MN-DOC-001 — Trustworthy Conversion via MCP
+
+- **Micronarrative**: *As a customer agent using the MCP tool "crank-doc-converter," I want to convert a PDF to DOCX with predictable latency and verifiable outputs so that I can embed the result in a synchronous UX without degrading user confidence.*
+- **User Requirement (UR-DOC-001)**: For inputs ≤ **20 MB**, the MCP tool shall return a successful conversion within **3 s p95 / 10 s p99**, include a **SHA-256 of the artifact**, and emit **redacted audit metadata** (request_id, tool, duration_ms, status) to an immutable log.
+- **Acceptance Criteria**:
+
+  ```gherkin
+  Feature: Document conversion via MCP (crank-doc-converter)
+    Scenario: Small document returns synchronously with hash and audit
+      Given an MCP client is connected to the "crank-doc-converter" server
+      And the MCP tool "convert_document" is available
+      And a 5MB PDF named "sample-5mb.pdf"
+      When I invoke MCP tool "convert_document" with input_path="sample-5mb.pdf" and target="docx"
+      Then the MCP result status is "ok"
+      And a file artifact "sample-5mb.docx" is produced
+      And the artifact includes a "sha256" field of length 64
+      And the elapsed time is <= 3 seconds (p95 budget)
+      And an audit event is recorded with fields: request_id, tool, status, duration_ms
+
+    Scenario: Large document falls back to async with progress and callback
+      Given an MCP client is connected to the "crank-doc-converter" server
+      And the MCP tool "convert_document" is available
+      And a 50MB PDF named "sample-50mb.pdf"
+      When I invoke MCP tool "convert_document" with input_path="sample-50mb.pdf" and target="docx"
+      Then I receive an "accepted" response with a "job_id"
+      And progress events emit at least every 2 seconds
+      And a callback payload is delivered with job_id, status, artifact_path, sha256
+      And the total elapsed time is <= 120 seconds
+      And an audit event is recorded with status "ok"
+  ```
+
+- **Trace Links**: UR-DOC-001 → REQ-PLAT-Connection Pooling, REQ-QA-Timeout Handling, REQ-SEC-Audit Trail, REQ-PLAT-Request Routing → *Pending Tests*: `tests/e2e/doc_converter.feature` + `tests/e2e/test_doc_converter_steps.py`
+
 ### User Requirements Coverage (New)
 
 | User Requirement | E2E Test(s) | Status |
@@ -94,6 +127,7 @@ This document maps test cases to system requirements defined in `REQUIREMENTS.md
 | UR-OPS-001 | `test_rollout_zerodowntime.py::TestWeightedRouting` | *Pending* |
 | UR-CUST-001 | `test_conversion_latency.py` | *Pending* |
 | UR-GOV-001 | `test_audit_redaction.py` | *Pending* |
+| UR-DOC-001 | `doc_converter.feature` + `test_doc_converter_steps.py` | *Pending* |
 
 > Add more micronarratives as they emerge (operators, customer agents, governance, SREs, billing, privacy). Each UR must trace down to one or more REQ-* rows and executable tests.
 

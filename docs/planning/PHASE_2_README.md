@@ -1,0 +1,186 @@
+# Phase 2: Base Worker Image & Hybrid Deployment
+
+**Status**: ✅ **IMPLEMENTATION READY** (Nov 10, 2025)
+
+**Goal**: Eliminate Dockerfile duplication and enable native (non-containerized) worker execution per the taxonomy vision.
+
+## What's New
+
+### 1. Base Worker Image (`Dockerfile.worker-base`)
+
+Single base image containing all common worker infrastructure:
+
+- Python 3.11 slim base
+- Non-root user (`crank:crank`)
+- Common dependencies (FastAPI, uvicorn, httpx, pydantic)
+- Shared crank modules (`src/crank/`)
+- Certificate directory structure
+- Common healthcheck setup
+
+**Benefits**:
+
+- **DRY**: Eliminates 40+ lines of duplication per worker Dockerfile
+- **Consistency**: All workers use identical base environment
+- **Cache**: Base layers cached, faster worker builds
+- **Security**: Consistent user/permissions across workers
+
+### 2. Thin Worker Dockerfiles
+
+Worker-specific Dockerfiles reduced from ~45 lines to ~15 lines:
+
+**Before** (`Dockerfile.crank-streaming`):
+
+```dockerfile
+FROM python:3.11-slim
+RUN apt-get update && apt-get install curl ca-certificates...
+RUN groupadd crank && useradd crank...
+COPY src/crank /app/src/crank
+RUN pip install fastapi uvicorn httpx pydantic...
+COPY services/crank_streaming.py /app/
+COPY requirements-streaming.txt /app/
+RUN pip install -r requirements-streaming.txt
+EXPOSE 8500
+CMD ["python", "crank_streaming.py"]
+```
+
+**After** (`Dockerfile.crank-streaming.new`):
+
+```dockerfile
+FROM worker-base:latest
+COPY --chown=crank:crank services/crank_streaming.py /app/
+COPY --chown=crank:crank requirements-streaming.txt /app/
+RUN pip install --no-cache-dir -r requirements-streaming.txt
+EXPOSE 8500
+CMD ["python", "crank_streaming.py"]
+```
+
+### 3. Native Execution (Hybrid Deployment)
+
+New Makefile targets for non-containerized deployment:
+
+```bash
+# Install worker in isolated venv
+make worker-install WORKER=streaming
+
+# Run worker natively (macOS, Linux, WSL2)
+make worker-run WORKER=streaming
+```
+
+**Why**:
+
+- **macOS Metal GPU**: Run GPU workers natively for Apple Silicon acceleration
+- **Development**: Faster iteration without Docker rebuild
+- **Testing**: Validate "workers are not containers" architecture principle
+- **Embedded**: Pattern for mobile/Raspberry Pi deployment
+
+## Usage
+
+### Build Base Image
+
+```bash
+make worker-base
+```
+
+This creates `worker-base:latest` with all common infrastructure.
+
+### Build Worker from Base
+
+```bash
+# Streaming worker
+make worker-build WORKER=streaming
+
+# Document converter
+make worker-build WORKER=doc_converter
+
+# Email classifier
+make worker-build WORKER=email_classifier
+```
+
+### Native Installation & Execution
+
+```bash
+# Install streaming worker natively
+make worker-install WORKER=streaming
+
+# Run it (no Docker required)
+make worker-run WORKER=streaming
+```
+
+Worker runs in isolated venv (`.venv-streaming/`), imports from `src/crank/`, uses WorkerApplication infrastructure.
+
+### Clean Virtual Environments
+
+```bash
+make worker-clean
+```
+
+## Migration Checklist
+
+**Per Worker**:
+
+- [ ] Create `Dockerfile.crank-{worker}.new` using base image
+- [ ] Test build: `make worker-build WORKER={worker}`
+- [ ] Test native: `make worker-install WORKER={worker} && make worker-run WORKER={worker}`
+- [ ] Verify healthcheck, registration, heartbeat
+- [ ] Compare image sizes (base vs old)
+- [ ] Validate all tests still pass
+- [ ] Rename `.new` to replace old Dockerfile
+
+**Workers to Migrate**:
+
+- [ ] streaming (example provided)
+- [ ] doc_converter
+- [ ] email_classifier
+- [ ] email_parser
+- [ ] image_classifier_advanced (GPU - requires WSL2)
+
+## File Structure
+
+```text
+crank-platform/
+├── services/
+│   ├── Dockerfile.worker-base          # NEW: Base image for all workers
+│   ├── Dockerfile.crank-streaming.new  # NEW: Thin streaming worker
+│   ├── Dockerfile.crank-streaming      # OLD: To be replaced
+│   ├── crank_streaming.py              # Worker code (unchanged)
+│   └── ...
+├── Makefile                             # UPDATED: Phase 2 targets
+├── tests/e2e/                           # NEW: E2E test structure
+│   ├── doc_converter.feature
+│   ├── test_doc_converter_steps.py
+│   ├── conftest.py
+│   └── doc_converter_pickle.json
+└── docs/planning/
+    ├── PHASE_2_README.md               # This file
+    └── REQUIREMENTS_TRACEABILITY.md    # UPDATED: MN-DOC-001 added
+```
+
+## Success Metrics
+
+- [ ] Base image builds successfully
+- [ ] At least one worker migrated and tested
+- [ ] Image size reduction measured
+- [ ] Native macOS deployment proven
+- [ ] CI builds all workers from base
+- [ ] Migration plan for remaining workers documented
+
+## Next Steps
+
+1. **Build base image**: `make worker-base`
+2. **Migrate streaming worker**: Test `Dockerfile.crank-streaming.new`
+3. **Test native execution**: `make worker-install WORKER=streaming`
+4. **Measure improvements**: Image size, build time
+5. **Update CI**: Build from base in GitHub Actions
+6. **Migrate remaining workers**: doc_converter, email_classifier, email_parser
+7. **Phase 3**: Extract controller from platform (Issue #30)
+
+## Related Documents
+
+- **Architecture Plan**: `docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md`
+- **Taxonomy**: `docs/planning/crank-taxonomy-and-deployment.md`
+- **Traceability**: `docs/planning/REQUIREMENTS_TRACEABILITY.md` (MN-DOC-001)
+- **E2E Tests**: `tests/e2e/doc_converter.feature`
+
+## Questions?
+
+See Issue #29 in CONTROLLER_WORKER_REFACTOR_PLAN.md for full context and acceptance criteria.
