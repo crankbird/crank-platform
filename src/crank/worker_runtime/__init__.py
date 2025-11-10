@@ -24,16 +24,20 @@ Usage:
 """
 
 from crank.worker_runtime.base import WorkerApplication
-from crank.worker_runtime.lifecycle import HealthStatus, ShutdownHandler
+from crank.worker_runtime.lifecycle import HealthStatus, ShutdownHandler, ShutdownTask
 from crank.worker_runtime.registration import (
     ControllerClient,
     WorkerRegistration,
 )
+from crank.worker_runtime.security import CertificateBundle, CertificateManager
 
 __all__: list[str] = [
+    "CertificateBundle",
+    "CertificateManager",
     "ControllerClient",
     "HealthStatus",
     "ShutdownHandler",
+    "ShutdownTask",
     "WorkerApplication",
     "WorkerRegistration",
 ]

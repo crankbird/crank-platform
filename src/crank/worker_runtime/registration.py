@@ -57,6 +57,7 @@ class ControllerClient:
         capabilities: list[CapabilityDefinition],
         controller_url: Optional[str] = None,
         auth_token: Optional[str] = None,
+        verify_ssl: bool = False,
     ) -> None:
         """
         Initialize controller client.
@@ -67,10 +68,12 @@ class ControllerClient:
             capabilities: List of capabilities this worker provides
             controller_url: Controller endpoint (defaults to PLATFORM_URL env var)
             auth_token: Authentication token (defaults to PLATFORM_AUTH_TOKEN env var)
+            verify_ssl: Whether to verify SSL certificates (default: False for dev)
         """
         self.worker_id = worker_id
         self.worker_url = worker_url
         self.capabilities = capabilities
+        self.verify_ssl = verify_ssl
 
         # Controller connection settings (with backwards-compatible defaults)
         self.controller_url = controller_url or os.getenv(
@@ -82,26 +85,36 @@ class ControllerClient:
             "local-dev-key",
         )
 
+        # HTTP client lifecycle
+        self._http_client: Optional[httpx.AsyncClient] = None
+
         # Heartbeat state
         self.heartbeat_task: Optional[asyncio.Task[None]] = None
         self.heartbeat_interval = int(os.getenv("WORKER_HEARTBEAT_INTERVAL", "30"))
         self.heartbeat_retry_interval = int(os.getenv("WORKER_HEARTBEAT_RETRY", "5"))
 
-    def _create_http_client(self, timeout: float = 30.0) -> httpx.AsyncClient:
+    async def _get_http_client(self) -> httpx.AsyncClient:
         """
-        Create HTTP client with proper SSL configuration.
+        Get or create HTTP client with proper configuration.
 
-        For development environments, SSL verification is disabled
-        but connection pooling is maintained for stability.
+        Client is lazily initialized and reused across requests.
         """
-        return httpx.AsyncClient(
-            verify=False,  # TODO: Enable SSL verification with proper cert chain
-            timeout=timeout,
-            limits=httpx.Limits(
-                max_keepalive_connections=5,
-                max_connections=10,
-            ),
-        )
+        if self._http_client is None:
+            self._http_client = httpx.AsyncClient(
+                verify=self.verify_ssl,
+                timeout=30.0,
+                limits=httpx.Limits(
+                    max_keepalive_connections=5,
+                    max_connections=10,
+                ),
+            )
+        return self._http_client
+
+    async def close(self) -> None:
+        """Close HTTP client and clean up resources."""
+        if self._http_client is not None:
+            await self._http_client.aclose()
+            self._http_client = None
 
     async def register(self) -> None:
         """
@@ -114,11 +127,7 @@ class ControllerClient:
         capability_ids = [cap.id for cap in self.capabilities]
 
         # Legacy service_type - derive from first capability or use generic
-        service_type = (
-            self.capabilities[0].id.split(".")[0]
-            if self.capabilities
-            else "generic_worker"
-        )
+        service_type = self._derive_service_type()
 
         worker_info = WorkerRegistration(
             worker_id=self.worker_id,
@@ -138,28 +147,29 @@ class ControllerClient:
         max_retries = 5
         retry_count = 0
 
+        client = await self._get_http_client()
+
         while retry_count < max_retries:
             try:
-                async with self._create_http_client() as client:
-                    logger.info(
-                        f"📝 Registering worker {self.worker_id} with controller "
-                        f"(attempt {retry_count + 1}/{max_retries})"
-                    )
+                logger.info(
+                    f"📝 Registering worker {self.worker_id} with controller "
+                    f"(attempt {retry_count + 1}/{max_retries})"
+                )
 
-                    response = await client.post(
-                        registration_url,
-                        json=worker_info.model_dump(),
-                        headers=headers,
-                    )
+                response = await client.post(
+                    registration_url,
+                    json=worker_info.model_dump(),
+                    headers=headers,
+                )
 
-                    if response.status_code == 200:
-                        logger.info(f"✅ Worker {self.worker_id} registered successfully")
-                        logger.info(f"   Capabilities: {', '.join(capability_ids)}")
-                        return
+                if response.status_code == 200:
+                    logger.info(f"✅ Worker {self.worker_id} registered successfully")
+                    logger.info(f"   Capabilities: {', '.join(capability_ids)}")
+                    return
 
-                    logger.warning(
-                        f"⚠️  Registration returned status {response.status_code}: {response.text}"
-                    )
+                logger.warning(
+                    f"⚠️  Registration returned status {response.status_code}: {response.text}"
+                )
 
             except Exception as e:
                 logger.warning(f"⚠️  Registration attempt {retry_count + 1} failed: {e}")
@@ -172,6 +182,19 @@ class ControllerClient:
 
         logger.error(f"❌ Failed to register worker after {max_retries} attempts")
 
+    def _derive_service_type(self) -> str:
+        """
+        Derive legacy service_type from capabilities.
+
+        Returns first capability's domain (e.g., 'email' from 'email.classification')
+        or 'generic_worker' if no capabilities defined.
+        """
+        if not self.capabilities:
+            return "generic_worker"
+
+        # First capability defines service domain
+        return self.capabilities[0].id.split(".")[0]
+
     async def send_heartbeat(self) -> None:
         """Send a heartbeat to the controller to maintain registration."""
         heartbeat_url = f"{self.controller_url}/v1/workers/{self.worker_id}/heartbeat"
@@ -181,15 +204,15 @@ class ControllerClient:
         }
 
         try:
-            async with self._create_http_client(timeout=10.0) as client:
-                response = await client.post(heartbeat_url, headers=headers)
+            client = await self._get_http_client()
+            response = await client.post(heartbeat_url, headers=headers)
 
-                if response.status_code == 200:
-                    logger.debug(f"💓 Heartbeat sent for worker {self.worker_id}")
-                else:
-                    logger.warning(
-                        f"⚠️  Heartbeat failed with status {response.status_code}"
-                    )
+            if response.status_code == 200:
+                logger.debug(f"💓 Heartbeat sent for worker {self.worker_id}")
+            else:
+                logger.warning(
+                    f"⚠️  Heartbeat failed with status {response.status_code}"
+                )
 
         except Exception as e:
             logger.warning(f"💔 Heartbeat error: {e}")
@@ -219,7 +242,7 @@ class ControllerClient:
         )
 
     async def stop_heartbeat(self) -> None:
-        """Stop the heartbeat task gracefully."""
+        """Stop the heartbeat task and close HTTP client gracefully."""
         if self.heartbeat_task and not self.heartbeat_task.done():
             self.heartbeat_task.cancel()
             try:
@@ -227,3 +250,6 @@ class ControllerClient:
             except asyncio.CancelledError:
                 pass
             logger.info("💓 Heartbeat stopped")
+
+        # Close HTTP client
+        await self.close()

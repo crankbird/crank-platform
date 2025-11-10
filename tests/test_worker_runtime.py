@@ -133,8 +133,9 @@ class TestShutdownHandler:
             nonlocal callback_called
             callback_called = True
 
-        handler.register_shutdown_callback(test_callback)
-        assert len(handler.shutdown_callbacks) == 1
+        handler.register_shutdown_callback("test_callback", test_callback)
+        assert len(handler.shutdown_tasks) == 1
+        assert handler.shutdown_tasks[0].name == "test_callback"
 
     @pytest.mark.asyncio
     async def test_execute_shutdown_calls_callbacks(self) -> None:
@@ -146,7 +147,7 @@ class TestShutdownHandler:
             nonlocal callback_called
             callback_called = True
 
-        handler.register_shutdown_callback(test_callback)
+        handler.register_shutdown_callback("test_callback", test_callback)
         await handler.execute_shutdown()
 
         assert callback_called
@@ -166,9 +167,9 @@ class TestShutdownHandler:
         async def callback3() -> None:
             call_order.append(3)
 
-        handler.register_shutdown_callback(callback1)
-        handler.register_shutdown_callback(callback2)
-        handler.register_shutdown_callback(callback3)
+        handler.register_shutdown_callback("callback1", callback1)
+        handler.register_shutdown_callback("callback2", callback2)
+        handler.register_shutdown_callback("callback3", callback3)
 
         await handler.execute_shutdown()
 
@@ -258,7 +259,7 @@ class TestControllerClient:
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_client.post.return_value = mock_response
-        mock_client_class.return_value.__aenter__.return_value = mock_client
+        mock_client_class.return_value = mock_client
 
         capabilities = [STREAMING_CLASSIFICATION]
         client = ControllerClient(
@@ -271,6 +272,9 @@ class TestControllerClient:
 
         # Verify registration was attempted
         assert mock_client.post.called
+
+        # Clean up
+        await client.close()
 
     @pytest.mark.asyncio
     async def test_start_heartbeat_creates_task(self) -> None:

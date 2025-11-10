@@ -71,26 +71,40 @@ class WorkerApplication(abc.ABC):
             service_name: Service name for URL construction (defaults to hostname)
             https_port: HTTPS port for this worker
         """
-        # Worker identity
+        self._configure_identity(worker_id, service_name, https_port)
+        self._configure_components()
+        self._configure_app()
+
+        logger.info(f"🏗️  Worker {self.worker_id} initialized")
+        logger.info(f"   URL: {self.worker_url}")
+
+    def _configure_identity(
+        self,
+        worker_id: Optional[str],
+        service_name: Optional[str],
+        https_port: int,
+    ) -> None:
+        """Configure worker identity and networking."""
         self.worker_id = worker_id or f"worker-{uuid.uuid4().hex[:8]}"
         self.service_name = service_name or f"{self.worker_id}-service"
         self.https_port = https_port
         self.worker_url = f"https://{self.service_name}:{https_port}"
 
-        # Core components
+    def _configure_components(self) -> None:
+        """Initialize core runtime components."""
         self.shutdown_handler = ShutdownHandler()
         self.health_manager = HealthCheckManager(self.worker_id)
         self.cert_manager = CertificateManager(self.worker_id)
         self.controller_client: Optional[ControllerClient] = None
 
-        # Initialize FastAPI with lifespan handler
+    def _configure_app(self) -> None:
+        """Configure FastAPI application with lifespan and routes."""
+
         @asynccontextmanager
         async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             """Lifespan context manager for startup and shutdown."""
-            # Startup
             await self._startup_handler()
             yield
-            # Shutdown
             await self._shutdown_handler()
 
         self.app = FastAPI(
@@ -98,12 +112,8 @@ class WorkerApplication(abc.ABC):
             lifespan=lifespan,
         )
 
-        # Set up core infrastructure
         self._setup_core_routes()
         self.shutdown_handler.setup_signal_handlers()
-
-        logger.info(f"🏗️  Worker {self.worker_id} initialized")
-        logger.info(f"   URL: {self.worker_url}")
 
     # ========================================================================
     # Abstract Methods - Subclasses MUST implement

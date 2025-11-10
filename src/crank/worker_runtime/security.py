@@ -13,10 +13,59 @@ from the controller (the only privileged component).
 
 import logging
 import os
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class CertificateBundle:
+    """
+    Validated bundle of certificate files for mTLS.
+
+    All paths are validated to exist on construction.
+    Provides clean conversion to uvicorn SSL config.
+    """
+
+    cert_file: Path
+    key_file: Path
+    ca_file: Path
+    worker_id: str
+
+    def __post_init__(self) -> None:
+        """Validate all certificate files exist."""
+        missing = [
+            str(path) for path in [self.cert_file, self.key_file, self.ca_file]
+            if not path.exists()
+        ]
+        if missing:
+            raise FileNotFoundError(
+                f"Missing certificate files for worker '{self.worker_id}': "
+                f"{', '.join(missing)}"
+            )
+
+    def to_uvicorn_config(self) -> dict[str, str]:
+        """
+        Convert bundle to uvicorn SSL configuration dict.
+
+        Returns:
+            Dictionary with ssl_certfile, ssl_keyfile, ssl_ca_certs keys
+        """
+        return {
+            "ssl_certfile": str(self.cert_file),
+            "ssl_keyfile": str(self.key_file),
+            "ssl_ca_certs": str(self.ca_file),
+        }
+
+    def __repr__(self) -> str:
+        """Human-readable representation."""
+        return (
+            f"CertificateBundle(worker_id='{self.worker_id}', "
+            f"cert={self.cert_file.name}, key={self.key_file.name}, "
+            f"ca={self.ca_file.name})"
+        )
 
 
 class CertificateManager:
@@ -103,9 +152,28 @@ class CertificateManager:
         )
         return False
 
+    def ensure_certificates(self) -> CertificateBundle:
+        """
+        Ensure certificates exist and return validated bundle.
+
+        Returns:
+            CertificateBundle with validated paths
+
+        Raises:
+            FileNotFoundError: If required certificates don't exist
+        """
+        return CertificateBundle(
+            cert_file=self.get_cert_path(),
+            key_file=self.get_key_path(),
+            ca_file=self.get_ca_cert_path(),
+            worker_id=self.worker_id,
+        )
+
     def get_ssl_context(self) -> dict[str, str]:
         """
         Get SSL context configuration for HTTPS server.
+
+        Deprecated: Use ensure_certificates().to_uvicorn_config() instead.
 
         Returns:
             Dictionary with cert file paths for SSL configuration
@@ -113,23 +181,8 @@ class CertificateManager:
         Raises:
             FileNotFoundError: If required certificates don't exist
         """
-        cert_file = self.get_cert_path()
-        key_file = self.get_key_path()
-        ca_file = self.get_ca_cert_path()
-
-        if not all(p.exists() for p in [cert_file, key_file, ca_file]):
-            missing = [
-                str(p) for p in [cert_file, key_file, ca_file] if not p.exists()
-            ]
-            raise FileNotFoundError(
-                f"Missing required certificates: {', '.join(missing)}"
-            )
-
-        return {
-            "ssl_certfile": str(cert_file),
-            "ssl_keyfile": str(key_file),
-            "ssl_ca_certs": str(ca_file),
-        }
+        bundle = self.ensure_certificates()
+        return bundle.to_uvicorn_config()
 
 
 def load_certificates_sync(worker_id: str) -> dict[str, str]:
