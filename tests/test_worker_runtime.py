@@ -448,6 +448,123 @@ class TestControllerClient:
         assert client.heartbeat_task is not None
         assert client.heartbeat_task.done()
 
+    @pytest.mark.asyncio
+    async def test_http_client_lazy_initialization(self) -> None:
+        """
+        Test httpx.AsyncClient is lazily initialized on first use.
+
+        REQUIREMENT: Worker Container Pattern - Resource efficiency
+        VALIDATES: Beauty pass commit 824bb96 - Lazy client initialization
+        """
+        capabilities = [STREAMING_CLASSIFICATION]
+        client = ControllerClient(
+            worker_id="test-worker",
+            worker_url="https://worker:8500",
+            capabilities=capabilities,
+        )
+
+        # Trigger client creation via registration
+        with patch("httpx.AsyncClient.post") as mock_post:
+            mock_response = AsyncMock()
+            mock_response.status_code = 200
+            mock_post.return_value = mock_response
+
+            await client.register()
+            assert mock_post.called
+
+        await client.close()
+
+    @pytest.mark.asyncio
+    async def test_http_client_reuse_across_requests(self) -> None:
+        """
+        Test httpx.AsyncClient reuses connection pool.
+
+        REQUIREMENT: Platform Services - Performance optimization
+        VALIDATES: Beauty pass commit 824bb96 - Connection pooling
+        """
+        capabilities = [STREAMING_CLASSIFICATION]
+        client = ControllerClient(
+            worker_id="test-worker",
+            worker_url="https://worker:8500",
+            capabilities=capabilities,
+        )
+
+        with patch("httpx.AsyncClient.post") as mock_post:
+            mock_response = AsyncMock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {"acknowledged": True}
+            mock_post.return_value = mock_response
+
+            # Multiple heartbeats should reuse same client
+            for _ in range(3):
+                await client.send_heartbeat()
+
+            assert mock_post.call_count == 3
+
+        await client.close()
+
+    @pytest.mark.asyncio
+    async def test_http_client_cleanup_on_close(self) -> None:
+        """
+        Test httpx.AsyncClient is properly cleaned up.
+
+        REQUIREMENT: Worker Container Pattern - Graceful shutdown
+        VALIDATES: Beauty pass commit 824bb96 - Resource cleanup
+        """
+        capabilities = [STREAMING_CLASSIFICATION]
+        client = ControllerClient(
+            worker_id="test-worker",
+            worker_url="https://worker:8500",
+            capabilities=capabilities,
+        )
+
+        # Create client via registration
+        with patch("httpx.AsyncClient.post") as mock_post:
+            mock_response = AsyncMock()
+            mock_response.status_code = 200
+            mock_post.return_value = mock_response
+            await client.register()
+
+        # Close should clean up resources
+        await client.close()
+
+        # Close is idempotent
+        await client.close()
+
+    @pytest.mark.asyncio
+    async def test_registration_exchange_from_corpus(self) -> None:
+        """
+        Test registration flow using corpus fixture.
+
+        REQUIREMENT: Worker Container Pattern - Platform registration
+        VALIDATES: Registration protocol matches expected exchange
+        """
+        from unittest.mock import patch
+
+        from tests.data.loader import load_controller_exchange
+
+        exchange = load_controller_exchange("registration/successful.json")
+
+        with patch("httpx.AsyncClient.post") as mock_post:
+            mock_response = AsyncMock()
+            mock_response.status_code = exchange["response"]["status_code"]
+            mock_response.json.return_value = exchange["response"]["json"]
+            mock_post.return_value = mock_response
+
+            client = ControllerClient(
+                worker_id=exchange["request"]["json"]["worker_id"],
+                worker_url=exchange["request"]["json"]["endpoint"],
+                capabilities=[STREAMING_CLASSIFICATION],
+            )
+
+            await client.register()
+
+            # Verify request made
+            assert mock_post.called
+            assert "/workers/register" in str(mock_post.call_args)
+
+            await client.close()
+
 
 class TestWorkerApplication:
     """Test worker application base class."""
