@@ -1,6 +1,6 @@
 # 🎭 Mascot Council Action Plan
 
-**Review Date:** 2025-11-10  
+**Review Date:** 2025-11-10
 **Based On:** `mascots/MASCOT_COUNCIL_REVIEW.md`
 
 This document prioritizes the technical debt and security issues identified by the Mascot Council review.
@@ -46,7 +46,7 @@ def _create_client(self) -> httpx.AsyncClient:
 - [ ] Add test: `test_worker_http_client_enforces_tls_verification`
 - [ ] Update REQ-SEC-002 coverage in traceability matrix
 
-**Estimated Effort:** 2-3 hours  
+**Estimated Effort:** 2-3 hours
 **Risk if Deferred:** High - Man-in-the-middle attacks possible in production
 
 ---
@@ -76,7 +76,7 @@ healthcheck:
 - [ ] Test health checks still work with proper verification
 - [ ] Document health check certificate requirements
 
-**Estimated Effort:** 1-2 hours  
+**Estimated Effort:** 1-2 hours
 **Risk if Deferred:** Medium - Health checks work but violate security policy
 
 ---
@@ -97,7 +97,7 @@ healthcheck:
 - [ ] Update traceability matrix to show existing REQ-SEC-002 coverage
 - [ ] Add certificate rotation tests
 
-**Estimated Effort:** 4-6 hours  
+**Estimated Effort:** 4-6 hours
 **Risk if Deferred:** Low - Tests exist but aren't linked properly
 
 ---
@@ -131,7 +131,7 @@ logger.info(f"Converting {file.filename} from {input_format} to {output_format}"
 - [ ] Add Ruff rule `G001` to detect f-string issues in logging
 - [ ] Add pre-commit hook to catch this pattern
 
-**Estimated Effort:** 1 hour  
+**Estimated Effort:** 1 hour
 **Risk if Deferred:** Medium - Production logs are useless for debugging
 
 ---
@@ -169,7 +169,7 @@ async def convert_document(request):
 - [ ] Apply same pattern to `crank_email_parser.py` and `crank_image_classifier_advanced.py`
 - [ ] Update docs to show `WorkerApplication` as canonical pattern
 
-**Estimated Effort:** 6-8 hours (per worker)  
+**Estimated Effort:** 6-8 hours (per worker)
 **Risk if Deferred:** High - Protocol changes require shotgun surgery across workers
 
 ---
@@ -202,7 +202,7 @@ if not self.platform_url:
 - [ ] Add validation that required env vars are present
 - [ ] Document required environment variables per worker
 
-**Estimated Effort:** 2 hours  
+**Estimated Effort:** 2 hours
 **Risk if Deferred:** Medium - Harder to deploy on Kubernetes/bare metal
 
 ---
@@ -239,7 +239,7 @@ CONTAINER_RUNTIME=$(detect_container_runtime)
 - [ ] Add smoke tests that boot via `podman compose`
 - [ ] Document multi-runtime support in README
 
-**Estimated Effort:** 4-6 hours  
+**Estimated Effort:** 4-6 hours
 **Risk if Deferred:** Low - Only affects developers without Docker
 
 ---
@@ -262,7 +262,7 @@ CONTAINER_RUNTIME=$(detect_container_runtime)
 - [ ] Update traceability matrix to reflect new coverage
 - [ ] Set target: 80% coverage by end of Phase 1
 
-**Estimated Effort:** 12-16 hours (ongoing)  
+**Estimated Effort:** 12-16 hours (ongoing)
 **Risk if Deferred:** Medium - Requirements drift from implementation
 
 ---
@@ -278,7 +278,7 @@ CONTAINER_RUNTIME=$(detect_container_runtime)
 - [ ] Document ADR-003: Requirements Traceability Pattern
 - [ ] Template for future ADRs
 
-**Estimated Effort:** 4 hours  
+**Estimated Effort:** 4 hours
 **Risk if Deferred:** Low - But helpful for onboarding
 
 ---
@@ -296,30 +296,75 @@ CONTAINER_RUNTIME=$(detect_container_runtime)
 - [ ] Add separation readiness scoring tool
 - [ ] Integrate into CI pipeline
 
-**Estimated Effort:** 8-12 hours  
+**Estimated Effort:** 8-12 hours
 **Risk if Deferred:** Low - Nice to have, not blocking
 
 ---
 
 ## 📊 Summary & Roadmap
 
-### Immediate Actions (This Week)
-1. ✅ **Fix `verify=False` security violations** (Priority 1.1) - 3 hours
-2. ✅ **Fix literal brace logging bug** (Priority 2.1) - 1 hour
-3. ✅ **Update REQ-SEC coverage in traceability matrix** (Priority 1.3) - 1 hour
-4. ✅ **Fix health check certificate validation** (Priority 1.2) - 2 hours
+### ✅ Success Stories (Already Passing Council Review)
 
-**Total: ~7 hours, eliminates critical security issues**
+**Refactored Workers (WorkerApplication Pattern):**
+- `crank_email_classifier.py` - ✅ All mascots approve
+- `crank_streaming.py` - ✅ All mascots approve
+
+**Key Wins:**
+- Zero `verify=False` instances
+- Zero code duplication (registration/heartbeat in base class)
+- Clean separation of concerns
+- Automatic certificate management
+- Environment-driven configuration
+- 40-60% code reduction per worker
+
+**Pattern Proven:** The `WorkerApplication` refactoring eliminates most council concerns automatically!
+
+---
+
+### Immediate Actions (This Week)
+
+**Strategy:** Apply proven `WorkerApplication` pattern to remaining workers
+
+1. ✅ **Refactor `crank_doc_converter.py`** (Priority 1) - 6-8 hours
+   - Delete ~200 lines of duplicated infrastructure
+   - Automatically fixes `verify=False` violations
+   - Automatically fixes hardcoded URLs
+   - Automatically fixes manual registration/heartbeat
+   - Expected result: ~250-300 lines (60% reduction)
+
+2. ✅ **Update REQ-SEC coverage in traceability matrix** (DONE) - 0 hours
+   - Already completed in previous commit
+
+3. ✅ **Fix literal brace logging** (DONE) - 0 hours
+   - Already completed in previous commit
+
+**Total: ~6-8 hours, eliminates ALL critical issues in document converter**
+
+---
 
 ### Next Sprint (2 Weeks)
-1. Refactor document converter to `WorkerApplication` (Priority 2.2) - 8 hours
-2. Add missing REQ-SEC tests (Priority 1.3) - 4 hours
-3. Remove hardcoded platform URLs (Priority 3.1) - 2 hours
-4. Create ADRs for major decisions (Priority 4.2) - 4 hours
 
-**Total: ~18 hours, eliminates code duplication and documents architecture**
+1. **Refactor `crank_email_parser.py`** - 6-8 hours
+   - Apply WorkerApplication pattern
+   - Fixes `verify=False` automatically
+   - Completes email processing stack
+
+2. **Refactor `crank_image_classifier_advanced.py`** - 8-10 hours
+   - Apply WorkerApplication pattern (GPU variant)
+   - Fixes `verify=False` automatically
+   - More complex due to GPU memory management
+
+3. **Create ADRs for architecture decisions** - 4 hours
+   - ADR-001: Worker Runtime Standardization
+   - ADR-002: WorkerApplication Pattern
+   - ADR-003: Test Corpus Infrastructure
+
+**Total: ~18-22 hours, achieves 100% worker standardization**
+
+---
 
 ### Long Term (Phase 1 Completion)
+
 1. Increase requirements coverage to 80% (Priority 4.1) - 16 hours
 2. Add container runtime abstraction (Priority 3.2) - 6 hours
 3. Create Bella's modularity test suite (Priority 5.1) - 12 hours
@@ -357,5 +402,5 @@ CONTAINER_RUNTIME=$(detect_container_runtime)
 
 ---
 
-**Next Review:** After Priority 1 items are completed  
+**Next Review:** After Priority 1 items are completed
 **Council Reconvene:** 2025-11-17 (1 week)

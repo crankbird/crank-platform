@@ -1,33 +1,26 @@
-"""
-Crank Email Parser Service
+"""Crank Email Parser Service - Refactored to use WorkerApplication.
 
 Bulk email parsing service that integrates the parse-email-archive functionality
 with the crank-platform mesh architecture. Provides high-performance streaming
 parsing of email archives (mbox, eml) with mTLS security.
 """
 
-import asyncio
 import email
 import logging
 import mailbox
 import os
-import ssl
-import sys
 import tempfile
-from collections.abc import AsyncIterator, Iterator
-from contextlib import asynccontextmanager
+from collections.abc import Iterator
 from datetime import datetime, timezone
 from email import policy
-from types import TracebackType
 from typing import Any, Optional
 from uuid import uuid4
 
-import httpx
-import uvicorn
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 
-# Import security configuration and models
+from crank.capabilities.schema import EMAIL_PARSING, CapabilityDefinition
+from crank.worker_runtime import WorkerApplication
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -36,19 +29,7 @@ logger = logging.getLogger(__name__)
 # FastAPI dependency defaults - create at module level to avoid evaluation in defaults
 _DEFAULT_FILE_UPLOAD = File(...)
 
-
-# Worker registration model
-class WorkerRegistration(BaseModel):
-    """Model for worker registration with platform."""
-
-    worker_id: str
-    service_type: str
-    endpoint: str
-    health_url: str
-    capabilities: list[str]
-
-
-# Import the existing parse_mbox functionality
+# Default keywords for receipt detection
 DEFAULT_KEYWORDS = [
     "receipt",
     "invoice",
@@ -84,153 +65,17 @@ class EmailParseResponse(BaseModel):
     summary: dict[str, Any]
 
 
-class CrankEmailParserService:
-    """Email parser service implementing crank-platform mesh interface."""
+class EmailParser:
+    """Pure email parsing logic without infrastructure concerns."""
 
-    def __init__(self) -> None:
-        # Create lifespan context manager
-        @asynccontextmanager
-        async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-            # Startup
-            logger.info("📧 Starting Crank Email Parser Service...")
-            await self._register_with_platform()
-            logger.info("✅ Crank Email Parser Service startup complete!")
-
-            yield
-
-            # Shutdown
-            if self.heartbeat_task:
-                self.heartbeat_task.cancel()
-                try:
-                    await self.heartbeat_task
-                except asyncio.CancelledError:
-                    logger.info("Heartbeat task cancelled")
-
-        self.app = FastAPI(title="Crank Email Parser", version="1.0.0", lifespan=lifespan)
-
-        # Worker registration configuration
-        self.worker_id = f"email-parser-{uuid4().hex[:8]}"
-        self.platform_url = os.getenv("PLATFORM_URL", "https://platform:8443")
-        self.worker_url = (
-            f"https://crank-email-parser:{os.getenv('EMAIL_PARSER_HTTPS_PORT', '8301')}"
-        )
-        self.platform_auth_token = os.getenv("PLATFORM_AUTH_TOKEN", "dev-mesh-key")
-        self.heartbeat_task: Optional[asyncio.Task[None]] = None
-
-        # Legacy service_id for compatibility
-        self.service_id = self.worker_id
-
-        self.setup_routes()
-
-    def setup_routes(self) -> None:
-        """Setup FastAPI routes for the service."""
-
-        @self.app.get("/health")
-        async def health_check() -> dict[str, Any]:
-            return {
-                "status": "healthy",
-                "service": "crank-email-parser",
-                "service_id": self.service_id,
-                "capabilities": [
-                    "mbox_parsing",
-                    "eml_parsing",
-                    "attachment_extraction",
-                    "bulk_processing",
-                ],
-            }
-
-        @self.app.get("/parse")
-        async def parse_info() -> dict[str, Any]:
-            """Get information about available parsing endpoints."""
-            return {
-                "service": "crank-email-parser",
-                "available_endpoints": {
-                    "/parse/mbox": {
-                        "method": "POST",
-                        "description": "Parse mbox email archive files",
-                        "accepts": ["multipart/form-data"],
-                        "file_types": [".mbox"],
-                    },
-                    "/parse/eml": {
-                        "method": "POST",
-                        "description": "Parse single EML email files",
-                        "accepts": ["multipart/form-data"],
-                        "file_types": [".eml"],
-                    },
-                },
-                "analysis_endpoints": {
-                    "/analyze/archive": {
-                        "method": "POST",
-                        "description": "Analyze email archive patterns and statistics",
-                        "accepts": ["multipart/form-data"],
-                    },
-                },
-                "capabilities": [
-                    "mbox_parsing",
-                    "eml_parsing",
-                    "attachment_extraction",
-                    "bulk_processing",
-                ],
-            }
-
-        @self.app.post("/parse/mbox", response_model=EmailParseResponse)
-        async def parse_mbox_file(
-            file: UploadFile = _DEFAULT_FILE_UPLOAD,
-            request_data: str = Form(...),
-        ) -> EmailParseResponse:
-            """Parse mbox email archive."""
-            try:
-                parse_request = EmailParseRequest.model_validate_json(request_data)
-                return await self._parse_mbox(file, parse_request)
-            except Exception as e:
-                logger.exception("Error parsing mbox: {e!s}")
-                raise HTTPException(status_code=500, detail=str(e)) from e
-
-        @self.app.post("/parse/eml", response_model=EmailParseResponse)
-        async def parse_eml_file(
-            file: UploadFile = _DEFAULT_FILE_UPLOAD,
-            request_data: str = Form(...),
-        ) -> EmailParseResponse:
-            """Parse single EML file."""
-            try:
-                parse_request = EmailParseRequest.model_validate_json(request_data)
-                return await self._parse_eml(file, parse_request)
-            except Exception as e:
-                logger.exception("Error parsing EML: {e!s}")
-                raise HTTPException(status_code=500, detail=str(e)) from e
-
-        @self.app.post("/analyze/archive")
-        async def analyze_email_archive(
-            file: UploadFile = _DEFAULT_FILE_UPLOAD,
-            request_data: str = Form(...),
-        ) -> dict[str, Any]:
-            """Analyze email archive patterns and statistics."""
-            try:
-                parse_request = EmailParseRequest.model_validate_json(request_data)
-                return await self._analyze_archive(file, parse_request)
-            except Exception as e:
-                logger.exception("Error analyzing archive: {e!s}")
-                raise HTTPException(status_code=500, detail=str(e)) from e
-
-        # Store function references to prevent "unused function" warnings from type checkers
-        # These functions are actually used by FastAPI through decorators
-        self._health_check_func = health_check
-        self._parse_info_func = parse_info
-        self._parse_mbox_file_func = parse_mbox_file
-        self._parse_eml_file_func = parse_eml_file
-        self._analyze_email_archive_func = analyze_email_archive
-
-    async def _parse_mbox(self, file: UploadFile, request: EmailParseRequest) -> EmailParseResponse:
+    def parse_mbox(self, file_content: bytes, request: EmailParseRequest) -> EmailParseResponse:
         """Parse mbox file using streaming parser."""
         start_time = datetime.now(timezone.utc)
         job_id = f"mbox-{uuid4().hex[:8]}"
 
-        # Read file content
-        content = await file.read()
-
         # Create temporary file for mailbox parsing
         with tempfile.NamedTemporaryFile() as temp_file:
-            temp_file.write(content)
+            temp_file.write(file_content)
             temp_file.flush()
 
             # Use the streaming parser logic
@@ -260,14 +105,13 @@ class CrankEmailParserService:
             summary=summary,
         )
 
-    async def _parse_eml(self, file: UploadFile, request: EmailParseRequest) -> EmailParseResponse:
+    def parse_eml(self, file_content: bytes, request: EmailParseRequest) -> EmailParseResponse:
         """Parse single EML file."""
         start_time = datetime.now(timezone.utc)
         job_id = f"eml-{uuid4().hex[:8]}"
 
         # Read and parse EML
-        content = await file.read()
-        message = email.message_from_bytes(content, policy=policy.default)  # type: ignore[arg-type]
+        message = email.message_from_bytes(file_content, policy=policy.default)  # type: ignore[arg-type]
 
         # Convert to our format
         parsed_message = self._message_to_record(
@@ -291,14 +135,14 @@ class CrankEmailParserService:
             summary=self._generate_summary(messages),
         )
 
-    async def _analyze_archive(
+    def analyze_archive(
         self,
-        file: UploadFile,
+        file_content: bytes,
         request: EmailParseRequest,
     ) -> dict[str, Any]:
         """Analyze email archive for patterns and statistics."""
         # First parse the archive
-        parse_response = await self._parse_mbox(file, request)
+        parse_response = self.parse_mbox(file_content, request)
         messages = parse_response.messages
 
         # Perform analysis
@@ -513,200 +357,101 @@ class CrankEmailParserService:
             "message_count_by_period": "not_implemented",
         }
 
-    class _SecureHTTPClientManager:
-        """Context manager for creating HTTP client with CA certificate verification."""
 
-        def __init__(self, ca_service_url: str = "https://cert-authority:9090") -> None:
-            self.ca_service_url = ca_service_url
-            self.ca_cert_file: Optional[str] = None
-            self.client: Optional[httpx.AsyncClient] = None
+class EmailParserWorker(WorkerApplication):
+    """Email parser worker using WorkerApplication infrastructure.
 
-        async def __aenter__(self) -> httpx.AsyncClient:
-            try:
-                # Import the CA client to get fresh CA certificate
-                from crank_platform.security.cert_initialize import CertificateAuthorityClient
+    Provides email parsing capabilities:
+    - Mbox archive parsing
+    - EML file parsing
+    - Archive analysis and statistics
 
-                # Get CA certificate directly from the Certificate Authority Service
-                ca_client = CertificateAuthorityClient(self.ca_service_url)
-                ca_cert = await ca_client.get_ca_certificate()
+    All infrastructure (registration, heartbeat, health checks, certificates)
+    is handled by the WorkerApplication base class.
+    """
 
-                if ca_cert:
-                    # Create SSL context with CA certificate
-                    ssl_context = ssl.create_default_context()
-                    ssl_context.check_hostname = False  # For development environment
-                    ssl_context.verify_mode = ssl.CERT_REQUIRED
-
-                    # Load CA certificate directly into SSL context
-                    ssl_context.load_verify_locations(cadata=ca_cert)
-
-                    # Configure httpx to use the SSL context
-                    self.client = httpx.AsyncClient(
-                        verify=ssl_context,
-                        timeout=10.0,
-                    )
-                    logger.info("🔒 Created secure HTTP client with CA certificate verification")
-                    return self.client
-                # Fallback for development - disable verification
-                logger.warning("⚠️ No CA certificate available, using insecure client")
-                self.client = httpx.AsyncClient(verify=False, timeout=10.0)
-                return self.client
-            except Exception:
-                logger.warning("Failed to access CA certificate: {e}, using insecure client")
-                self.client = httpx.AsyncClient(verify=False, timeout=10.0)
-                return self.client
-
-        async def __aexit__(
-            self,
-            exc_type: Optional[type[BaseException]],
-            exc_val: Optional[BaseException],
-            exc_tb: Optional[TracebackType],
-        ) -> None:
-            if self.client:
-                await self.client.aclose()
-
-    def _create_adaptive_client(self) -> "_SecureHTTPClientManager":
-        """Create HTTP client context manager with CA certificate verification."""
-        return self._SecureHTTPClientManager()
-
-    async def _register_with_platform(self) -> None:
-        """Register this worker with the platform using mTLS."""
-        worker_info = WorkerRegistration(
-            worker_id=self.worker_id,
-            service_type="email_parsing",
-            endpoint=self.worker_url,
-            health_url=f"{self.worker_url}/health",
-            capabilities=[
-                "mbox_parsing",
-                "eml_parsing",
-                "attachment_extraction",
-                "bulk_processing",
-                "archive_analysis",
-            ],
+    def __init__(self) -> None:
+        """Initialize email parser worker."""
+        super().__init__(
+            service_name="crank-email-parser",
+            https_port=int(os.getenv("EMAIL_PARSER_HTTPS_PORT", "8301")),
         )
+        self.parser = EmailParser()
 
-        # Try to register with retries
-        max_retries = 5
-        for attempt in range(max_retries):
+    def get_capabilities(self) -> list[CapabilityDefinition]:
+        """Return worker capabilities."""
+        return [EMAIL_PARSING]
+
+    def setup_routes(self) -> None:
+        """Setup FastAPI routes for email parsing endpoints.
+
+        IMPORTANT: Use explicit binding pattern self.app.METHOD("/path")(handler)
+        instead of @self.app.METHOD decorators to avoid Pylance "not accessed" warnings.
+
+        Pattern documented in:
+        - src/crank/worker_runtime/base.py (lines 11-13, 187-192)
+        - .vscode/AGENT_CONTEXT.md (FastAPI Route Handler Pattern section)
+        """
+
+        async def parse_mbox_file(
+            file: UploadFile = _DEFAULT_FILE_UPLOAD,
+            request_data: str = Form(...),
+        ) -> EmailParseResponse:
+            """Parse mbox email archive."""
             try:
-                async with self._create_adaptive_client() as client:
-                    response = await client.post(
-                        f"{self.platform_url}/v1/workers/register",
-                        json=worker_info.model_dump(),
-                        headers={"Authorization": f"Bearer {self.platform_auth_token}"},
-                    )
-                    response.raise_for_status()
-                    logger.info(
-                        f"🔒 Successfully registered email parser service via mTLS. Worker ID: {self.worker_id}",
-                    )
+                parse_request = EmailParseRequest.model_validate_json(request_data)
+                content = await file.read()
+                return self.parser.parse_mbox(content, parse_request)
+            except Exception as e:
+                logger.exception(f"Error parsing mbox: {e!s}")
+                raise HTTPException(status_code=500, detail=str(e)) from e
 
-                    # Start heartbeat task
-                    self._start_heartbeat_task()
-                    return
-            except Exception:
-                logger.warning("Registration attempt {attempt + 1} failed: {e}")
-                if attempt < max_retries - 1:
-                    await asyncio.sleep(2**attempt)
+        async def parse_eml_file(
+            file: UploadFile = _DEFAULT_FILE_UPLOAD,
+            request_data: str = Form(...),
+        ) -> EmailParseResponse:
+            """Parse single EML file."""
+            try:
+                parse_request = EmailParseRequest.model_validate_json(request_data)
+                content = await file.read()
+                return self.parser.parse_eml(content, parse_request)
+            except Exception as e:
+                logger.exception(f"Error parsing EML: {e!s}")
+                raise HTTPException(status_code=500, detail=str(e)) from e
 
-        logger.error("Failed to register with platform after all retries")
+        async def analyze_email_archive(
+            file: UploadFile = _DEFAULT_FILE_UPLOAD,
+            request_data: str = Form(...),
+        ) -> dict[str, Any]:
+            """Analyze email archive patterns and statistics."""
+            try:
+                parse_request = EmailParseRequest.model_validate_json(request_data)
+                content = await file.read()
+                return self.parser.analyze_archive(content, parse_request)
+            except Exception as e:
+                logger.exception(f"Error analyzing archive: {e!s}")
+                raise HTTPException(status_code=500, detail=str(e)) from e
 
-    def _start_heartbeat_task(self) -> None:
-        """Start the background heartbeat task."""
-
-        async def heartbeat_loop() -> None:
-            while True:
-                try:
-                    await asyncio.sleep(int(os.getenv("WORKER_HEARTBEAT_INTERVAL", "20")))
-                    await self._send_heartbeat()
-                except asyncio.CancelledError:
-                    logger.info("Heartbeat task cancelled")
-                    break
-                except Exception:
-                    logger.exception("Heartbeat error: {e}")
-
-        self.heartbeat_task = asyncio.create_task(heartbeat_loop())
-        os.getenv("WORKER_HEARTBEAT_INTERVAL", "20")
-        logger.info("🫀 Started heartbeat task with {heartbeat_interval}s interval")
-
-    async def _send_heartbeat(self) -> None:
-        """Send heartbeat to platform."""
-        try:
-            async with self._create_adaptive_client() as client:
-                response = await client.post(
-                    f"{self.platform_url}/v1/workers/{self.worker_id}/heartbeat",
-                    data={
-                        "service_type": "email_parsing",
-                        "load_score": 0.3,  # Medium load for parsing service
-                    },
-                    headers={"Authorization": f"Bearer {self.platform_auth_token}"},
-                )
-                response.raise_for_status()
-        except Exception:
-            logger.warning("Heartbeat failed: {e}")
+        # Explicit binding pattern
+        self.app.post("/parse/mbox", response_model=EmailParseResponse)(parse_mbox_file)
+        self.app.post("/parse/eml", response_model=EmailParseResponse)(parse_eml_file)
+        self.app.post("/analyze/archive")(analyze_email_archive)
 
 
-# Create service instance
-email_parser_service = CrankEmailParserService()
-app = email_parser_service.app
+# ============================================================================
+# MAIN ENTRY POINT
+# ============================================================================
+
+
+# Create worker instance
+worker = EmailParserWorker()
+app = worker.app
 
 
 def main() -> None:
-    """Main entry point with clean certificate initialization."""
-    # Initialize certificates using SECURE CSR pattern
-    https_only = os.getenv("HTTPS_ONLY", "true").lower() == "true"
-    ca_service_url = os.getenv("CA_SERVICE_URL")
-
-    if https_only and ca_service_url:
-        logger.info("🔐 Initializing certificates using SECURE CSR pattern...")
-        try:
-            # Run secure certificate initialization in the same process
-            from crank_platform.security import cert_store, init_certificates
-
-            # Run secure certificate initialization
-            asyncio.run(init_certificates())
-
-            # Check if certificates were loaded
-            if cert_store.platform_cert is None:
-                raise RuntimeError(
-                    "🚫 Certificate initialization completed but no certificates in memory",
-                )
-
-            logger.info("✅ Certificates loaded successfully using SECURE CSR pattern")
-            logger.info("🔒 SECURITY: Private keys generated locally and never transmitted")
-
-        except Exception:
-            logger.exception("❌ Failed to initialize certificates with CA service: {e}")
-            sys.exit(1)
-    else:
-        logger.error("🚫 HTTPS_ONLY environment requires Certificate Authority Service")
-        sys.exit(1)
-
-    # Start server with in-memory certificates
-    service_port = int(os.getenv("EMAIL_PARSER_HTTPS_PORT", "8301"))
-    service_host = os.getenv("EMAIL_PARSER_HOST", "0.0.0.0")
-
-    logger.info("� Starting Crank Email Parser with HTTPS/mTLS ONLY on port {service_port}")
-    logger.info("🔐 Using in-memory certificates from Certificate Authority Service")
-
-    # Create SSL context from in-memory certificates (SECURE CSR pattern)
-    try:
-        cert_store.get_ssl_context()
-
-        logger.info("🔒 Using certificates obtained via SECURE CSR pattern")
-
-        # Get the temporary certificate file paths for uvicorn
-        cert_file = cert_store.temp_cert_file  # pyright: ignore[reportAttributeAccessIssue]
-        key_file = cert_store.temp_key_file  # pyright: ignore[reportAttributeAccessIssue]
-
-        uvicorn.run(
-            app,
-            host=service_host,
-            port=service_port,
-            ssl_keyfile=key_file,
-            ssl_certfile=cert_file,
-        )
-    except Exception:
-        logger.exception("❌ Failed to start with certificates: {e}")
-        sys.exit(1)
+    """Main entry point - creates and runs email parser worker."""
+    worker = EmailParserWorker()
+    worker.run()
 
 
 if __name__ == "__main__":
