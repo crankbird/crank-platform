@@ -271,6 +271,7 @@ self.app.get("/health")(health_check)
 ```
 
 **Pattern Usage**:
+
 - `src/crank/worker_runtime/base.py` (lines 11-13, 187-192) - Base class implementation
 - `services/crank_streaming.py` - Streaming worker with 6 endpoints using explicit binding
 

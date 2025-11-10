@@ -232,6 +232,7 @@ We need to collapse these into the proper controller/worker separation.
 **Status**: ✅ **COMPLETE** (Nov 10, 2025 - Commit TBD)
 
 **Results**:
+
 - **Lines of Code**: 525 → 292 (44% reduction, 233 lines removed)
 - **Boilerplate Eliminated**:
   - WorkerRegistration model (20 lines)
@@ -265,6 +266,7 @@ We need to collapse these into the proper controller/worker separation.
 **Migration Pattern Established**:
 
 1. **Create Worker Subclass**:
+
    ```python
    from crank.worker_runtime import WorkerApplication
    from crank.capabilities.schema import STREAMING_CLASSIFICATION
@@ -281,6 +283,7 @@ We need to collapse these into the proper controller/worker separation.
    ```
 
 2. **Implement Required Methods**:
+
    ```python
    def get_capabilities(self) -> list[CapabilityDefinition]:
        return [STREAMING_CLASSIFICATION]
@@ -292,6 +295,7 @@ We need to collapse these into the proper controller/worker separation.
    ```
 
 3. **Simplify main()**:
+
    ```python
    def main():
        worker = StreamingWorker()
@@ -299,11 +303,13 @@ We need to collapse these into the proper controller/worker separation.
    ```
 
 4. **Update Dockerfile**:
+
    - Remove certificate initialization script
    - Remove startup script generation
    - Use `CMD ["python", "crank_streaming.py"]`
 
 **Lessons Learned**:
+
 - WorkerApplication pattern eliminates ~250 lines of boilerplate per worker
 - All tests passed without modification (perfect backward compatibility)
 - Docker builds simplified (no intermediate scripts needed)
