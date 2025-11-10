@@ -50,4 +50,30 @@ tests/results/
 test_output.json
 *_test_results.json
 *-test-report.json
+test_results.json
+confidence-test-report.json
+
+# Python artifacts
 __pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.pyc
+
+# Coverage reports
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+
+# macOS artifacts
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor artifacts
+*.swp
+*.swo
+*~
+.vscode/*.log
