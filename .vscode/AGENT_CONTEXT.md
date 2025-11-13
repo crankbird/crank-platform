@@ -534,14 +534,14 @@ The venv will become **richer** with:
 **❌ Code-first approach leads to:**
 
 - Type annotation cleanup iterations
-- Import resolution chaos  
+- Import resolution chaos
 - Missing abstract method implementations
 - JSON schema validation failures
 
 **✅ Schema-first approach:**
 
 1. **Define Pydantic models completely** with proper type annotations
-2. **Set up import structure** (`__init__.py` exports) before implementation  
+2. **Set up import structure** (`__init__.py` exports) before implementation
 3. **Create CapabilityDefinition** with matching input/output schemas
 4. **Test schema validation** before writing business logic
 
@@ -556,7 +556,7 @@ The venv will become **richer** with:
 **During implementation:**
 
 - [ ] Use `CapabilityDefinition` with `IOContract` (not direct schema fields)
-- [ ] Implement ALL abstract methods: `get_capabilities()`, `setup_routes()`  
+- [ ] Implement ALL abstract methods: `get_capabilities()`, `setup_routes()`
 - [ ] Use explicit route binding: `self.app.post("/path")(handler)` (avoids Pylance warnings)
 - [ ] Handle exceptions with proper chaining: `raise HTTPException(...) from e`
 
@@ -572,7 +572,7 @@ The venv will become **richer** with:
 See `services/crank_hello_world.py` - Complete example following all patterns:
 
 - Phase A: Schema definition (Pydantic models + CapabilityDefinition)
-- Phase B: Business logic (isolated engine class)  
+- Phase B: Business logic (isolated engine class)
 - Phase C: Worker integration (WorkerApplication subclass)
 - Phase D: End-to-end testing (validation script)
 
@@ -582,7 +582,7 @@ See `services/crank_hello_world.py` - Complete example following all patterns:
 # ✅ Modern Python 3.9+ typing
 def process(data: dict[str, Any]) -> MyResponse:  # Not Dict[str, Any]
 
-# ✅ Type-safe JSON processing  
+# ✅ Type-safe JSON processing
 def _expect_string(value: Any, label: str) -> str:
     if not isinstance(value, str):
         raise ValueError(f"{label} must be a string")

@@ -65,15 +65,15 @@ Create core processing logic independent of web framework.
 ```python
 class ExampleEngine:
     """Core business logic - no FastAPI dependencies."""
-    
+
     def __init__(self) -> None:
         # Initialize any required resources
         self._initialize_resources()
-    
+
     def process_text(self, text: str, options: dict[str, Any] | None = None) -> WorkerResponse:
         """
         Main processing function.
-        
+
         Returns:
             WorkerResponse with results and metadata
         """
@@ -83,7 +83,7 @@ class ExampleEngine:
             metadata={"processing_time": elapsed},
             confidence=confidence_score
         )
-    
+
     def _initialize_resources(self) -> None:
         """Load any required models, configs, etc."""
         pass
@@ -105,25 +105,25 @@ from crank.worker_runtime.base import WorkerApplication
 
 class ExampleWorker(WorkerApplication):
     """Worker providing example text processing capabilities."""
-    
+
     def __init__(self, worker_id: str | None = None) -> None:
         """
         Initialize worker with proper WorkerApplication constructor.
-        
+
         Args:
             worker_id: Optional unique identifier for this worker instance
         """
         super().__init__(worker_id=worker_id)
         self.engine = ExampleEngine()
         logger.info("Example worker initialized")
-    
+
     def get_capabilities(self) -> list[CapabilityDefinition]:
         """Return capabilities this worker provides."""
         return [WORKER_CAPABILITY]
-    
+
     def setup_routes(self) -> None:
         """Register FastAPI routes for business logic."""
-        
+
         # Use explicit binding to avoid Pylance "not accessed" warnings
         async def process_endpoint(request: WorkerRequest) -> JSONResponse:
             """Main processing endpoint matching capability contract."""
@@ -133,14 +133,14 @@ class ExampleWorker(WorkerApplication):
                     options=request.options
                 )
                 return JSONResponse(content=result.model_dump())
-            
+
             except ValueError as e:
                 logger.warning(f"Invalid request: {e}")
                 raise HTTPException(status_code=400, detail=str(e)) from e
             except Exception as e:
                 logger.exception("Processing failed")
                 raise HTTPException(status_code=500, detail="PROCESSING_FAILED") from e
-        
+
         # Register route with explicit binding
         self.app.post("/process")(process_endpoint)
 ```
@@ -160,15 +160,15 @@ Test complete request/response cycle.
 # Integration test example
 async def test_worker_integration():
     worker = ExampleWorker(worker_id="test-worker")
-    
+
     # Test capability registration
     capabilities = worker.get_capabilities()
     assert len(capabilities) == 1
     assert capabilities[0].name == "Example Worker"
-    
+
     # Test route setup
     worker.setup_routes()
-    
+
     # Test actual processing (requires test client)
     # This validates the complete request → response cycle
 ```
@@ -221,7 +221,7 @@ def load_config() -> MyConfigModel:
     """Load configuration with full type safety."""
     with open(config_path) as f:
         raw_data: dict[str, Any] = json.load(f)
-    
+
     return MyConfigModel(
         name=_expect_string(raw_data.get("name"), "config.name"),
         # ... explicit validation for every field
@@ -237,7 +237,7 @@ async def endpoint(request: MyRequest) -> JSONResponse:
     try:
         result = self.engine.process(request.data)
         return JSONResponse(content=result.model_dump())
-    
+
     except ValueError as e:
         # Client errors - invalid input
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -274,7 +274,7 @@ async def endpoint(request: MyRequest) -> JSONResponse:
 ## 🎯 Quality Gates
 
 **Phase A Complete:** Schema definition passes type checking
-**Phase B Complete:** Business logic works with test data  
+**Phase B Complete:** Business logic works with test data
 **Phase C Complete:** Worker integrates with runtime framework
 **Phase D Complete:** End-to-end request/response cycle works
 

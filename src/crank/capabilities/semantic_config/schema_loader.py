@@ -22,7 +22,7 @@ def _expect_object(value: JSONValue | None, label: str) -> JSONObject:
     """Ensure the JSON value is an object and narrow the static type."""
     if not isinstance(value, dict):
         raise ValueError(f"{label} must be an object")
-    return cast(JSONObject, value)
+    return value  # Type is already narrowed by isinstance check
 
 
 def _object_or_empty(source: JSONObject, key: str) -> JSONObject:
