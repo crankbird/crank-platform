@@ -189,7 +189,12 @@ We need to collapse these into the proper controller/worker separation.
 
 **Strategy**: Pick **ONE** worker as proof-of-concept
 
-**Recommended**: `crank_streaming.py` (cleanest implementation)
+**Primary Option**: `crank_streaming.py` (cleanest implementation for refactor)
+**Alternative Option**: **NEW** `crank_philosophical_analyzer.py` (from golden integration - proof-of-concept for greenfield worker development)
+
+> **Note**: Golden integration provides opportunity to demonstrate worker pattern with BOTH refactor (streaming) AND greenfield (philosophical analyzer) approaches.
+
+**Recommended**: Start with philosophical analyzer as greenfield proof-of-concept, then apply lessons to streaming refactor.
 
 **Deliverables**:
 
@@ -313,6 +318,47 @@ We need to collapse these into the proper controller/worker separation.
 - WorkerApplication pattern eliminates ~250 lines of boilerplate per worker
 - All tests passed without modification (perfect backward compatibility)
 - Docker builds simplified (no intermediate scripts needed)
+
+#### **Phase 1 Extension: Philosophical Analyzer (Golden Integration)**
+
+**Status**: 🚧 **PLANNED** (Integration with golden knowledge base)
+**Timeline**: 2-3 days
+**Risk**: Low (new service, no existing dependencies)
+
+**Purpose**: Demonstrate greenfield worker development using established worker_runtime pattern. Integrates philosophical analysis capabilities from golden repository.
+
+**Deliverables**:
+
+1. **Create `services/crank_philosophical_analyzer.py`**
+   - First NEW worker built from scratch using worker_runtime foundation
+   - Implements `PHILOSOPHICAL_ANALYSIS` capability (from golden/semantic-config)
+   - Integrates golden/philosophical-analyzer/ code as service logic
+   - Proves new capability schema and worker pattern works end-to-end
+
+2. **Container & Deployment Integration**
+   - `Dockerfile.crank-philosophical-analyzer` using worker-base pattern
+   - Add to `docker-compose.development.yml`
+   - Integration with existing mTLS/certificate system
+
+3. **Golden Knowledge Base Integration**
+   - golden/zettels/ → docs/knowledge/ (organized zettel knowledge vault)
+   - BDD integration: golden/gherkins/ → tests/bdd/features/philosophical/
+   - Semantic configuration: golden/semantic-config/ → docs/schemas/philosophical/
+
+**Acceptance Criteria**:
+
+- [ ] Philosophical analyzer service operational using worker_runtime
+- [ ] PHILOSOPHICAL_ANALYSIS capability registered and functional
+- [ ] Integration with golden knowledge base complete
+- [ ] BDD tests operational for philosophical analysis features
+- [ ] Template established for future greenfield worker development
+
+**Strategic Value**:
+
+- Validates capability schema with novel use case
+- Demonstrates end-to-end worker development process
+- Provides template for future service creation
+- Integrates valuable philosophical analysis tooling
 - Route handlers work exactly as before (FastAPI compatibility)
 - Environment variables remain the same (deployment unchanged)
 - Migration is straightforward: ~1 hour per worker

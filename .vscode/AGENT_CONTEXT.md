@@ -522,3 +522,75 @@ The venv will become **richer** with:
 1. **Workers do *one* job**. If you need more, create another worker.
 2. **No global state outside lifespan DI.**
 3. **If unsure: ask** — do not guess capability/service boundaries.
+
+---
+
+## 🎓 WORKER DEVELOPMENT LESSONS (Nov 2025)
+
+**Based on philosophical analyzer integration experience** - these patterns prevent 80% of common integration friction.
+
+### Schema-First Development Pattern
+
+**❌ Code-first approach leads to:**
+
+- Type annotation cleanup iterations
+- Import resolution chaos  
+- Missing abstract method implementations
+- JSON schema validation failures
+
+**✅ Schema-first approach:**
+
+1. **Define Pydantic models completely** with proper type annotations
+2. **Set up import structure** (`__init__.py` exports) before implementation  
+3. **Create CapabilityDefinition** with matching input/output schemas
+4. **Test schema validation** before writing business logic
+
+### Worker Integration Checklist
+
+**Before coding:**
+
+- [ ] Read `src/crank/worker_runtime/base.py` contract completely
+- [ ] Study existing capability definitions in `src/crank/capabilities/schema.py`
+- [ ] Plan import structure with proper module exports
+
+**During implementation:**
+
+- [ ] Use `CapabilityDefinition` with `IOContract` (not direct schema fields)
+- [ ] Implement ALL abstract methods: `get_capabilities()`, `setup_routes()`  
+- [ ] Use explicit route binding: `self.app.post("/path")(handler)` (avoids Pylance warnings)
+- [ ] Handle exceptions with proper chaining: `raise HTTPException(...) from e`
+
+**Quality gates:**
+
+- [ ] Type checker passes completely (`mypy src/`)
+- [ ] All imports resolve (`python -c "from services.my_worker import MyWorker"`)
+- [ ] Worker instantiates without errors
+- [ ] Basic functionality test passes
+
+### Reference Implementation
+
+See `services/crank_hello_world.py` - Complete example following all patterns:
+
+- Phase A: Schema definition (Pydantic models + CapabilityDefinition)
+- Phase B: Business logic (isolated engine class)  
+- Phase C: Worker integration (WorkerApplication subclass)
+- Phase D: End-to-end testing (validation script)
+
+### Common Type Safety Patterns
+
+```python
+# ✅ Modern Python 3.9+ typing
+def process(data: dict[str, Any]) -> MyResponse:  # Not Dict[str, Any]
+
+# ✅ Type-safe JSON processing  
+def _expect_string(value: Any, label: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{label} must be a string")
+    return value
+
+# ✅ Proper exception chaining in FastAPI
+except ValueError as e:
+    raise HTTPException(status_code=400, detail=str(e)) from e
+```
+
+**Key insight**: Linting errors reveal architectural problems, not cosmetic issues. Fix them, don't ignore them.

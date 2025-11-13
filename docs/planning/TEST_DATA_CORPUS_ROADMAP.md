@@ -22,8 +22,10 @@
 | --- | --- | --- |
 | 0 – Bootstrap | Stand up shared structure + quick wins | `tests/data/` layout, README, automated fetch script, first two corpora wired into pytest |
 | 1 – Adversarial schema suite | Stress capability schema + controller contracts | JSON Schema Test Suite integration, malformed capability definitions, signed/unsigned CSR samples |
+| 1a – BDD Integration (Golden) | Integrate BDD framework with philosophical analysis | pytest-bdd setup, philosophical analysis feature tests, golden gherkins integration |
 | 2 – Worker runtime resilience | Exercise lifecycle + heartbeat | Recorded controller exchanges, shutdown edge cases, corrupted heartbeat payloads |
 | 3 – Domain corpora | Rich inputs for email/streaming/image workers | Sanitized public emails, audio/text streams, reference images with annotations |
+| 3a – Philosophical Test Data | Corpus for philosophical analysis validation | Curated text samples for authentic vs. performed thinking detection, philosophical DNA marker test cases |
 | 4 – Continuous expansion | Automation + governance | Checklist for new modules, CI job to validate corpus freshness, issue labels for coverage gaps |
 
 ## Quick wins (public domain sources)
@@ -42,12 +44,18 @@
 - **Image/video sanity cases**
   - COCO sample subset (CC-BY) and Unsplash public-domain thumbnails; store resized versions ≤256 KB to keep CI light.
 
+- **Philosophical analysis test data (Golden integration)**
+  - Curated text samples from docs/knowledge/ for philosophical DNA marker validation
+  - Semantic schema test cases from golden/semantic-config/
+  - BDD feature files from golden/gherkins/ → tests/bdd/features/philosophical/
+
 ## Integration with existing test suite
 
 **Current coverage** (as of Phase 1 completion):
 
-- 24 capability schema tests (`tests/test_capability_schema.py`) - validates 6 standard capabilities
+- 24 capability schema tests (`tests/test_capability_schema.py`) - validates 6 standard capabilities + PHILOSOPHICAL_ANALYSIS
 - 24 worker runtime tests (`tests/test_worker_runtime.py`) - covers WorkerApplication, ControllerClient, HealthCheckManager, ShutdownHandler, CertificateManager
+- BDD framework integration (`tests/bdd/`) - pytest-bdd setup with philosophical analysis feature tests
 - 4 streaming worker tests (`tests/test_streaming_worker.py`) - validates migrated crank_streaming.py
 - Email classifier fixtures (`tests/fixtures/classifier_test_emails.json`) - existing test data for ML validation
 

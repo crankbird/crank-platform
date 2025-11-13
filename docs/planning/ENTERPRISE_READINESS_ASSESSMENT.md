@@ -11,6 +11,7 @@
 **Current Position**: "Ahead of most DIY job runners, on par with solid mid-maturity platforms, one or two design moves away from credible enterprise-grade."
 
 **Competitive Stance**:
+
 - ✅ **Stronger than**: Celery/RQ, basic Serverless queues, most hobby frameworks
 - ⚙️ **On par with**: Mid-maturity orchestrators, early-stage service meshes
 - 🎯 **Approaching**: Temporal, K8s+ServiceMesh, established enterprise platforms
@@ -22,6 +23,7 @@
 ### 1. Security by Design ✅
 
 **Current State**:
+
 - mTLS everywhere for service-to-service auth
 - Certificate hygiene and rotation planning
 - Audit trail architecture (MN-GOV-001)
@@ -29,6 +31,7 @@
 - Zero-trust posture baked in
 
 **Evidence**:
+
 - `docs/security/DOCKER_SECURITY_DECISIONS.md` — comprehensive threat model
 - `mascots/wendy/wendy_security.py` — production-grade sanitization
 - CAP architecture documented and ready for Q2 2026
@@ -38,12 +41,14 @@
 ### 2. Testable Requirements ✅
 
 **Current State**:
+
 - Micronarratives (MN-DOC-001, MN-GOV-001, MN-OPS-001)
 - Requirements traceability matrix
 - BDD/Gherkin acceptance criteria
 - E2E test scaffolding
 
 **Evidence**:
+
 - `docs/planning/REQUIREMENTS_TRACEABILITY.md`
 - `tests/e2e/doc_converter.feature`
 - Pickle format for test visualization
@@ -53,12 +58,14 @@
 ### 3. Operational Discipline ✅
 
 **Current State**:
+
 - Health checks (liveness/readiness)
 - Graceful shutdown with named tasks
 - Connection pooling
 - Clean resource teardown
 
 **Evidence**:
+
 - `src/crank/worker_runtime/lifecycle.py` — ShutdownTask metadata
 - `src/crank/worker_runtime/registration.py` — exponential backoff, retry logic
 - Health endpoint standardization
@@ -68,12 +75,14 @@
 ### 4. Modularity & Capability Routing ✅
 
 **Current State**:
+
 - Clean controller ↔ worker separation
 - Capability discovery and registration
 - Weighted routing architecture (designed)
 - Protocol adapters for REST/gRPC/MCP/legacy
 
 **Evidence**:
+
 - `services/mesh_interface_v2.py` — universal request/response format
 - `services/universal_protocol_support.py` — ONC RPC, SOAP, etc.
 - Controller client with capability ID propagation
@@ -83,17 +92,37 @@
 ### 5. Protocol Agility ✅
 
 **Current State**:
+
 - REST/HTTP already working
 - MCP adapter for AI agent integration
 - Legacy protocol adapters (ONC RPC, SOAP) designed
 - GraphQL/gRPC planned
 
 **Evidence**:
+
 - `services/protocol_demo_standalone.py`
 - `services/universal_protocol_support.py`
 - MCP integration in E2E tests
 
 **Competitive Edge**: Meet legacy systems where they are; no client rewrites required.
+
+### 6. Knowledge Management & Decision Support ✅ (NEW - Golden Integration)
+
+**Current State**:
+
+- Structured knowledge base (docs/knowledge/) with thematic organization
+- Philosophical analysis capabilities for content validation
+- BDD integration for requirements traceability
+- Zettel-based knowledge management with Obsidian compatibility
+
+**Evidence**:
+
+- `docs/knowledge/` - Organized knowledge vault (philosophy, business, cognitive science, brand science, technical, personas, coordination)
+- `services/crank_philosophical_analyzer.py` - "Deslopifier" system for authentic vs. performed thinking detection
+- `tests/bdd/features/philosophical/` - BDD tests for knowledge validation
+- Six philosophical DNA markers for intellectual pattern recognition
+
+**Competitive Edge**: Unique philosophical analysis capability; structured knowledge management rare in technical platforms.
 
 ---
 
@@ -102,17 +131,20 @@
 ### 1. SLOs + Error Budgets ⚠️ HIGH PRIORITY
 
 **Current State**:
+
 - Latency tracking exists (E2E tests measure elapsed time)
 - No codified SLOs per capability
 - No error budget enforcement in CI
 
 **What's Missing**:
+
 - Per-capability SLO files (YAML)
 - Dashboard integration (Grafana/Datadog)
 - CI checks fail on SLO regression
 - P50/P95/P99 latency targets
 
 **Recommended Action**:
+
 ```yaml
 # Example: docs/slo/summarize-v2.yaml
 capability: summarize:v2
@@ -135,17 +167,20 @@ slo:
 ### 2. Idempotency & Exactly-Once Semantics ⚠️ HIGH PRIORITY
 
 **Current State**:
+
 - `job_id` exists in MeshRequest
 - No deduplication window or outbox pattern
 - No documentation of at-least-once vs exactly-once per capability
 
 **What's Missing**:
+
 - Request ID deduplication (prevent double-charging)
 - Idempotency keys in capability contracts
 - Outbox/inbox pattern for reliable delivery
 - Clear semantics: which capabilities are idempotent?
 
 **Example Architecture**:
+
 ```python
 # Platform controller deduplication cache
 class IdempotencyManager:
@@ -176,6 +211,7 @@ async def convert_document(...):
 ### 3. Distributed Tracing (OpenTelemetry) ⚠️ MEDIUM PRIORITY
 
 **Current State**:
+
 - `job_id` propagates through requests
 - Metadata enrichment exists (`_enrich_request_metadata`)
 - No `traceparent` header propagation
@@ -184,21 +220,25 @@ async def convert_document(...):
 **You Said**: "Don't we kind of have this already?"
 
 **Answer**: Partially. You have:
+
 - ✅ Correlation IDs (`job_id`)
 - ✅ Metadata tracking (user_id, timestamp, service_type)
 - ✅ Controller can aggregate logs
 
 **What's Missing**:
+
 - ❌ W3C Trace Context (`traceparent` header)
 - ❌ Span relationships (parent/child causality)
 - ❌ Auto-instrumentation for external calls (httpx, DB)
 - ❌ Exemplars linking traces ↔ metrics ↔ logs
 
 **Why It Matters**:
+
 - Current: "Request failed somewhere in the mesh" → grep logs for job_id across services
 - With OTel: "Click on trace → see exact request flow, latencies, error location"
 
 **Recommended Implementation**:
+
 ```python
 # Add OpenTelemetry to mesh_interface_v2.py
 from opentelemetry import trace
@@ -233,6 +273,7 @@ class MeshInterface(ABC):
 ### 4. Back-Pressure & Rate Limiting ⚠️ HIGH PRIORITY
 
 **Current State**:
+
 - Wendy has request size validation (50MB limit)
 - No global quotas or per-tenant limits
 - No queue depth monitoring
@@ -243,6 +284,7 @@ class MeshInterface(ABC):
 **Answer**: Correct! Controller is the right place. You need:
 
 **Platform-Level Controls**:
+
 ```python
 # In crank-controller
 class RateLimiter:
@@ -267,6 +309,7 @@ class WorkerCircuitBreaker:
 ```
 
 **Recommended Micronarrative**:
+
 ```gherkin
 Feature: Graceful degradation under load
   Scenario: Queue depth exceeds threshold
@@ -287,23 +330,27 @@ Feature: Graceful degradation under load
 ### 5. Policy as Code (OPA/Cedar) 🔵 MEDIUM PRIORITY
 
 **Current State**:
+
 - Policy enforcement architecture designed
 - CAP (Capability Access Policy) documented for Q2 2026
 - Example Rego policies in `docs/`
 - No runtime enforcement yet
 
 **What Exists**:
+
 - `docs/architecture/mesh-interface-design.md` — MeshPolicyEngine skeleton
 - `philosophy/security-requirements.md` — OPA examples
 - Authorization hooks in PlatformService
 
 **What's Missing**:
+
 - OPA sidecar or library integration
 - Policy files in version control (`policies/`)
 - Policy testing framework
 - Audit trail for policy decisions
 
 **Recommended Implementation**:
+
 ```python
 # policies/document-converter.rego
 package crank.authz
@@ -333,6 +380,7 @@ deny[msg] {
 ### 6. Chaos Engineering & Partition Drills 🔵 MEDIUM PRIORITY
 
 **Current State**:
+
 - Adversarial data corpus testing (you did this today!)
 - No network partition simulation
 - No latency injection
@@ -345,6 +393,7 @@ deny[msg] {
 **Mascot: Loki the Chaos Llama** 🦙 (Kevin's chaotic cousin)
 
 **Loki's Responsibilities**:
+
 - Inject random latency (10ms - 5s) into worker responses
 - Kill random workers mid-request
 - Partition controller ↔ worker network
@@ -352,6 +401,7 @@ deny[msg] {
 - Simulate certificate expiration
 
 **Implementation**:
+
 ```python
 # mascots/loki/chaos_scenarios.py
 class LokiChaosScenarios:
@@ -368,6 +418,7 @@ class LokiChaosScenarios:
 ```
 
 **Recommended Micronarrative**:
+
 ```gherkin
 Feature: Resilience under chaos
   Scenario: Worker crashes mid-request
@@ -388,6 +439,7 @@ Feature: Resilience under chaos
 ### 7. Multi-Region Story 🔵 LOW PRIORITY (Future)
 
 **Current State**:
+
 - Peer-to-peer controller architecture envisioned
 - No multi-region deployment yet
 - No cross-region failover
@@ -399,18 +451,21 @@ Feature: Resilience under chaos
 **Recommended Phases**:
 
 **Phase 1: Multi-Node Single-Region** (Q2 2026)
+
 - Deploy 3 controllers in same Azure region
 - Test peer-to-peer discovery
 - Validate worker registration from multiple controllers
 - Prove quorum/consensus if needed
 
 **Phase 2: Cross-Region** (Q3-Q4 2026)
+
 - Deploy controllers in Azure US-East, US-West, EU-West
 - Implement geo-routing (route to nearest controller)
 - Cross-region worker placement
 - Failover playbooks
 
 **Phase 3: Global Mesh** (2027+)
+
 - Edge deployment (gaming laptops, mobile)
 - P2P discovery without central controller
 - Economic routing across regions
@@ -424,6 +479,7 @@ Feature: Resilience under chaos
 ### 8. Pluggable Schedulers 🟢 OPTIONAL ENHANCEMENT
 
 **Current State**:
+
 - Simple round-robin routing in controller
 - No advanced scheduling (bin packing, affinity, quotas)
 
@@ -434,12 +490,14 @@ Feature: Resilience under chaos
 **Assessment**: This is a **strategic opportunity**, not a gap.
 
 **Use Cases**:
+
 - **ML Training**: Delegate to Ray for distributed training
 - **Batch ETL**: Use Dask for DataFrame operations
 - **GPU Workloads**: Use K8s with GPU node affinity
 - **Legacy Mainframe**: Keep CICS integration, route there for specific operations
 
 **Example Architecture**:
+
 ```python
 # Capability declares preferred scheduler
 @capability(
@@ -472,18 +530,21 @@ class SchedulerRouter:
 ### What to Add to Roadmap
 
 **Q1 2026** (append to Short Term):
+
 - [ ] **SLO files per capability** (YAML format, tracked in Git)
 - [ ] **Idempotency manager** in controller (request deduplication, 1hr TTL)
 - [ ] **Back-pressure controls** (queue depth limits, 503 shedding)
 - [ ] **Rate limiting** (per-tenant quotas, token buckets)
 
 **Q2 2026** (append to Medium Term):
+
 - [ ] **OpenTelemetry instrumentation** (traceparent, spans, exemplars)
 - [ ] **OPA policy engine** (Rego policies, audit logging)
 - [ ] **Loki chaos scenarios** 🦙 (network partitions, latency injection)
 - [ ] **Multi-node controller** (peer-to-peer in single region)
 
 **Q3-Q4 2026** (append to Long Term):
+
 - [ ] **Pluggable schedulers** (Ray/Dask integration for ML/batch)
 - [ ] **Cross-region deployment** (multi-region controllers, geo-routing)
 - [ ] **Advanced chaos drills** (partition game days, full DR tests)
@@ -539,6 +600,7 @@ class SchedulerRouter:
 **Current Assessment**: "One or two design moves away from credible enterprise-grade."
 
 **Those Moves**:
+
 1. **Add SLOs + Error Budgets** (Q1 2026) → Enables capacity planning, prevents regressions
 2. **Implement Idempotency + Deduplication** (Q1 2026) → Safe retries, prevents billing errors
 3. **Add OpenTelemetry Tracing** (Q2 2026) → Faster incident resolution, request visibility
@@ -556,12 +618,14 @@ class SchedulerRouter:
 **Update Roadmap**: Add the 9 items listed above to Q1-Q4 2026 phases.
 
 **Do NOT**:
+
 - Change JEMM principle
 - Abandon protocol agility
 - Skip testable requirements
 - Weaken security posture
 
 **Priority Order**:
+
 1. SLOs + Idempotency (Q1 2026) — highest ROI
 2. Back-pressure + Rate Limiting (Q1 2026) — prevents outages
 3. Tracing + OPA (Q2 2026) — enterprise requirements

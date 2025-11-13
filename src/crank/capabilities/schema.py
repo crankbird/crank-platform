@@ -18,6 +18,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
+from .semantic_config import PhilosophicalSchema, load_schema
+
 
 class CapabilityVersion(BaseModel):
     """
@@ -404,4 +406,135 @@ CSR_SIGNING = CapabilityDefinition(
     ),
     tags=["certificate", "security", "pki"],
     estimated_duration_ms=100,
+)
+
+_PHILOSOPHICAL_SCHEMA: PhilosophicalSchema = load_schema()
+
+
+def _build_philosophical_output_schema(schema: PhilosophicalSchema) -> dict[str, Any]:
+    """Construct the output schema from the semantic configuration."""
+    dna_marker_properties: dict[str, Any] = {
+        code: {
+            "type": "number",
+            "description": f"{marker.name} score (0-1)",
+        }
+        for code, marker in schema.primary_markers.items()
+    }
+
+    secondary_theme_properties: dict[str, Any] = {
+        code: {
+            "type": "number",
+            "description": f"{theme.name} emphasis score (0-1)",
+        }
+        for code, theme in schema.secondary_themes.items()
+    }
+
+    readiness_thresholds: dict[str, Any] = {
+        action: {
+            "type": "number",
+            "description": f"Threshold for {action.replace('_', ' ')} actions",
+            "default": threshold,
+        }
+        for action, threshold in schema.readiness_thresholds.items()
+    }
+
+    return {
+        "type": "object",
+        "properties": {
+            "dna_markers": {
+                "type": "object",
+                "description": "Per-marker confidence scores driven by the semantic schema",
+                "properties": dna_marker_properties,
+                "required": list(dna_marker_properties.keys()),
+                "additionalProperties": False,
+            },
+            "secondary_themes": {
+                "type": "object",
+                "description": "Theme alignment scores derived from semantic configuration",
+                "properties": secondary_theme_properties,
+                "additionalProperties": False,
+            },
+            "authenticity_score": {
+                "type": "number",
+                "description": "Authentic vs. performed thinking score (0-1)",
+            },
+            "analysis_summary": {
+                "type": "string",
+                "description": "Human-readable analysis summary",
+            },
+            "confidence": {
+                "type": "number",
+                "description": "Overall analysis confidence level (0-1)",
+            },
+            "detected_patterns": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "List of detected philosophical patterns",
+            },
+            "readiness_thresholds": {
+                "type": "object",
+                "description": "Snapshot of readiness thresholds used during analysis",
+                "properties": readiness_thresholds,
+                "additionalProperties": False,
+            },
+        },
+        "required": ["dna_markers", "authenticity_score", "analysis_summary", "confidence"],
+    }
+
+
+def _build_philosophical_analysis_contract(schema: PhilosophicalSchema) -> IOContract:
+    """Create the IO contract using the latest semantic configuration."""
+    return IOContract(
+        input_schema={
+            "type": "object",
+            "properties": {
+                "text": {"type": "string", "description": "Text content to analyze"},
+                "analysis_type": {
+                    "type": "string",
+                    "enum": ["dna_markers", "authenticity", "full_analysis"],
+                    "default": "full_analysis",
+                },
+                "context": {
+                    "type": "object",
+                    "properties": {
+                        "author": {"type": "string", "description": "Optional author context"},
+                        "domain": {
+                            "type": "string",
+                            "description": "Content domain (business, technical, philosophical)",
+                        },
+                    },
+                    "additionalProperties": True,
+                },
+            },
+            "required": ["text"],
+        },
+        output_schema=_build_philosophical_output_schema(schema),
+        error_codes=[
+            ErrorCode(
+                code="TEXT_TOO_SHORT",
+                description="Text too short for meaningful analysis",
+                retryable=False,
+            ),
+            ErrorCode(
+                code="ANALYSIS_FAILED",
+                description="Philosophical analysis processing failed",
+                retryable=True,
+            ),
+            ErrorCode(
+                code="INVALID_CONTEXT",
+                description="Invalid context parameters",
+                retryable=False,
+            ),
+        ],
+    )
+
+
+PHILOSOPHICAL_ANALYSIS = CapabilityDefinition(
+    id="content.philosophical_analysis",
+    version=CapabilityVersion(major=1, minor=0, patch=0),
+    name="Philosophical Analysis",
+    description="Analyze content for philosophical DNA markers and authentic vs. performed thinking patterns",
+    contract=_build_philosophical_analysis_contract(_PHILOSOPHICAL_SCHEMA),
+    tags=["content", "analysis", "philosophy", "ml"],
+    estimated_duration_ms=500,
 )
