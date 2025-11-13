@@ -1,7 +1,7 @@
 # Capability Access Policy (CAP) — Architecture Note
 
-**Status**: Future Enhancement (Q2-Q3 2026)  
-**Owner**: Wendy 🐰  
+**Status**: Future Enhancement (Q2-Q3 2026)
+**Owner**: Wendy 🐰
 **Purpose**: Document why CAP isn't implemented now and how current architecture won't block it
 
 ---

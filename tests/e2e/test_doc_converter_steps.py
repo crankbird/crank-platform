@@ -20,6 +20,8 @@ Fixtures are injected dynamically by pytest-bdd, making static typing impractica
 This entire file is excluded from mypy checking via pyproject.toml.
 """
 
+# mypy: disable-error-code=misc
+
 from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import Any, Callable

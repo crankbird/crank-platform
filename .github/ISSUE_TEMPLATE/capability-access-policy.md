@@ -31,7 +31,7 @@ capability_access:
       - system:internal
     denied_callers:
       - image-classifier  # This worker should never summarize
-  
+
   classify-image:v1:
     allowed_callers:
       - crank-ui
@@ -73,11 +73,11 @@ capability_access:
 
 ## What We Did to NOT Block This
 
-✅ Platform controller already handles capability routing → policy checks are additive  
-✅ mTLS provides caller identity → no protocol changes needed  
-✅ Capability registry is versioned → policies can reference `capability:version`  
-✅ Audit logging exists → policy denials auto-appear in logs  
-✅ Service mesh compatible → CAP can layer on Istio/Linkerd  
+✅ Platform controller already handles capability routing → policy checks are additive
+✅ mTLS provides caller identity → no protocol changes needed
+✅ Capability registry is versioned → policies can reference `capability:version`
+✅ Audit logging exists → policy denials auto-appear in logs
+✅ Service mesh compatible → CAP can layer on Istio/Linkerd
 
 ## Open Questions
 
@@ -107,6 +107,6 @@ We're letting the current security foundation (mTLS + container hardening) settl
 
 ---
 
-**Assigned to**: @wendy 🐰  
-**Timeline**: Q1-Q4 2026  
+**Assigned to**: @wendy 🐰
+**Timeline**: Q1-Q4 2026
 **Priority**: P1 (High security value, not urgent)

@@ -1,7 +1,7 @@
 # Loki the Chaos Llama 🦙
 
-**Role**: Chaos Engineering & Resilience Testing  
-**Relationship**: Kevin's chaotic cousin  
+**Role**: Chaos Engineering & Resilience Testing
+**Relationship**: Kevin's chaotic cousin
 **Motto**: "If it can fail, it will fail. Let's find out how."
 
 ---
@@ -223,6 +223,6 @@ Loki tracks:
 
 ---
 
-**Prepared by**: Loki the Chaos Llama 🦙  
-**Philosophy**: "Embrace failure. Build antifragility."  
+**Prepared by**: Loki the Chaos Llama 🦙
+**Philosophy**: "Embrace failure. Build antifragility."
 **Warning**: Do not run Loki experiments in production without approval from the entire Mascot Council.

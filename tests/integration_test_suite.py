@@ -16,9 +16,12 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from typing import Callable
+
+TestCallable = Callable[[], bool]
 
 
-def test_port_configuration():
+def test_port_configuration() -> bool:
     """Test Kevin's port configuration system"""
     print("🦙 Testing Kevin's Port Configuration...")
 
@@ -48,7 +51,7 @@ def test_port_configuration():
     return True
 
 
-def test_security_framework():
+def test_security_framework() -> bool:
     """Test Wendy's security framework"""
     print("\n🐰 Testing Wendy's Security Framework...")
 
@@ -87,7 +90,7 @@ def test_security_framework():
     return True
 
 
-def test_pattern_detection():
+def test_pattern_detection() -> bool:
     """Test Oliver's enhanced pattern detection"""
     print("\n🦅 Testing Oliver's Pattern Detection...")
 
@@ -156,7 +159,7 @@ API_KEY = "hardcoded_secret"
         Path(temp_file).unlink(missing_ok=True)
 
 
-def test_service_syntax():
+def test_service_syntax() -> bool:
     """Test that all service files have valid Python syntax"""
     print("\n📝 Testing Service File Syntax...")
 
@@ -187,7 +190,7 @@ def test_service_syntax():
     return True
 
 
-def test_configuration_files():
+def test_configuration_files() -> bool:
     """Test that configuration files are valid"""
     print("\n⚙️  Testing Configuration Files...")
 
@@ -217,14 +220,14 @@ def test_configuration_files():
     return True
 
 
-def run_integration_tests():
+def run_integration_tests() -> bool:
     """Run all integration tests"""
     print("🧪 Comprehensive Integration Test Suite")
     print("=" * 60)
     print("Testing that security enhancements haven't broken functionality")
     print("")
 
-    tests = [
+    tests: list[tuple[str, TestCallable]] = [
         ("Port Configuration", test_port_configuration),
         ("Security Framework", test_security_framework),
         ("Pattern Detection", test_pattern_detection),
@@ -232,7 +235,7 @@ def run_integration_tests():
         ("Configuration Files", test_configuration_files),
     ]
 
-    results = []
+    results: list[tuple[str, bool]] = []
     for test_name, test_func in tests:
         try:
             success = test_func()

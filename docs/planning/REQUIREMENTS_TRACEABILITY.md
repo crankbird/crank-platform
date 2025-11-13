@@ -1,5 +1,13 @@
 # Requirements Traceability Matrix
 
+**Status**: Active
+**Type**: Requirements Engineering
+**Last Updated**: 2025-11-10
+**Owner**: Platform Team
+**Purpose**: Link tests to requirements, enabling bidirectional traceability and requirements coverage analysis
+
+---
+
 > **Purpose**: Link tests to requirements, enabling bidirectional traceability and requirements coverage analysis.
 
 ## Overview

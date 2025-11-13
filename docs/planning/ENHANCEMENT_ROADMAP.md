@@ -1,5 +1,13 @@
 # Crank Platform Enhancement Roadmap
 
+**Status**: Active
+**Type**: Strategic Plan (TO-BE Architecture)
+**Last Updated**: 2025-11-10
+**Owner**: Platform Team
+**Purpose**: Future capabilities, enterprise readiness, and phased rollout plan
+
+---
+
 ## �️ Architecture Principles
 
 ### JEMM: Just Enough Microservices and Monoliths

@@ -23,7 +23,7 @@ Your mission is to ensure zero-trust security principles are followed religiousl
 
 **A03 - Injection (Bobby Tables Prevention):**
 - Parameterized queries/prepared statements ONLY
-- No string concatenation in SQL/LDAP/XPath queries  
+- No string concatenation in SQL/LDAP/XPath queries
 - Input validation with whitelisting approach
 - Output encoding for all dynamic content
 - Command injection prevention

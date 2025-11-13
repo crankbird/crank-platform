@@ -78,6 +78,22 @@ htmlcov/
 .AppleDouble
 .LSOverride
 
+# iCloud sync artifacts
+*.icloud
+Icon?
+Icon*
+.com.apple.*
+.localized
+**/@__thumb/
+**/._*
+
+# iCloud temporary files
+**/.TemporaryItems/
+**/Temporary Items/
+**/.DocumentRevisions-V100/
+.fseventsd/
+.Trashes/
+
 # Editor artifacts
 *.swp
 *.swo

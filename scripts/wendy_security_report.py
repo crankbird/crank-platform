@@ -11,10 +11,7 @@ This report addresses Wendy the Zero Security Bunny's concerns about:
 """
 
 
-from mascots.wendy.wendy_security import WendyInputSanitizer, SecurityViolation
-
-
-def run_security_assessment():
+def run_security_assessment() -> None:
     """Run comprehensive security assessment"""
 
     print("🐰 Wendy's Security Assessment Report")

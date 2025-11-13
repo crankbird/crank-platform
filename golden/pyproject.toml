@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "philosophical-analyzer"
+version = "1.0.0"
+description = "Richard Martin's philosophical DNA pattern recognition system"
+readme = "HEY_AGENT_START_HERE.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Richard Martin", email = "ricky@crankbird.com"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "click>=8.0.0",
+    "pyyaml>=6.0.0",
+    "python-dateutil>=2.8.0",
+]
+
+[project.scripts]
+philosophical-analyzer = "philosophical_analyzer.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/crankbird/philosophical-analyzer"
+Repository = "https://github.com/crankbird/philosophical-analyzer"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["philosophical_analyzer*"]

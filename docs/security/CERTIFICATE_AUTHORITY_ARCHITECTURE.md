@@ -1,5 +1,13 @@
 # Certificate Authority Service Architecture
 
+**Status**: Active
+**Type**: Architecture (AS-IS)
+**Last Updated**: 2025-11-10
+**Owner**: Wendy 🐰
+**Purpose**: Centralized enterprise-grade certificate management for zero-trust mTLS
+
+---
+
 ## Overview
 
 The Certificate Authority Service provides centralized, enterprise-grade certificate management for the Crank Platform. This architecture solves several critical security issues:

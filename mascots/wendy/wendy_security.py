@@ -15,9 +15,10 @@ import hashlib
 import logging
 import re
 import shlex
+import subprocess
 import tempfile
 from pathlib import Path, PurePath
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar, Optional, cast
 
 logger = logging.getLogger(__name__)
 
@@ -366,19 +367,25 @@ def validate_json_request(data: dict[str, Any]) -> dict[str, Any]:
     # Sanitize all input data
     sanitized_data = wendy_sanitizer.sanitize_json_input(data)
 
-    logger.info("🐰 Wendy approved JSON request with %d fields", len(sanitized_data))
+    if not isinstance(sanitized_data, dict):
+        raise SecurityViolation("JSON request must be a JSON object at the top level")
 
-    return sanitized_data
+    sanitized_dict = cast(dict[str, Any], sanitized_data)
+
+    logger.info("🐰 Wendy approved JSON request with %d fields", len(sanitized_dict))
+
+    return sanitized_dict
 
 
-def safe_subprocess_run(cmd: list[str], **kwargs) -> Any:
+def safe_subprocess_run(
+    cmd: list[str],
+    **kwargs: Any,
+) -> subprocess.CompletedProcess[str]:
     """
     🐰 Wendy's safe subprocess execution - prevents command injection.
 
     Authority: OWASP Command Injection Prevention, CWE-78
     """
-    import subprocess
-
     # Sanitize command arguments
     safe_cmd = wendy_sanitizer.sanitize_command_args(cmd)
 

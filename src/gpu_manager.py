@@ -7,7 +7,7 @@ import json
 import logging
 import platform
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import torch
 
@@ -155,7 +155,8 @@ class UniversalGPUManager:
             # Enable torch.compile if available (PyTorch 2.0+)
             if hasattr(torch, "compile"):
                 try:
-                    model = torch.compile(model, mode="reduce-overhead")
+                    compiled_model = torch.compile(model, mode="reduce-overhead")
+                    model = cast(torch.nn.Module, compiled_model)
                     logger.info("Applied torch.compile optimization for CUDA")
                 except Exception as e:
                     logger.debug(f"torch.compile failed: {e}")
@@ -259,12 +260,18 @@ class UniversalGPUManager:
         if self.config_file.exists():
             try:
                 with open(self.config_file) as f:
-                    return json.load(f)
+                    data = json.load(f)
+                if isinstance(data, dict):
+                    return cast(dict[str, Any], data)
             except Exception:
                 logger.exception("Failed to load config: {e}")
         return None
 
-    def benchmark_device(self, size: int = 1000, iterations: int = 10) -> dict[str, float]:
+    def benchmark_device(
+        self,
+        size: int = 1000,
+        iterations: int = 10,
+    ) -> dict[str, float | int | str]:
         """Benchmark device performance"""
         import time
 
@@ -297,7 +304,7 @@ class UniversalGPUManager:
             f"Benchmark results: {benchmark_results['average_time_ms']:.2f}ms per operation",
         )
 
-        return benchmark_results
+        return cast(dict[str, float | int | str], benchmark_results)
 
     def __str__(self) -> str:
         """String representation of GPU manager"""

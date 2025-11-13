@@ -1,5 +1,13 @@
 # Worker Certificate Pattern - Architecture Guide
 
+**Status**: Active
+**Type**: Implementation Pattern (AS-IS)
+**Last Updated**: 2025-11-10
+**Owner**: Wendy 🐰
+**Purpose**: Synchronous certificate loading pattern eliminating timing issues in worker services
+
+---
+
 ## Problem Solved
 
 Eliminates timing issues between async FastAPI startup and certificate initialization that caused "No CA certificate available" warnings and potential security vulnerabilities.
@@ -12,8 +20,8 @@ Eliminates timing issues between async FastAPI startup and certificate initializ
 def main():
     app = create_fastapi()  # Creates app first
     uvicorn.run(app)        # Certificates loaded during async startup
-    
-@app.on_event("startup") 
+
+@app.on_event("startup")
 async def startup():
     initialize_security()  # ASYNC - causes timing issues
 
@@ -21,17 +29,17 @@ async def startup():
 
 ### ✅ **CORRECT Pattern (Synchronous Certificate Loading)**
 
-```python  
+```python
 def main():
     # 1. Load certificates SYNCHRONOUSLY before FastAPI
 
     cert_pattern = WorkerCertificatePattern("service-name")
     cert_store = cert_pattern.initialize_certificates()
-    
+
     # 2. Create FastAPI with pre-loaded certificates
 
     app = create_worker_app(cert_store=cert_store)
-    
+
     # 3. Start server (certificates already in memory)
 
     cert_pattern.start_server(app, port=8201)
@@ -48,19 +56,19 @@ from worker_cert_pattern import WorkerCertificatePattern, create_worker_fastapi_
 def main():
     cert_pattern = WorkerCertificatePattern("crank-my-service")
     cert_store = cert_pattern.initialize_certificates()
-    
+
     worker_config = create_worker_fastapi_with_certs(
         title="My Service",
         service_name="crank-my-service",
         cert_store=cert_store
     )
-    
+
     setup_my_routes(worker_config["app"], worker_config)
     cert_pattern.start_server(worker_config["app"], port=8201)
 
 ```
 
-### Option B: Manual Implementation  
+### Option B: Manual Implementation
 
 If you prefer not to use the library, follow this exact pattern:
 
@@ -84,7 +92,7 @@ crank-my-service:
 
     - SERVICE_NAME=crank-my-service
 
-    - HTTPS_ONLY=true  
+    - HTTPS_ONLY=true
 
     - CA_SERVICE_URL=https://crank-cert-authority:9090
   volumes:
@@ -100,7 +108,7 @@ crank-my-service:
 
 - **Volume Mount**: `/shared/ca-certs` for Root CA certificate
 
-- **SERVICE_NAME**: Individual service identity for SAN certificates  
+- **SERVICE_NAME**: Individual service identity for SAN certificates
 
 - **Dependency**: Wait for Certificate Authority Service health check
 
@@ -134,7 +142,7 @@ Add new services following the same pattern: `SERVICE_NAME`, `localhost`, `SHORT
 
 - **Fix**: Switch to synchronous certificate loading in `main()`
 
-### "Certificate initialization completed but no certificates in memory"  
+### "Certificate initialization completed but no certificates in memory"
 
 - **Cause**: `SERVICE_NAME` environment variable not set
 

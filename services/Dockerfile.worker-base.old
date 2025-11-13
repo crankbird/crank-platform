@@ -1,0 +1,103 @@
+# ============================================================================
+# Dockerfile.worker-base
+# ============================================================================
+# Multi-stage base image for all Crank workers.
+#
+# This image provides:
+#   - Common Python environment setup
+#   - Non-root user creation
+#   - Shared dependencies (crank.worker_runtime, crank.capabilities)
+#   - Certificate directory structure
+#   - Common healthcheck utilities
+#
+# Usage:
+#   Build base image:
+#     docker build -f services/Dockerfile.worker-base -t worker-base:latest .
+#
+#   Use in worker Dockerfile:
+#     FROM worker-base:latest
+#     COPY services/crank_streaming.py /app/
+#     COPY requirements-streaming.txt /app/
+#     RUN pip install -r requirements-streaming.txt
+#     EXPOSE 8500
+#     CMD ["python", "crank_streaming.py"]
+#
+# Benefits:
+#   - Eliminates duplicate setup across 7 worker Dockerfiles
+#   - Reduces worker image build time (base layers cached)
+#   - Ensures consistent environment across workers
+#   - Simplifies worker Dockerfiles to ~10 lines
+# ============================================================================
+
+ARG PYTHON_VERSION=3.11
+
+# ============================================================================
+# Stage 1: Base Setup
+# ============================================================================
+FROM python:${PYTHON_VERSION}-slim AS base
+
+# Install common system dependencies
+# - curl: for healthchecks
+# - ca-certificates: for TLS verification
+# - openssl: for certificate validation
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    openssl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user for running workers
+# Security: Workers should not run as root
+RUN groupadd --gid 1000 crank \
+    && useradd --uid 1000 --gid crank --shell /bin/bash --create-home crank
+
+# Create application directory
+WORKDIR /app
+
+# Create certificate directory structure
+# Workers expect certs in /app/certs/
+RUN mkdir -p /app/certs && chown -R crank:crank /app/certs
+
+# Copy shared crank libraries
+# All workers depend on worker_runtime and capabilities
+COPY --chown=crank:crank src/crank /app/src/crank
+
+# Install shared dependencies
+# worker_runtime, capabilities, security modules
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir \
+    fastapi \
+    uvicorn \
+    httpx \
+    pydantic \
+    pydantic-settings
+
+# Install crank modules in development mode
+# This makes src/crank importable
+RUN pip install --no-cache-dir -e /app/src
+
+# Switch to non-root user
+USER crank
+
+# Set Python path
+ENV PYTHONPATH=/app:/app/src
+ENV PYTHONUNBUFFERED=1
+
+# Common healthcheck script
+# Workers override the PORT environment variable
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f https://localhost:${HTTPS_PORT:-8443}/health --insecure || exit 1
+
+# Default working directory for worker code
+WORKDIR /app
+
+# ============================================================================
+# Stage 2: Production Base (optional optimization)
+# ============================================================================
+# For production, we could add a second stage that:
+#   - Removes build tools
+#   - Compiles Python to .pyc
+#   - Strips debug symbols
+#
+# For now, keeping single-stage for simplicity and debugging.
+# ============================================================================

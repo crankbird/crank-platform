@@ -1,5 +1,13 @@
 # Platform Architecture
 
+**Status**: Active
+**Type**: Architecture (AS-IS — Current System Design)
+**Last Updated**: 2025-11-10
+**Owner**: Platform Team
+**Purpose**: Document current system architecture, JEMM principles, and energy efficiency strategy
+
+---
+
 ## Architecture Philosophy
 
 ### The Hybrid Approach: Best of All Worlds
