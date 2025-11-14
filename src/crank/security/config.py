@@ -96,6 +96,15 @@ class SecurityConfig:
         # Certificate paths
         self.paths = CertificatePaths.from_cert_dir(self.cert_dir)
 
+        # Certificate filename mapping for dynamic access
+        self.cert_filenames = {
+            "ca": CA_CERT_FILENAME,
+            "cert": PLATFORM_CERT_FILENAME,  # or CLIENT_CERT_FILENAME for workers
+            "key": PLATFORM_KEY_FILENAME,  # or CLIENT_KEY_FILENAME for workers
+            "client_cert": CLIENT_CERT_FILENAME,
+            "client_key": CLIENT_KEY_FILENAME,
+        }
+
         # Security policy - HTTPS/mTLS ONLY
         # No environment-based relaxation
         self.https_only = True

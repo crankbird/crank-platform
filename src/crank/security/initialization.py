@@ -1,0 +1,422 @@
+"""
+Certificate Initialization
+
+Handles certificate bootstrapping for workers and controllers:
+- CSR generation (private keys never leave worker)
+- CA service communication
+- Certificate storage and validation
+
+Workers use this to obtain certificates from the CA service.
+Controllers use this for initial CA setup.
+"""
+
+import asyncio
+import logging
+import os
+import subprocess
+import tempfile
+from pathlib import Path
+from typing import Optional
+
+import aiohttp
+
+from .config import get_security_config
+from .constants import (
+    CA_CERT_FILENAME,
+    CLIENT_CERT_FILENAME,
+    CLIENT_KEY_FILENAME,
+    DEFAULT_CA_SERVICE_TIMEOUT,
+    DEFAULT_CA_SERVICE_URL,
+    RSA_KEY_SIZE,
+)
+from .events import CertificateEvent, emit_certificate_event
+
+logger = logging.getLogger(__name__)
+
+
+class CertificateInitializationError(Exception):
+    """Raised when certificate initialization fails."""
+
+
+async def wait_for_ca_service(
+    ca_service_url: str,
+    timeout: int = DEFAULT_CA_SERVICE_TIMEOUT,
+    correlation_id: Optional[str] = None,
+) -> bool:
+    """
+    Wait for Certificate Authority Service to become available.
+
+    Args:
+        ca_service_url: CA service endpoint URL
+        timeout: Maximum wait time in seconds
+        correlation_id: Optional correlation ID for distributed tracing
+
+    Returns:
+        True if CA service is available, False if timeout
+
+    Example:
+        >>> if await wait_for_ca_service("https://cert-authority:9090"):
+        ...     print("CA service ready")
+    """
+    logger.info("⏳ Waiting for Certificate Authority Service at %s", ca_service_url)
+
+    for attempt in range(timeout):
+        try:
+            # Use insecure connection for health check (CA cert not yet obtained)
+            async with aiohttp.ClientSession(
+                connector=aiohttp.TCPConnector(ssl=False),
+                timeout=aiohttp.ClientTimeout(total=2),
+            ) as session:
+                async with session.get(f"{ca_service_url}/health") as response:
+                    if response.status == 200:
+                        health_data = await response.json()
+                        logger.info(
+                            "✅ Certificate Authority Service ready: %s",
+                            health_data.get("provider", "unknown"),
+                        )
+                        return True
+        except Exception as e:
+            logger.debug("CA service not ready (attempt %d/%d): %s", attempt + 1, timeout, e)
+
+        await asyncio.sleep(1)
+
+    logger.error("❌ Certificate Authority Service not available after %d seconds", timeout)
+    return False
+
+
+async def get_ca_certificate(
+    ca_service_url: str,
+    correlation_id: Optional[str] = None,
+) -> str:
+    """
+    Retrieve CA root certificate for verification.
+
+    Args:
+        ca_service_url: CA service endpoint URL
+        correlation_id: Optional correlation ID for distributed tracing
+
+    Returns:
+        CA certificate PEM string
+
+    Raises:
+        CertificateInitializationError: If CA cert retrieval fails
+    """
+    try:
+        # Use insecure connection (we don't have CA cert yet)
+        async with aiohttp.ClientSession(
+            connector=aiohttp.TCPConnector(ssl=False)
+        ) as session:
+            async with session.get(f"{ca_service_url}/ca/certificate") as response:
+                if response.status == 200:
+                    ca_data = await response.json()
+                    ca_cert: str = ca_data["ca_certificate"]
+                    logger.info("✅ CA certificate obtained for verification")
+                    return ca_cert
+
+                error_text = await response.text()
+                raise CertificateInitializationError(
+                    f"Failed to get CA certificate: {response.status} - {error_text}"
+                )
+    except Exception as e:
+        if isinstance(e, CertificateInitializationError):
+            raise
+        raise CertificateInitializationError(f"CA certificate retrieval failed: {e}") from e
+
+
+def generate_csr(
+    worker_id: str,
+    additional_san_names: Optional[list[str]] = None,
+) -> tuple[str, str]:
+    """
+    Generate RSA key pair and Certificate Signing Request locally.
+
+    SECURITY: Private key is generated locally and NEVER transmitted.
+    Only the CSR (containing public key) is sent to the CA service.
+
+    Args:
+        worker_id: Worker/service identifier (becomes CN in certificate)
+        additional_san_names: Additional Subject Alternative Names
+
+    Returns:
+        Tuple of (private_key_pem, csr_pem)
+
+    Raises:
+        CertificateInitializationError: If CSR generation fails
+
+    Example:
+        >>> private_key, csr = generate_csr("streaming-worker-1")
+        >>> # private_key stays local, only csr is sent to CA
+    """
+    logger.info("🔑 Generating local RSA key pair and CSR for %s...", worker_id)
+
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            private_key_path = temp_path / "service.key"
+            csr_path = temp_path / "service.csr"
+            config_path = temp_path / "csr.conf"
+
+            # Generate RSA private key locally (NEVER leaves this machine)
+            subprocess.run(
+                [
+                    "openssl",
+                    "genrsa",
+                    "-out",
+                    str(private_key_path),
+                    str(RSA_KEY_SIZE),
+                ],
+                check=True,
+                capture_output=True,
+            )
+            logger.info("✅ Private key generated locally (%d-bit RSA)", RSA_KEY_SIZE)
+
+            # Build Subject Alternative Names list
+            san_names = [worker_id, "localhost"]
+            if additional_san_names:
+                san_names.extend(additional_san_names)
+
+            san_list = ",".join([f"DNS:{name}" for name in san_names])
+
+            # Create OpenSSL config for CSR with SAN extensions
+            config_content = f"""[req]
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+prompt = no
+
+[req_distinguished_name]
+CN = {worker_id}
+O = Crank Platform
+OU = Worker Services
+
+[v3_req]
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+subjectAltName = {san_list}
+"""
+
+            config_path.write_text(config_content)
+
+            # Generate CSR with SAN extensions
+            subprocess.run(
+                [
+                    "openssl",
+                    "req",
+                    "-new",
+                    "-key",
+                    str(private_key_path),
+                    "-out",
+                    str(csr_path),
+                    "-config",
+                    str(config_path),
+                ],
+                check=True,
+                capture_output=True,
+            )
+            logger.info("✅ CSR generated with SAN: %s", san_list)
+
+            # Emit observability event
+            emit_certificate_event(
+                CertificateEvent.CSR_GENERATED,
+                worker_id=worker_id,
+                metadata={"san_names": san_names},
+            )
+
+            # Read generated key and CSR
+            private_key_pem = private_key_path.read_text()
+            csr_pem = csr_path.read_text()
+
+        return private_key_pem, csr_pem
+
+    except subprocess.CalledProcessError as e:
+        raise CertificateInitializationError(
+            f"OpenSSL CSR generation failed: {e.stderr.decode() if e.stderr else str(e)}"
+        ) from e
+    except Exception as e:
+        raise CertificateInitializationError(f"CSR generation failed: {e}") from e
+
+
+async def submit_csr(
+    ca_service_url: str,
+    csr_pem: str,
+    worker_id: str,
+    correlation_id: Optional[str] = None,
+) -> str:
+    """
+    Submit Certificate Signing Request to CA service.
+
+    Args:
+        ca_service_url: CA service endpoint URL
+        csr_pem: Certificate Signing Request in PEM format
+        worker_id: Worker/service identifier
+        correlation_id: Optional correlation ID for distributed tracing
+
+    Returns:
+        Signed certificate in PEM format
+
+    Raises:
+        CertificateInitializationError: If CSR submission/signing fails
+    """
+    logger.info("📝 Submitting CSR to CA service for %s", worker_id)
+
+    try:
+        # Emit observability event
+        emit_certificate_event(
+            CertificateEvent.CSR_SUBMITTED,
+            worker_id=worker_id,
+            correlation_id=correlation_id,
+        )
+
+        # Use insecure connection (we're getting our first cert)
+        async with aiohttp.ClientSession(
+            connector=aiohttp.TCPConnector(ssl=False)
+        ) as session:
+            async with session.post(
+                f"{ca_service_url}/certificates/csr",
+                json={
+                    "csr": csr_pem,
+                    "service_name": worker_id,
+                },
+            ) as response:
+                if response.status == 200:
+                    cert_response = await response.json()
+                    signed_cert: str = cert_response["certificate"]
+                    logger.info("✅ Certificate signed by CA service")
+
+                    # Emit success event
+                    emit_certificate_event(
+                        CertificateEvent.CERT_ISSUED,
+                        worker_id=worker_id,
+                        correlation_id=correlation_id,
+                        metadata={"cert_length": len(signed_cert)},
+                    )
+
+                    return signed_cert
+
+                error_text = await response.text()
+                # Emit failure event
+                emit_certificate_event(
+                    CertificateEvent.CSR_FAILED,
+                    worker_id=worker_id,
+                    correlation_id=correlation_id,
+                    metadata={"status": response.status, "error": error_text},
+                    log_level=logging.ERROR,
+                )
+                raise CertificateInitializationError(
+                    f"CA service rejected CSR: {response.status} - {error_text}"
+                )
+
+    except Exception as e:
+        if isinstance(e, CertificateInitializationError):
+            raise
+        raise CertificateInitializationError(f"CSR submission failed: {e}") from e
+
+
+async def initialize_worker_certificates(
+    worker_id: str,
+    ca_service_url: Optional[str] = None,
+    cert_dir: Optional[Path] = None,
+    additional_san_names: Optional[list[str]] = None,
+    correlation_id: Optional[str] = None,
+) -> tuple[Path, Path, Path]:
+    """
+    Initialize certificates for a worker using secure CSR pattern.
+
+    Complete flow:
+    1. Wait for CA service availability
+    2. Generate local key pair + CSR (private key never leaves)
+    3. Submit CSR to CA service
+    4. Receive signed certificate
+    5. Store certificates to disk
+
+    Args:
+        worker_id: Worker/service identifier
+        ca_service_url: CA service URL (default: from config)
+        cert_dir: Certificate directory (default: from config)
+        additional_san_names: Additional Subject Alternative Names
+        correlation_id: Optional correlation ID for distributed tracing
+
+    Returns:
+        Tuple of (cert_file, key_file, ca_cert_file) paths
+
+    Raises:
+        CertificateInitializationError: If initialization fails
+
+    Example:
+        >>> cert, key, ca = await initialize_worker_certificates("streaming-1")
+        >>> print(f"Certificates ready: {cert}")
+    """
+    config = get_security_config()
+    ca_service_url = ca_service_url or os.getenv("CA_SERVICE_URL", DEFAULT_CA_SERVICE_URL)
+    cert_dir = cert_dir or config.cert_dir
+
+    # Ensure ca_service_url is not None
+    if not ca_service_url:
+        raise CertificateInitializationError("CA_SERVICE_URL not configured")
+
+    logger.info("🔐 Initializing certificates for worker: %s", worker_id)
+    logger.info("📁 Certificate directory: %s", cert_dir)
+    logger.info("🌐 CA Service URL: %s", ca_service_url)
+
+    try:
+        # Step 1: Wait for CA service
+        if not await wait_for_ca_service(ca_service_url, correlation_id=correlation_id):
+            raise CertificateInitializationError("CA service unavailable")
+
+        # Step 2: Get CA certificate for verification
+        ca_cert_pem = await get_ca_certificate(ca_service_url, correlation_id=correlation_id)
+
+        # Step 3: Generate local key pair and CSR
+        private_key_pem, csr_pem = generate_csr(worker_id, additional_san_names)
+
+        # Step 4: Submit CSR and get signed certificate
+        signed_cert_pem = await submit_csr(
+            ca_service_url, csr_pem, worker_id, correlation_id=correlation_id
+        )
+
+        # Step 5: Store certificates to disk
+        cert_dir.mkdir(parents=True, exist_ok=True)
+
+        # CRITICAL: Write to client.{crt,key} for mTLS client compatibility
+        # This ensures create_mtls_client() can find certificates without
+        # manual file copying/symlinking
+        cert_file = cert_dir / CLIENT_CERT_FILENAME
+        key_file = cert_dir / CLIENT_KEY_FILENAME
+        ca_cert_file = cert_dir / CA_CERT_FILENAME
+
+        cert_file.write_text(signed_cert_pem)
+        key_file.write_text(private_key_pem)
+        ca_cert_file.write_text(ca_cert_pem)
+
+        # Set proper permissions
+        key_file.chmod(0o600)  # Private key: owner read/write only
+        cert_file.chmod(0o644)  # Certificate: owner read/write, others read
+        ca_cert_file.chmod(0o644)  # CA cert: owner read/write, others read
+
+        logger.info("✅ Certificates initialized and stored")
+        logger.info("   Cert: %s", cert_file)
+        logger.info("   Key:  %s", key_file)
+        logger.info("   CA:   %s", ca_cert_file)
+
+        return cert_file, key_file, ca_cert_file
+
+    except Exception as e:
+        logger.error("❌ Certificate initialization failed for %s: %s", worker_id, e)
+        raise
+
+
+# Convenience function for backward compatibility with old patterns
+async def initialize_certificates_from_env() -> tuple[Path, Path, Path]:
+    """
+    Initialize certificates using environment variables.
+
+    Reads: SERVICE_NAME, CA_SERVICE_URL, CERT_DIR from environment.
+    This is a convenience wrapper for containerized workers.
+
+    Returns:
+        Tuple of (cert_file, key_file, ca_cert_file) paths
+
+    Raises:
+        CertificateInitializationError: If initialization fails
+    """
+    worker_id = os.getenv("SERVICE_NAME", "worker")
+    return await initialize_worker_certificates(worker_id=worker_id)
