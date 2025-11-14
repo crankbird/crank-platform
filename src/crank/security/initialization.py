@@ -293,11 +293,16 @@ subjectAltName = {san_list}
         # Run blocking OpenSSL operations in thread pool to avoid blocking event loop
         private_key_pem, csr_pem = await asyncio.to_thread(_generate_csr_sync)
 
+        # Build SAN list for event metadata (matches what was generated in sync function)
+        san_names = [worker_id, "localhost"]
+        if additional_san_names:
+            san_names.extend(additional_san_names)
+
         # Emit observability event (now that we're back in async context)
         emit_certificate_event(
             CertificateEvent.CSR_GENERATED,
             worker_id=worker_id,
-            metadata={"key_size": RSA_KEY_SIZE},
+            metadata={"key_size": RSA_KEY_SIZE, "san_names": san_names},
         )
 
         return private_key_pem, csr_pem
@@ -357,13 +362,8 @@ async def submit_csr(
                         signed_cert: str = cert_response["certificate"]
                         logger.info("✅ Certificate signed by CA service")
 
-                        # Emit success event
-                        emit_certificate_event(
-                            CertificateEvent.CERT_ISSUED,
-                            worker_id=worker_id,
-                            correlation_id=correlation_id,
-                            metadata={"cert_length": len(signed_cert)},
-                        )
+                        # Note: CERT_ISSUED event emitted after files persisted in initialize_worker_certificates
+                        # to avoid double-counting in metrics/alerting
 
                         return signed_cert
 
@@ -395,14 +395,16 @@ async def submit_csr(
                 await asyncio.sleep(backoff)
             else:
                 logger.error("❌ Failed to submit CSR after %d attempts", MAX_RETRIES)
-                # Emit failure event
+                # Emit CA-specific failure event with full context for observability
                 emit_certificate_event(
                     CertificateEvent.CSR_FAILED,
                     worker_id=worker_id,
                     correlation_id=correlation_id,
                     metadata={
+                        "phase": "csr_submission",
                         "attempts": MAX_RETRIES,
                         "error": str(e),
+                        "ca_service_url": ca_service_url,
                     },
                     log_level=logging.ERROR,
                 )
@@ -514,14 +516,18 @@ async def initialize_worker_certificates(
 
         return cert_file, key_file, ca_cert_file
 
+    except CertificateInitializationError:
+        # CSR-specific failures already emitted their events, just propagate
+        raise
     except Exception as e:
         logger.error("❌ Certificate initialization failed for %s: %s", worker_id, e)
-        # Emit failure event
+        # Emit failure event for non-CSR failures (file I/O, unexpected errors)
+        # CSR submission failures are handled in submit_csr with CA-specific context
         emit_certificate_event(
             CertificateEvent.CSR_FAILED,
             worker_id=worker_id,
             correlation_id=correlation_id,
-            metadata={"error": str(e)},
+            metadata={"error": str(e), "phase": "bootstrap_other"},
             log_level=logging.ERROR,
         )
         raise

@@ -87,19 +87,23 @@ class CertificateManager:
 
         Args:
             worker_id: Unique identifier for this worker
-            cert_dir: Directory for certificate storage (defaults to ./certs)
+            cert_dir: Directory for certificate storage (defaults to ./certs, or CERT_DIR env)
         """
         self.worker_id = worker_id
+        # Use ./certs as default for user-writable development/testing
+        # Production deployments should set CERT_DIR=/etc/certs explicitly
         self.cert_dir = cert_dir or Path(os.getenv("CERT_DIR", "./certs"))
         self.cert_dir.mkdir(parents=True, exist_ok=True)
 
     def get_cert_path(self) -> Path:
         """Get path to worker certificate file."""
-        return self.cert_dir / f"{self.worker_id}.crt"
+        # Use standard client.crt name (matches initialize_worker_certificates output)
+        return self.cert_dir / "client.crt"
 
     def get_key_path(self) -> Path:
         """Get path to worker private key file."""
-        return self.cert_dir / f"{self.worker_id}.key"
+        # Use standard client.key name (matches initialize_worker_certificates output)
+        return self.cert_dir / "client.key"
 
     def get_ca_cert_path(self) -> Path:
         """Get path to CA certificate file."""
