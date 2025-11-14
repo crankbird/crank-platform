@@ -18,6 +18,7 @@
 ### Environment Setup
 
 **[ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md)** ⭐ **START HERE**
+
 - Quick start for macOS, Linux, Windows
 - GPU setup (CUDA, MPS, CPU fallback)
 - Docker configuration
@@ -26,16 +27,19 @@
 ### Platform-Specific Guides
 
 **[mac-mini-development-strategy.md](mac-mini-development-strategy.md)**
+
 - Mac Mini M2/M4 development
 - Apple Silicon MPS GPU support
 - macOS-specific setup
 
 **[windows-agent-instructions.md](windows-agent-instructions.md)**
+
 - Windows development setup
 - WSL2 integration
 - Windows-specific considerations
 
 **[WSL2-GPU-CUDA-COMPATIBILITY.md](WSL2-GPU-CUDA-COMPATIBILITY.md)**
+
 - WSL2 CUDA GPU passthrough
 - NVIDIA GPU on Windows
 - WSL2 Docker integration
@@ -43,11 +47,13 @@
 ### Advanced Environment Topics
 
 **[universal-gpu-environment.md](universal-gpu-environment.md)**
+
 - Cross-platform GPU detection
 - PyTorch CUDA/MPS setup
 - GPU environment troubleshooting
 
 **[uv-conda-hybrid-strategy.md](uv-conda-hybrid-strategy.md)**
+
 - Hybrid package management
 - When to use uv vs conda
 - ML-specific dependencies
@@ -57,21 +63,25 @@
 ### Code Quality
 
 **[code-quality-strategy.md](code-quality-strategy.md)** ⭐ **CRITICAL**
+
 - Three-ring type safety architecture
 - Boundary shim patterns for ML libraries
 - Type safety for untyped dependencies
 
 **[LINTING_AND_TYPE_CHECKING.md](LINTING_AND_TYPE_CHECKING.md)**
+
 - Ruff linter configuration
 - Pylance type checker setup
 - Auto-formatting on save
 
 **[pylance-ml-configuration.md](pylance-ml-configuration.md)**
+
 - ML-specific type checking
 - Handling untyped ML libraries
 - Type stubs and overrides
 
 **[error-suppression-strategy.md](error-suppression-strategy.md)**
+
 - When to suppress errors
 - Proper suppression patterns
 - Error handling best practices
@@ -79,6 +89,7 @@
 ### Testing
 
 **[testing-strategy.md](testing-strategy.md)**
+
 - Testing architecture
 - Unit, integration, E2E tests
 - Mascot-driven testing framework
@@ -86,6 +97,7 @@
 ### Docker & Containers
 
 **[DOCKER_CONFIGS.md](DOCKER_CONFIGS.md)**
+
 - Docker Compose configurations
 - Service definitions
 - Container networking
@@ -93,13 +105,14 @@
 ### Machine Learning
 
 **[ml-development-guide.md](ml-development-guide.md)**
+
 - ML service development
 - Model integration patterns
 - GPU utilization
 
 ## 📁 File Organization
 
-```
+```text
 development/
 ├── ENVIRONMENT_SETUP.md          # ⭐ Start here - unified setup guide
 ├── code-quality-strategy.md      # ⭐ Critical - type safety architecture

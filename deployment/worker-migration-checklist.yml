@@ -1,0 +1,141 @@
+# Worker Migration Checklist Template
+
+# Copy this template for each worker migration and track progress
+# Usage: cp deployment/worker-migration-checklist.yml deployment/migration-{worker-name}-{date}.yml
+
+worker_name: "crank_example_worker" # Replace with actual worker name
+migration_date: "2025-11-14" # Date migration started
+target_phase: "phase_1" # phase_1, phase_2, or phase_3
+estimated_effort: "2_days" # Time estimate for completion
+
+# Code Implementation Changes
+code_changes:
+  - task: "WorkerApplication inheritance implemented"
+    status: "not_started" # not_started | in_progress | completed | blocked
+    notes: ""
+
+  - task: "Capability definitions updated in schema.py"
+    status: "not_started"
+    notes: ""
+
+  - task: "Business logic extracted to engine class"
+    status: "not_started"
+    notes: ""
+
+  - task: "Route handlers converted to explicit binding"
+    status: "not_started"
+    notes: ""
+
+  - task: "Testing mode (--test) implemented"
+    status: "not_started"
+    notes: ""
+
+  - task: "Type checking passes (mypy + pylance)"
+    status: "not_started"
+    notes: ""
+
+# Deployment Artifact Updates
+deployment_artifacts:
+  - task: "Dockerfile updated for new patterns"
+    status: "not_started"
+    file_path: "image-classifier/Dockerfile" # Path to artifact
+    notes: ""
+
+  - task: "Plugin YAML capability declarations updated"
+    status: "not_started"
+    file_path: "deployment/plugins/worker-capabilities.yml"
+    notes: ""
+
+  - task: "CI job configuration includes new testing patterns"
+    status: "not_started"
+    file_path: ".github/workflows/worker-tests.yml"
+    notes: ""
+
+  - task: "Resource limits updated (GPU/memory requirements)"
+    status: "not_started"
+    file_path: "docker-compose.gpu-dev.yml"
+    notes: ""
+
+  - task: "Health check endpoints verified"
+    status: "not_started"
+    notes: ""
+
+# Infrastructure Configuration Updates
+infrastructure_updates:
+  - task: "Controller routing tables updated for new capabilities"
+    status: "not_started"
+    notes: ""
+
+  - task: "Mesh configuration includes new capability routing"
+    status: "not_started"
+    notes: ""
+
+  - task: "Monitoring dashboards include new service metrics"
+    status: "not_started"
+    notes: ""
+
+  - task: "Alert rules configured for new endpoints"
+    status: "not_started"
+    notes: ""
+
+# Backward Compatibility & Migration Strategy
+migration_strategy:
+  - task: "Migration shim implemented for old endpoints"
+    status: "not_started"
+    notes: ""
+
+  - task: "Backward compatibility test matrix created"
+    status: "not_started"
+    notes: ""
+
+  - task: "Legacy endpoint deprecation timeline defined"
+    status: "not_started"
+    timeline: "30_days" # Timeline for retirement
+    notes: ""
+
+# Validation & Testing
+validation:
+  - task: "End-to-end deployment tested in dev environment"
+    status: "not_started"
+    notes: ""
+
+  - task: "Performance regression testing completed"
+    status: "not_started"
+    notes: ""
+
+  - task: "Client compatibility verified against old/new APIs"
+    status: "not_started"
+    notes: ""
+
+  - task: "Rollback plan documented and tested"
+    status: "not_started"
+    notes: ""
+
+# Success Criteria
+success_criteria:
+  - "Zero deployment failures during migration"
+  - "All existing clients continue working without changes"
+  - "New worker patterns follow established best practices"
+  - "Performance maintains or improves from baseline"
+  - "Monitoring and alerting provide full observability"
+
+# Rollback Plan
+rollback_plan:
+  git_commit_before_migration: "" # Commit hash to rollback to
+  rollback_steps:
+    - "Revert worker service to previous version"
+    - "Restore original capability declarations"
+    - "Rollback infrastructure routing changes"
+    - "Verify client connectivity restored"
+
+  rollback_triggers:
+    - "Deployment failure preventing service startup"
+    - "Client compatibility breaks existing workflows"
+    - "Performance degrades beyond acceptable thresholds"
+    - "Monitoring indicates service instability"
+
+# Notes and Lessons Learned
+notes:
+  blockers: []
+  lessons_learned: []
+  recommendations_for_future: []

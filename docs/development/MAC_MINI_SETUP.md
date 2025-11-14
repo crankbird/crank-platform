@@ -18,6 +18,7 @@
 - **Network**: Gigabit Ethernet for reliable development
 
 **Why Mac Mini for Platform Development**:
+
 - Native ARM architecture matches edge deployment targets (Raspberry Pi, ARM cloud)
 - Unified memory architecture (32GB shared CPU/GPU) enables large model development
 - Metal Performance Shaders (MPS) provides GPU acceleration for ML
@@ -248,6 +249,7 @@ code crank-platform-mascots.code-workspace
 ```
 
 **Extensions**:
+
 - Python (Microsoft)
 - Docker (Microsoft)
 - GitHub Copilot

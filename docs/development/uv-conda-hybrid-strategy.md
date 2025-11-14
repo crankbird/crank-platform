@@ -63,31 +63,27 @@ Based on research from the uv + conda hybrid articles, here's the optimal approa
 1. **Install uv in conda environment**
   
    ```bash
-
-pip install uv
-
+   pip install uv
    ```
 
 4. **Pure Python packages via uv**
-   
+
    ```bash
    # HuggingFace ecosystem (pure Python, fast installation)
 
 uv pip install transformers datasets accelerate diffusers tokenizers
-   
-   # ML tools and utilities
+
+# ML tools and utilities
 
    uv pip install scikit-learn xgboost lightgbm optuna wandb
-   
-   # Development tools
+
+# Development tools
 
    uv pip install black isort flake8 pytest ipywidgets tqdm rich
-   
-   # API and web frameworks
+
+# API and web frameworks
 
    uv pip install fastapi uvicorn requests httpx
-
-   ```
 
 ## Package Classification
 

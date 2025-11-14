@@ -176,6 +176,42 @@ Why:
 
 ---
 
+## 🚨 **DEPLOYMENT LESSONS LEARNED (Nov 2025)**
+
+**CRITICAL**: From unified Sonnet+Codex worker analysis, these operational patterns are now mandatory:
+
+### **The Four Deployment Anti-Patterns**
+
+1. **Stranded Endpoints** - Refactoring capabilities without migration strategy
+   - ALWAYS implement backward compatibility shims
+   - ALWAYS test migration scenarios before capability retirement
+   - ALWAYS update controller routing, plugin manifests, deployment configs
+
+2. **Missing Dependencies** - Universal `--test` modes that fail inconsistently
+   - ALWAYS use `crank.testing.ensure_dependency` for environment checks
+   - ALWAYS provide graceful skips (Pandoc, GPU libs, network services)
+   - NEVER assume dependencies available across dev/CI/prod environments
+
+3. **Artifact Lag** - Code refactored but deployment configurations outdated
+   - ALWAYS update Docker builds, CI jobs, plugin YAML manifests together
+   - ALWAYS verify end-to-end deployment after worker changes
+   - ALWAYS document and test rollback procedures
+
+4. **Metadata Inconsistency** - Workers creating artifacts with incompatible schemas
+   - ALWAYS follow zettel worker front-matter patterns for artifacts
+   - ALWAYS design standardized metadata for publication pipelines
+   - ALWAYS consider downstream consumer requirements
+
+### **Mandatory Operational Testing**
+
+- **Concurrency/Backpressure** - Mock connection harnesses for streaming workers
+- **GPU Service Testing** - Three-tier strategy (full_gpu/mock_gpu/cpu_fallback)
+- **Environment Portability** - Consistent behavior across dev/CI/prod with appropriate skips
+
+**See**: `docs/development/AI_DEPLOYMENT_OPERATIONAL_PATTERNS.md` for complete patterns
+
+---
+
 ## 🧠 Type Checking & Testing Standards
 
 ### Strict Mode Requirements

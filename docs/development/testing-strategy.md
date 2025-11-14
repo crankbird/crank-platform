@@ -6,7 +6,7 @@ The Crank Platform uses a comprehensive, multi-tiered testing strategy designed 
 
 ## Testing Pyramid
 
-```
+```text
 Integration Tests (Slow, High Confidence)
 ├── Full platform validation (confidence_test_suite.py)
 ├── Multi-service communication (enhanced_smoke_test.py)
@@ -122,7 +122,7 @@ python test_runner.py --release --coverage-html --json-report=results.json
 
 ### Directory Structure
 
-```
+```text
 tests/
 ├── test_basic_validation.py      # @pytest.mark.unit - Framework tests
 ├── test_ml_boundary_shims.py     # @pytest.mark.unit - ML isolation layer

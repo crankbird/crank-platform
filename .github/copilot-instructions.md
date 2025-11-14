@@ -131,11 +131,14 @@ make worker-run WORKER=streaming
 2. **Phase Confusion**: Check refactor status before modifying worker code
 3. **Certificate Issues**: Run certificate initialization before any service testing
 4. **Legacy Patterns**: Don't copy registration/heartbeat code from existing `services/crank_*.py`
+5. **Deployment Anti-Patterns**: See `docs/development/AI_DEPLOYMENT_OPERATIONAL_PATTERNS.md` for critical deployment lessons
 
 ## 💡 AI Agent Workflow
 
 1. **Check refactor phase** in GitHub Issues #27-#31
 2. **Read architecture docs** before major changes
-3. **Use mascot testing** for specialized validation
-4. **Follow NEW patterns** from `src/crank/*`, not legacy `services/*`
-5. **Test with certificates** using development compose files
+3. **Review deployment patterns** from unified Sonnet+Codex worker analysis
+4. **Use mascot testing** for specialized validation
+5. **Follow NEW patterns** from `src/crank/*`, not legacy `services/*`
+6. **Test with certificates** using development compose files
+7. **Verify deployment artifacts** (Docker, CI, plugin manifests) updated together

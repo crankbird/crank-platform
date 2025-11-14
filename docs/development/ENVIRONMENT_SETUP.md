@@ -41,6 +41,7 @@ See `.vscode/AGENT_CONTEXT.md` for full architectural context.
 ### macOS (Apple Silicon)
 
 **Requirements**:
+
 - Docker Desktop 4.0+ (includes Apple Silicon support)
 - Xcode Command Line Tools (for git)
 
@@ -62,6 +63,7 @@ See [mac-mini-development-strategy.md](mac-mini-development-strategy.md) for det
 ### Linux (NVIDIA GPU)
 
 **Requirements**:
+
 - Docker Engine 20.10+
 - NVIDIA Container Toolkit (for GPU support)
 
@@ -89,6 +91,7 @@ docker run --rm --gpus all nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi
 ### Windows (WSL2)
 
 **Requirements**:
+
 - Windows 11 or Windows 10 (version 2004+)
 - WSL2 enabled
 - Docker Desktop for Windows
@@ -120,6 +123,7 @@ See [windows-agent-instructions.md](windows-agent-instructions.md) for Windows d
 ### Local CPU Development (No GPU)
 
 Best for:
+
 - Service development (FastAPI workers)
 - Platform controller development
 - Testing non-GPU features
@@ -129,15 +133,17 @@ Best for:
 ```
 
 Services start on:
-- Platform: https://localhost:8443
-- Document Converter: https://localhost:8101
-- Email Classifier: https://localhost:8201
-- Email Parser: https://localhost:8301
-- Streaming Service: https://localhost:8501
+
+- Platform: <https://localhost:8443>
+- Document Converter: <https://localhost:8101>
+- Email Classifier: <https://localhost:8201>
+- Email Parser: <https://localhost:8301>
+- Streaming Service: <https://localhost:8501>
 
 ### Universal GPU Development
 
 Best for:
+
 - ML model development
 - GPU-accelerated services
 - Image classification
@@ -148,8 +154,9 @@ Best for:
 ```
 
 Additional GPU services:
-- Image Classifier (CPU): https://localhost:8401
-- Image Classifier (GPU): https://localhost:8402
+
+- Image Classifier (CPU): <https://localhost:8401>
+- Image Classifier (GPU): <https://localhost:8402>
 
 **GPU Detection**: Automatic runtime detection of CUDA (NVIDIA), MPS (Apple Silicon), or CPU fallback.
 
@@ -207,10 +214,12 @@ See [DOCKER_CONFIGS.md](DOCKER_CONFIGS.md) for Docker Compose configuration deta
 ## Environment Variables
 
 Required environment variables are defined in:
+
 - `.env` (git-ignored, create from `.env.example`)
 - `docker-compose.*.yml` files
 
 Key variables:
+
 ```bash
 # Certificate paths
 CERT_PATH=/certs

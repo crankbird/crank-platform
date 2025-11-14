@@ -293,3 +293,48 @@ See `services/crank_hello_world.py` for a complete reference implementation foll
 5. **Skip Type Checking**: Ignoring linting errors instead of fixing root cause
 
 **Remember**: Linting errors reveal architectural issues, not cosmetic problems. Fix them, don't ignore them.
+
+## 🤖 **AI Assistant Worker Generation Analysis**
+
+**Reference**: `docs/development/SONNET_VS_CODEX_ZETTEL_COMPARISON.md` - Complete comparative analysis
+
+Based on testing with two major AI assistants (Claude Sonnet & GitHub Codex) creating equivalent zettel management workers, we've identified complementary approaches that inform our development patterns:
+
+### **Architectural Decision Matrix**
+
+| **Use Sonnet Pattern When:** | **Use Codex Pattern When:** |
+|-------------------------------|------------------------------|
+| Building comprehensive CRUD services | Building focused single-purpose services |
+| Need fast retrieval and complex filtering | Stateless operation is preferred |
+| Type safety is critical | Extension hooks over pre-defined fields |
+| Performance matters more than memory | Simplicity over performance optimization |
+
+### **Key Insights from AI Worker Generation**
+
+1. **Schema Design Approaches**:
+   - **Multiple operations** (Sonnet): Complex but type-safe with unified error handling
+   - **Single operations** (Codex): Simple contract with clean API boundaries
+
+2. **Storage Strategy Trade-offs**:
+   - **In-memory + filesystem** (Sonnet): Fast retrieval, memory growth
+   - **Pure filesystem** (Codex): Stateless, requires scanning for queries
+
+3. **Extension Strategies**:
+   - **Pre-defined schema fields** (Sonnet): Type safety with reduced flexibility
+   - **Method hooks** (Codex): Unlimited extension without type guarantees
+
+### **Hybrid Best Practices**
+
+Combine the best of both approaches:
+
+```python
+# Type-safe schema (Sonnet) + Extension hooks (Codex)
+class WorkerEngine(ABC):
+    @abstractmethod
+    def get_schema(self) -> BaseModel: ...  # Type safety
+
+    @abstractmethod
+    def extend_processing(self, data: dict) -> dict: ...  # Flexibility
+```
+
+**Testing Requirements**: All AI-generated workers must include `--test` modes with comprehensive validation patterns.

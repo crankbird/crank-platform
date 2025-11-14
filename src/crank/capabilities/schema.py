@@ -538,3 +538,109 @@ PHILOSOPHICAL_ANALYSIS = CapabilityDefinition(
     tags=["content", "analysis", "philosophy", "ml"],
     estimated_duration_ms=500,
 )
+
+CODEX_ZETTEL_REPOSITORY = CapabilityDefinition(
+    id="zettel.codex_repository",
+    version=CapabilityVersion(major=1, minor=0, patch=0),
+    name="Codex Zettel Repository",
+    description="Capture chat-generated zettels and persist them in a structured knowledge repository for downstream workflows",
+    contract=IOContract(
+        input_schema={
+            "type": "object",
+            "properties": {
+                "zettel_id": {
+                    "type": "string",
+                    "description": "Optional externally supplied identifier",
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Human-readable title or summary",
+                },
+                "content": {
+                    "type": "string",
+                    "description": "Markdown/plaintext body of the zettel",
+                },
+                "category": {
+                    "type": "string",
+                    "description": "Folder or thematic grouping for storage",
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Optional free-form tags applied by the agent",
+                },
+                "source_agent": {
+                    "type": "string",
+                    "description": "Agent or persona that generated the zettel",
+                },
+                "metadata": {
+                    "type": "object",
+                    "description": "Arbitrary metadata captured alongside the zettel",
+                    "additionalProperties": True,
+                },
+                "context": {
+                    "type": "object",
+                    "description": "Conversation context or prompts that produced the zettel",
+                    "additionalProperties": True,
+                },
+            },
+            "required": ["content"],
+            "additionalProperties": False,
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "zettel_id": {
+                    "type": "string",
+                    "description": "Identifier assigned to the stored zettel",
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Resolved title used for cataloging",
+                },
+                "category": {
+                    "type": "string",
+                    "description": "Final storage category/directory",
+                },
+                "storage_path": {
+                    "type": "string",
+                    "description": "Absolute path to the stored zettel file",
+                },
+                "relative_path": {
+                    "type": "string",
+                    "description": "Path relative to the repository root",
+                },
+                "repository_root": {
+                    "type": "string",
+                    "description": "Root directory configured for this repository",
+                },
+                "created_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Timestamp when the zettel was persisted",
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Tags that were stored with the zettel",
+                },
+            },
+            "required": ["zettel_id", "storage_path", "repository_root", "created_at"],
+            "additionalProperties": False,
+        },
+        error_codes=[
+            ErrorCode(
+                code="INVALID_ZETTEL",
+                description="Input payload missing required content or violates schema",
+                retryable=False,
+            ),
+            ErrorCode(
+                code="STORAGE_FAILURE",
+                description="Repository unable to persist the zettel",
+                retryable=True,
+            ),
+        ],
+    ),
+    tags=["zettelkasten", "knowledge", "codex", "content"],
+    estimated_duration_ms=150,
+)
