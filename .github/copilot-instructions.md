@@ -9,8 +9,9 @@
 
 **CRITICAL**: This platform is migrating from "platform-centric" to "controller + worker + capability" architecture (Nov 2025). Always check the current phase:
 
-- **Phase 0**: Building capability schema + worker runtime foundation (Issue #27)
-- **Phase 1**: Migrating first worker (streaming) to shared runtime (Issue #28)
+- ✅ **Phase 0 Complete**: Capability schema + worker runtime foundation (Issue #27, Nov 10)
+- ✅ **Phase 1 Complete**: Streaming worker migrated - 44% code reduction (Issue #28, Nov 10)
+- 🔄 **Phase 2 Next**: Base worker image + hybrid deployment (Issue #29)
 - **Legacy code**: Archived in `archive/2025-11-09-pre-controller-refactor/`
 
 ### Core Concepts
@@ -19,6 +20,20 @@
 2. **Controllers** = Node-local supervisors managing workers/routing
 3. **Capabilities** = Declared functions workers provide (routing keys)
 4. **Mesh** = Distributed network of controllers sharing state
+
+**Architecture**:
+
+```text
+Crank-Node (host environment)
+  ├── Controller (supervisor: routing, trust, mesh coordination)
+  └── Workers (capability providers: email classification, doc conversion, etc.)
+```
+
+**Deployment varies by platform**:
+
+- **macOS**: Hybrid (CPU workers containerized, GPU native for Metal)
+- **Windows/Linux**: Full containerization with GPU passthrough
+- **Mobile/IoT**: Embedded workers in app sandbox
 
 ## 🎯 Development Patterns
 
@@ -48,6 +63,33 @@ class SomeWorker:
         self._setup_heartbeat()  # ❌ Code duplication
         self._setup_certificates()  # ❌ Code duplication
 ```
+
+### Type Safety Patterns
+
+**All pytest functions need return annotations**:
+
+```python
+def test_something() -> None:  # ✅ Required
+    assert True
+```
+
+**Enum comparisons require `.value`**:
+
+```python
+assert status.value == "healthy"  # ✅ Correct
+assert status == "healthy"        # ❌ Type error
+```
+
+**FastAPI route binding** (avoids Pylance "not accessed" warnings):
+
+```python
+async def handler() -> JSONResponse:
+    return JSONResponse(...)
+
+self.app.get("/health")(handler)  # ✅ Explicit binding instead of @decorator
+```
+
+See `docs/development/LINTING_AND_TYPE_CHECKING.md` for complete patterns.
 
 ### Certificate-First Security
 
@@ -125,13 +167,27 @@ make worker-run WORKER=streaming
 - **Mascot testing**: `mascots/` directory + `scripts/run_mascot_tests.py`
 - **Certificate management**: `scripts/initialize-certificates.py`
 
-## ⚠️ Common Pitfalls
+## 🚨 Deployment Anti-Patterns (Critical)
 
-1. **Import Resolution**: Always run `uv pip install -e .` after environment setup
-2. **Phase Confusion**: Check refactor status before modifying worker code
-3. **Certificate Issues**: Run certificate initialization before any service testing
-4. **Legacy Patterns**: Don't copy registration/heartbeat code from existing `services/crank_*.py`
-5. **Deployment Anti-Patterns**: See `docs/development/AI_DEPLOYMENT_OPERATIONAL_PATTERNS.md` for critical deployment lessons
+From unified Sonnet+Codex analysis (`docs/development/AI_DEPLOYMENT_OPERATIONAL_PATTERNS.md`):
+
+1. **Stranded Endpoints**: Refactor capabilities → update controller routing + plugin YAML manifests simultaneously
+2. **Missing Dependencies**: Use `crank.testing.ensure_dependency()` for graceful environment checks
+3. **Artifact Lag**: Code changes → update Docker, CI, plugin configs together
+4. **Metadata Drift**: Follow zettel worker front-matter pattern for artifact storage
+
+**Migration checklist template**: `cp deployment/worker-migration-checklist.yml deployment/migration-{worker}-{date}.yml`
+
+## ⚠️ Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Import errors (`crank.*` not found) | Run `uv pip install -e .` from project root |
+| Type errors in tests | Add `-> None` return annotation to all test functions |
+| Pylance "not accessed" warnings | Use explicit route binding: `app.get("/path")(handler)` |
+| Certificate failures | Initialize: `python scripts/initialize-certificates.py` |
+| Worker registration duplication | Subclass `WorkerApplication`, don't copy legacy patterns |
+| Deployment inconsistencies | Use `deployment/worker-migration-checklist.yml` template |
 
 ## 💡 AI Agent Workflow
 
