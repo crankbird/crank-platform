@@ -41,7 +41,7 @@ python azure/adversarial-test.py --target http://localhost:8080
 ## 📁 **Key Files**
 
 - `AZURE_SETUP_GUIDE.md` - Complete setup guide
-- `services/` - Mesh implementation  
+- `services/` - Mesh implementation
 - `azure/deployment-strategy.md` - Azure deployment plan
 - `docs/proposals/enhancement-roadmap.md` - Development roadmap
 

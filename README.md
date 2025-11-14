@@ -4,7 +4,7 @@
 
 > ✅ **Architecture Refactor: Phases 0-2 Complete** (Nov 2025)
 > Worker runtime and capability schema foundation complete. Phase 3 (controller extraction) ready to start.
-> See `docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md` | Old architecture: `archive/2025-11-09-pre-controller-refactor/`
+> Current work: `docs/planning/phase-3-controller-extraction.md` | Completed phases: `docs/archive/completed/` | Old architecture: `archive/2025-11-09-pre-controller-refactor/`
 
 ## Architecture Vision
 
@@ -58,21 +58,31 @@ All services communicate over HTTPS with mutual TLS (mTLS) for enhanced security
 ### Architecture & Planning
 
 - [**Controller/Worker Architecture**](docs/architecture/controller-worker-model.md) - Core architectural specification
-- [**Active Refactor Plan**](docs/planning/phase-3-controller-extraction.md) - Phase 3 implementation (current work)
-- [**Enhancement Roadmap**](docs/proposals/enhancement-roadmap.md) - Strategic feature proposals
+- [**Requirements Traceability**](docs/architecture/requirements-traceability.md) - Requirements → Tests mapping
+- [**GitHub Issues**](https://github.com/crankbird/crank-platform/issues) - Active work tracking (27 issues)
+  - **Active Plans** (tracked in issues):
+    - [Phase 3: Controller Extraction](docs/planning/phase-3-controller-extraction.md) → Issue #30
+    - [Test Data Corpus](docs/planning/test-data-corpus.md) → Issues #32-36
+  - **Completed Phases**: Issues #27-29 ✅ → [Archive](docs/archive/completed/)
+  - **Technical Debt**: Issues #13-26 (AI agent analysis)
+  - **Feature Requests**: Issues #11-12 (hello world template, Azure deployment)
+- [**Strategic Proposals**](docs/proposals/) - Future direction (not yet in issues)
 - [**Philosophy**](philosophy/) - System vision and economic model
 
 ### Development
 
 - [**Mascot System**](mascots/README.md) - AI specialist roles (future human+AI collaboration model)
-- [**Quick Start**](QUICK_START.md) - Getting started (will be updated for controller architecture)
+- [**Quick Start**](scripts/QUICK_START.md) - Getting started guide
 - [**Requirements**](REQUIREMENTS.md) - Dependencies and setup
+- [**Development Docs**](docs/development/) - Code quality, linting, GPU setup
 
-### Operations
+### Security & Operations
 
-- [**Security Architecture**](docs/security/) - mTLS, certificates, trust model
-- [**Certificate Authority**](docs/certificate-authority-architecture.md) - PKI infrastructure
-- [**Anti-Fragile mTLS**](docs/anti-fragile-mtls-strategy.md) - Resilience patterns
+- [**Security Architecture**](docs/security/README.md) - mTLS, certificates, trust model
+- [**Certificate Authority**](docs/security/CERTIFICATE_AUTHORITY_ARCHITECTURE.md) - PKI infrastructure
+- [**Worker Certificate Pattern**](docs/security/WORKER_CERTIFICATE_PATTERN.md) - mTLS for workers
+- [**Capability Access Policy**](docs/security/CAPABILITY_ACCESS_POLICY_ARCHITECTURE.md) - Future CAP system (Q2-Q4 2026)
+- [**Operations**](docs/operations/) - Deployment and monitoring strategies
 
 ## The Mascot System (Future Vision)
 
@@ -89,7 +99,7 @@ Each represents a **capability domain** that will be provided by human+AI worker
 Current implementation: `mascots/` directory with AI prompt engineering
 Future implementation: Human specialists with personal fine-tuned models, controller coordinates work
 
-See [Mascot Happiness Report](docs/MASCOT_HAPPINESS_REPORT.md) for current status.
+See [Mascot Happiness Report](docs/reports/MASCOT_HAPPINESS_REPORT.md) for current status.
 
 ## Quick Start (Legacy - Will be Updated)
 
@@ -166,8 +176,13 @@ crank-platform/
 │   └── [5 more migrated workers] # ✅ All using worker runtime
 ├── tests/                        # Test suite
 ├── docs/                         # Documentation
-│   ├── planning/                 # Architecture plans
-│   └── architecture/             # Implementation docs
+│   ├── architecture/             # Current state specifications
+│   ├── planning/                 # Active work plans
+│   ├── proposals/                # Future considerations
+│   ├── archive/                  # Historical context
+│   ├── security/                 # Security architecture
+│   ├── operations/               # Deployment & monitoring
+│   └── development/              # Developer guides
 ├── mascots/                      # AI specialist system
 ├── philosophy/                   # Vision documents
 ├── intellectual-property/        # Patent/IP context

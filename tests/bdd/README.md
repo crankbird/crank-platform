@@ -1,9 +1,9 @@
 # BDD Test Suite — Gherkin Features
 
-**Status**: Active  
-**Type**: Behavior-Driven Development (BDD)  
-**Last Updated**: 2025-11-10  
-**Framework**: pytest-bdd  
+**Status**: Active
+**Type**: Behavior-Driven Development (BDD)
+**Last Updated**: 2025-11-10
+**Framework**: pytest-bdd
 **Purpose**: Living documentation and acceptance tests for controller/worker refactor
 
 ---
@@ -221,6 +221,6 @@ pytest tests/bdd/features/security_trust_mtls.feature -v
 
 ---
 
-**Generated**: 2025-11-10 (pickle jar v2 from ChatGPT)  
-**Framework**: pytest-bdd  
+**Generated**: 2025-11-10 (pickle jar v2 from ChatGPT)
+**Framework**: pytest-bdd
 **Coverage**: Controller/worker refactor (Issues #27-#31, Phases 0-4)
