@@ -63,6 +63,7 @@ This proposal aligns with the *Enterprise Readiness* and *Security & Authorizati
 - Automated alerting to platform observability layer (Grafana/Datadog).
 - Root-cause tagging for incident forensics.
 
+
 ### 4. Certificate & Identity Management
 
 **Objective:** Establish automated certificate lifecycle and cryptographic trust.
@@ -70,6 +71,32 @@ This proposal aligns with the *Enterprise Readiness* and *Security & Authorizati
 - **HSM-backed CA** and root-of-trust rotation.
 - Automatic renewal via controller agent.
 - Integration with `mesh security receipts` for cross-service validation.
+
+#### Local Certificate Server Strategy (Development vs Production)
+
+A core pillar of the Security Factory is the **local certificate authority (local CA)** that issues short-lived certificates for all controller/worker mesh communications. This CA is the primary root of trust for the Crank mesh and remains independent of any external edge provider.
+
+**Development Environment**
+- Run the *local certificate server* inside the dev mesh.
+- Store the root CA certificate locally (Apple Keychain or secure filesystem store, depending on environment).
+- Automatically generate and rotate leaf certificates on controller/worker startup.
+- Disable `--insecure-skip-verify` once the CA is trusted to ensure end-to-end MTLS even in development.
+- Use fixtures and test harnesses to simulate expiry, rotation, and revocation as part of CI/CD.
+
+**Production Environment**
+- Retain the local CA as the **authoritative trust anchor** for all internal mesh traffic.
+- Use Cloudflare (e.g. Origin CA / Tunnels) *only* for:
+  - Edge termination and public ingress.
+  - Customer-facing APIs and dashboards.
+- Keep internal service-to-service trust **independent of Cloudflare** to avoid vendor lock-in.
+- Manage all internal certificates (issuance, rotation, revocation) through the Crank CA and controller agents.
+- Optionally leverage Cloudflare capabilities (MTLS at edge, DDoS protection) without delegating internal identity to them.
+
+**Lock-In Avoidance Principles**
+- Mesh identity is **Crank-defined**, not provider-defined.
+- Switching from Cloudflare to another edge provider requires no changes to internal mesh certificate logic.
+- All certificate flows live inside `security/` and are fully testable with local fixtures.
+- External providers can be treated as replaceable *adapters* at the edge, not as sources of truth.
 
 ### 5. Distroless & Immutable Runtime Images
 
@@ -99,10 +126,33 @@ This proposal aligns with the *Enterprise Readiness* and *Security & Authorizati
 ### 8. Observability & Evidence Correlation
 
 **Objective:** Link logs, traces, and metrics for audit evidence.
+
 **Deliverables:**
+
 - **OpenTelemetry** trace propagation (`traceparent` headers).
 - Cross-correlation exemplars between traces ↔ metrics ↔ logs.
 - Centralized evidence store for auditors.
+
+**⚠️ CRITICAL DEPENDENCY: Secure Observability Infrastructure**
+
+Security observability MUST itself be secured to prevent:
+
+- **Log injection attacks**: Sanitize all user/worker input in logs
+- **Metrics poisoning**: Validate metric values before export
+- **Trace spoofing**: Authenticate trace context propagation
+- **Data exfiltration via telemetry**: Encrypt telemetry in transit, redact PII
+- **Observability backdoors**: mTLS for Prometheus scraping, authenticated Grafana access
+
+**Action Required**: Create dedicated proposal for "Secure Observability" covering:
+
+- Zero-trust telemetry collection (mTLS for all scrape endpoints)
+- Certificate-based authentication for metrics exporters
+- Encrypted log shipping with integrity checks
+- RBAC for observability data access (Grafana, log aggregators)
+- Audit trail for observability system changes
+
+**Reference**: Security Module Consolidation (Issue #19) includes observability hooks
+for certificate lifecycle events - these hooks MUST emit data to secure telemetry stack.
 
 ---
 
