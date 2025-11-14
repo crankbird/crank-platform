@@ -1,6 +1,10 @@
-# Test Data Corpus Roadmap
+# Test Data Corpus Plan
 
-> Owner: Platform Quality · Status: Draft · Last updated: 2025-11-10
+**Type**: Active Plan
+**Status**: In Progress
+**Temporal Context**: Ongoing Work (Implementation Roadmap)
+**Owner**: Platform Quality
+**Last Updated**: November 14, 2025
 
 ## Why we need this
 

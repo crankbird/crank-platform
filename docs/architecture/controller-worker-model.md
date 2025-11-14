@@ -1,6 +1,9 @@
-# Crank Platform — Core Taxonomy & Deployment Model
+# Crank Platform — Controller/Worker Architecture
 
-_Last updated: (fill date)_
+**Type**: Architecture Specification
+**Status**: Current
+**Temporal Context**: Present State (How the System Works)
+**Last Updated**: November 14, 2025
 
 This document defines the shared terminology and architecture primitives used across the Crank ecosystem.
 It ensures consistent language for workers, controller, nodes, jobs, and capabilities, independent of deployment method.

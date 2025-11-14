@@ -278,5 +278,5 @@ jobs:
 - **Step Definitions**: `tests/e2e/test_doc_converter_steps.py`
 - **Fixtures**: `tests/e2e/conftest.py`
 - **Pickle Schema**: `tests/e2e/doc_converter_pickle.json`
-- **Requirements**: `docs/planning/REQUIREMENTS_TRACEABILITY.md` (MN-DOC-001)
+- **Requirements**: `docs/architecture/requirements-traceability.md` (MN-DOC-001)
 - **Phase 2 Guide**: `docs/planning/PHASE_2_README.md`

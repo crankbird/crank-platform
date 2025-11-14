@@ -1,8 +1,9 @@
 # Crank Platform Enhancement Roadmap
 
-**Status**: Active
-**Type**: Strategic Plan (TO-BE Architecture)
-**Last Updated**: 2025-11-10
+**Type**: Strategic Proposal
+**Status**: Draft
+**Temporal Context**: Future Direction (TO-BE Architecture)
+**Last Updated**: November 14, 2025
 **Owner**: Platform Team
 **Purpose**: Future capabilities, enterprise readiness, and phased rollout plan
 
@@ -65,7 +66,7 @@ Following the **JEMM principle** - we use the simplest architecture that solves 
 - [ ] **SLO Files per Capability**: YAML-based SLO definitions (latency p50/p95/p99, availability, error budgets)
   - CI checks fail on SLO regression
   - Dashboard integration (Grafana/Datadog)
-  - Reference: `docs/planning/ENTERPRISE_READINESS_ASSESSMENT.md` Section 1
+  - Reference: `docs/archive/assessments/2025-11-10-enterprise-readiness.md` Section 1
 
 - [ ] **Idempotency Manager**: Request deduplication in controller
   - 1-hour TTL for duplicate detection
@@ -122,7 +123,7 @@ Following the **JEMM principle** - we use the simplest architecture that solves 
   - Span instrumentation for controller and workers
   - Exemplars linking traces ↔ metrics ↔ logs
   - Integration with Jaeger/Tempo/Honeycomb
-  - Reference: `docs/planning/ENTERPRISE_READINESS_ASSESSMENT.md` Section 3
+  - Reference: `docs/archive/assessments/2025-11-10-enterprise-readiness.md` Section 3
 
 - [ ] **Chaos Engineering Platform** (Loki 🦙): Automated resilience testing
   - Network partition scenarios
@@ -163,7 +164,7 @@ Following the **JEMM principle** - we use the simplest architecture that solves 
   - Runtime policy enforcement via OPA sidecar
   - Policy testing framework
   - Audit trail for policy decisions
-  - Reference: `docs/planning/ENTERPRISE_READINESS_ASSESSMENT.md` Section 5
+  - Reference: `docs/archive/assessments/2025-11-10-enterprise-readiness.md` Section 5
 
 - [ ] **Runtime integrity monitoring**: Falco or equivalent for container anomaly detection
 
@@ -177,7 +178,7 @@ Following the **JEMM principle** - we use the simplest architecture that solves 
   - Immutable audit trails with PII redaction
   - Data retention and right-to-erasure policies
   - Compliance reporting and export capabilities
-  - Reference: MN-GOV-001 in `docs/planning/REQUIREMENTS_TRACEABILITY.md`
+  - Reference: MN-GOV-001 in `docs/architecture/requirements-traceability.md`
 
 - [ ] **Multi-tenancy**: Secure isolation between organizations
 
@@ -188,7 +189,7 @@ Following the **JEMM principle** - we use the simplest architecture that solves 
   - Dask integration for DataFrame operations
   - Kubernetes GPU node affinity for inference
   - Capability declares preferred scheduler
-  - Reference: `docs/planning/ENTERPRISE_READINESS_ASSESSMENT.md` Section 8
+  - Reference: `docs/archive/assessments/2025-11-10-enterprise-readiness.md` Section 8
 
 ### AI Integration
 
@@ -209,7 +210,7 @@ Following the **JEMM principle** - we use the simplest architecture that solves 
   - Geo-routing (route to nearest controller)
   - Cross-region worker placement
   - Failover playbooks and DR testing
-  - Reference: `docs/planning/ENTERPRISE_READINESS_ASSESSMENT.md` Section 7
+  - Reference: `docs/archive/assessments/2025-11-10-enterprise-readiness.md` Section 7
 
 - [ ] **Global Mesh**: Edge deployment at scale
   - Edge controllers on gaming laptops/mobile

@@ -203,7 +203,7 @@ pytest tests/bdd/features/security_trust_mtls.feature -v
    - Graduate to required when Phase 0 complete
 
 3. **Link to requirements traceability**:
-   - Update `docs/planning/REQUIREMENTS_TRACEABILITY.md`
+   - Update `docs/architecture/requirements-traceability.md`
    - Add BDD scenarios to micronarrative catalog
 
 4. **Implement fixtures**:
@@ -215,7 +215,7 @@ pytest tests/bdd/features/security_trust_mtls.feature -v
 
 - [HEY-SONNET-READ-THIS.md](HEY-SONNET-READ-THIS.md) — Original instructions from ChatGPT
 - [features/gherkin-index.md](features/gherkin-index.md) — Feature catalog
-- [docs/planning/REQUIREMENTS_TRACEABILITY.md](../../docs/planning/REQUIREMENTS_TRACEABILITY.md) — Requirements mapping
+- [docs/architecture/requirements-traceability.md](../../docs/architecture/requirements-traceability.md) — Requirements mapping
 - [docs/ARCHITECTURAL_MENAGERIE_GUIDE.md](../../docs/ARCHITECTURAL_MENAGERIE_GUIDE.md) — Mascot framework
 - [.vscode/AGENT_CONTEXT.md](../../.vscode/AGENT_CONTEXT.md) — Controller/worker refactor context
 

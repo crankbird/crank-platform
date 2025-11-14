@@ -3,7 +3,7 @@
 ## 📋 Essential Reading
 
 - **Primary agent context**: `.vscode/AGENT_CONTEXT.md` (comprehensive rules and patterns)
-- **Architecture roadmap**: `docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md`
+- **Architecture roadmap**: `docs/planning/phase-3-controller-extraction.md`
 
 ## 🏗️ Architecture: Controller/Worker Model (Active Refactor)
 
@@ -161,7 +161,7 @@ make worker-run WORKER=streaming
 
 ## 📁 Key File Locations
 
-- **Architecture docs**: `docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md`
+- **Architecture docs**: `docs/architecture/controller-worker-model.md`
 - **Capability schema**: `src/crank/capabilities/` (Phase 0)
 - **Worker runtime**: `src/crank/worker_runtime/` (Phase 0)
 - **Legacy services**: `services/crank_*.py` (avoid duplicating patterns)

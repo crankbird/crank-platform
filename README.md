@@ -39,7 +39,7 @@ All services communicate over HTTPS with mutual TLS (mTLS) for enhanced security
 **Active Development**: Controller/Worker architecture refactor - **Phases 0-2 Complete** ✅ (Nov 2025)
 
 - ✅ Old architecture archived and functional
-- ✅ Migration plan documented ([CONTROLLER_WORKER_REFACTOR_PLAN.md](docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md))
+- ✅ Migration plan documented (Phases 0-2: [docs/archive/completed/](docs/archive/completed/), Phase 3: [phase-3-controller-extraction.md](docs/planning/phase-3-controller-extraction.md))
 - ✅ **Phase 0 Complete** (Nov 10): Capability schema + worker runtime foundation (Issue #27 - closed)
   - 29/29 capability schema tests passing
   - 35/35 worker runtime tests passing
@@ -57,9 +57,9 @@ All services communicate over HTTPS with mutual TLS (mTLS) for enhanced security
 
 ### Architecture & Planning
 
-- [**Taxonomy & Deployment Model**](docs/planning/crank-taxonomy-and-deployment.md) - Core architectural vision
-- [**Controller Refactor Plan**](docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md) - Detailed implementation roadmap
-- [**Enhancement Roadmap**](docs/planning/ENHANCEMENT_ROADMAP.md) - Feature prioritization
+- [**Controller/Worker Architecture**](docs/architecture/controller-worker-model.md) - Core architectural specification
+- [**Active Refactor Plan**](docs/planning/phase-3-controller-extraction.md) - Phase 3 implementation (current work)
+- [**Enhancement Roadmap**](docs/proposals/enhancement-roadmap.md) - Strategic feature proposals
 - [**Philosophy**](philosophy/) - System vision and economic model
 
 ### Development
@@ -179,7 +179,7 @@ crank-platform/
 
 This project is undergoing major architectural refactor. If contributing:
 
-1. Read [CONTROLLER_WORKER_REFACTOR_PLAN.md](docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md)
+1. Read architecture overview: [controller-worker-model.md](docs/architecture/controller-worker-model.md) and active work: [phase-3-controller-extraction.md](docs/planning/phase-3-controller-extraction.md)
 2. Check active Phase in GitHub Issues (#27-#31)
 3. New code should follow controller/worker pattern, not archived patterns
 4. Tests must validate capability-based routing

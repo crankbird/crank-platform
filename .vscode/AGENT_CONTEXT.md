@@ -48,7 +48,7 @@ More text after the list.
 - ✅ **Phase 2** (Issue #29): Base worker image + hybrid deployment + CI integration
 - 🔜 **Phase 3** (Issue #30): Controller extraction (foundation ready, not yet started)
 - Old architecture archived in `archive/2025-11-09-pre-controller-refactor/`
-- See `docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md` for complete roadmap
+- See `docs/architecture/controller-worker-model.md` for architecture and `docs/planning/phase-3-controller-extraction.md` for current roadmap
 
 ### Critical Rules for New Code
 
@@ -56,7 +56,7 @@ More text after the list.
 2. **New workers MUST use** `src/crank/worker_runtime/` base classes (when ready)
 3. **Capabilities MUST be defined** in `src/crank/capabilities/schema.py` (when ready)
 4. **Tests MUST validate** capability-based routing, not direct service calls
-5. **Follow taxonomy** in `docs/planning/crank-taxonomy-and-deployment.md`
+5. **Follow architecture** in `docs/architecture/controller-worker-model.md`
 6. **Follow linting patterns** in `docs/development/LINTING_AND_TYPE_CHECKING.md`
 
 ### Architecture Principles (NEW)

@@ -11,10 +11,10 @@ This documentation is organized into **AS-IS** (current architecture), **TO-BE**
 
 ### Current Architecture (AS-IS)
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Current system design, JEMM principles
-- **[REQUIREMENTS_TRACEABILITY.md](planning/REQUIREMENTS_TRACEABILITY.md)** - Requirements → Tests mapping, micronarratives
+- **[requirements-traceability.md](architecture/requirements-traceability.md)** - Requirements → Tests mapping, micronarratives
 
 ### Future Plans (TO-BE)
-- **[ENHANCEMENT_ROADMAP.md](planning/ENHANCEMENT_ROADMAP.md)** - Strategic roadmap Q1-Q4 2026
+- **[enhancement-roadmap.md](proposals/enhancement-roadmap.md)** - Strategic roadmap Q1-Q4 2026
 
 ### Foundation
 - **[ORGANIZATION_SUMMARY.md](../philosophy/ORGANIZATION_SUMMARY.md)** - Project vision and context
@@ -22,10 +22,12 @@ This documentation is organized into **AS-IS** (current architecture), **TO-BE**
 ## 📂 Documentation by Category
 
 ### Planning & Requirements
-- [planning/ENHANCEMENT_ROADMAP.md](planning/ENHANCEMENT_ROADMAP.md) - Strategic roadmap (TO-BE)
-- [planning/REQUIREMENTS_TRACEABILITY.md](planning/REQUIREMENTS_TRACEABILITY.md) - Requirements engineering (Active)
-- [planning/ENTERPRISE_READINESS_ASSESSMENT.md](planning/ENTERPRISE_READINESS_ASSESSMENT.md) - Gap analysis (2025-11-10)
-- [planning/TEST_DATA_CORPUS_ROADMAP.md](planning/TEST_DATA_CORPUS_ROADMAP.md) - Test data strategy
+- [proposals/enhancement-roadmap.md](proposals/enhancement-roadmap.md) - Strategic roadmap (TO-BE)
+- [architecture/requirements-traceability.md](architecture/requirements-traceability.md) - Requirements engineering (Active)
+- [planning/phase-3-controller-extraction.md](planning/phase-3-controller-extraction.md) - Active refactor work
+- [planning/test-data-corpus.md](planning/test-data-corpus.md) - Test data strategy
+- [archive/assessments/2025-11-10-enterprise-readiness.md](archive/assessments/2025-11-10-enterprise-readiness.md) - Gap analysis (Historical)
+- [archive/completed/](archive/completed/) - Completed refactor phases 0-2
 
 ### Architecture & Design
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Current system design (AS-IS)
