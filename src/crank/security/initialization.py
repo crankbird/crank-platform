@@ -479,7 +479,22 @@ async def initialize_worker_certificates(
         )
 
         # Step 5: Store certificates to disk
-        cert_dir.mkdir(parents=True, exist_ok=True)
+        # Check if cert_dir is writable, provide helpful error if not
+        try:
+            cert_dir.mkdir(parents=True, exist_ok=True)
+        except PermissionError:
+            # Helpful error message for common development scenario
+            dev_cert_dir = Path("./certs").resolve()
+            raise CertificateInitializationError(
+                f"Cannot create certificate directory {cert_dir} (permission denied).\n"
+                f"\n"
+                f"Production: Run as root or ensure directory exists with proper permissions.\n"
+                f"Development: Set CERT_DIR environment variable:\n"
+                f"  export CERT_DIR={dev_cert_dir}\n"
+                f"  # or use helper: source scripts/dev-setup-certs.sh\n"
+                f"\n"
+                f"Then re-run initialization."
+            ) from None
 
         # CRITICAL: Write to client.{crt,key} for mTLS client compatibility
         # This ensures create_mtls_client() can find certificates without

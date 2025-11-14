@@ -107,7 +107,9 @@ async def main() -> None:
     """Main certificate initialization routine."""
     # Get configuration from environment
     ca_service_url = os.getenv("CA_SERVICE_URL", "https://cert-authority:9090")
-    cert_dir = Path(os.getenv("CERT_DIR", "/app/certificates"))
+    # Use /etc/certs to match new security module default
+    # Development: Set CERT_DIR=./certs for user-writable location
+    cert_dir = Path(os.getenv("CERT_DIR", "/etc/certs"))
     environment = os.getenv("CRANK_ENVIRONMENT", "development")
 
     logger.info("🔐 Initializing certificates for environment: %s", environment)

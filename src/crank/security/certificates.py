@@ -96,7 +96,20 @@ class CertificateManager:
         # Use DEFAULT_CERT_DIR (/etc/certs) for stable absolute path (matches production mounts)
         # Development can override with CERT_DIR=./certs for user-writable location
         self.cert_dir = cert_dir or Path(os.getenv("CERT_DIR", str(DEFAULT_CERT_DIR)))
-        self.cert_dir.mkdir(parents=True, exist_ok=True)
+
+        # Check if cert_dir is writable, provide helpful error if not
+        try:
+            self.cert_dir.mkdir(parents=True, exist_ok=True)
+        except PermissionError:
+            dev_cert_dir = Path("./certs").resolve()
+            raise PermissionError(
+                f"Cannot create certificate directory {self.cert_dir} (permission denied).\\n"
+                f"\\n"
+                f"Production: Ensure directory exists with proper permissions.\\n"
+                f"Development: Set CERT_DIR environment variable:\\n"
+                f"  export CERT_DIR={dev_cert_dir}\\n"
+                f"  # or use helper: source scripts/dev-setup-certs.sh\\n"
+            ) from None
 
     def get_cert_path(self) -> Path:
         """Get path to worker certificate file."""
