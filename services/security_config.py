@@ -1,6 +1,13 @@
 """
 Zero-Trust Security Configuration
 
+⚠️  DEPRECATED: This module is deprecated as of November 2025.
+    Use `crank.security` instead for unified certificate management.
+
+    Migration:
+        from security_config import SecurityConfig     # OLD
+        from crank.security import SecurityConfig      # NEW
+
 Implements HTTPS + mTLS for all platform communications to keep the bunny happy! 🐰🔒
 
 Features:
@@ -14,11 +21,21 @@ import logging
 import os
 import ssl
 import subprocess
+import warnings
 from pathlib import Path
 from typing import Any, Optional
 
 import httpx
 from fastapi import HTTPException
+
+# Issue deprecation warning when module is imported
+warnings.warn(
+    "services.security_config is deprecated. "
+    "Use crank.security for unified certificate management. "
+    "See docs/architecture/security-module-consolidation.md",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 logger = logging.getLogger(__name__)
 
