@@ -34,16 +34,17 @@ Crank Platform implements a **controller + worker + capability** model for distr
 
 All services communicate over HTTPS with mutual TLS (mTLS) for enhanced security.
 
-## Current Status (Phase 0)
+## Current Status
 
-**Active Development**: Controller/Worker architecture refactor in progress
+**Active Development**: Controller/Worker architecture refactor - **Phase 2 Complete** (Nov 2025)
 
 - ✅ Old architecture archived and functional
 - ✅ Migration plan documented ([CONTROLLER_WORKER_REFACTOR_PLAN.md](docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md))
-- 🔄 **Phase 0**: Building capability schema + worker runtime foundation (Issue #27)
-- ⏳ **Phase 1**: Migrate first worker (streaming) to shared runtime (Issue #28)
-- ⏳ **Phase 2**: Create base worker image + hybrid deployment (Issue #29)
-- ⏳ **Phase 3**: Extract controller from platform (Issue #30)
+- ✅ **Phase 0 Complete** (Nov 10): Capability schema + worker runtime foundation (Issue #27)
+- ✅ **Phase 1 Complete** (Nov 10): Worker migrations - 8 workers using `WorkerApplication` (Issue #28)
+  - Streaming, email classifier, email parser, doc converter, hello world, philosophical analyzer, zettel workers
+- ✅ **Phase 2 Complete** (Nov 10): Base worker image + hybrid deployment + E2E tests (Issue #29)
+- 🔄 **Phase 3 Next**: Extract controller from platform (Issue #30)
 - ⏳ **Phase 4**: Integration tests & documentation (Issue #31)
 
 ## Documentation
@@ -147,11 +148,16 @@ pytest --cov=src --cov-report=html
 ```text
 crank-platform/
 ├── src/crank/                    # Core platform libraries
-│   ├── capabilities/             # [Phase 0] Capability schema (NEW)
-│   ├── worker_runtime/           # [Phase 0] Shared worker base (NEW)
+│   ├── capabilities/             # ✅ Capability schema (Phase 0)
+│   ├── worker_runtime/           # ✅ Shared worker base (Phase 0)
 │   └── crank_platform/           # Type-safe core (existing)
 ├── services/                     # Worker implementations
-│   └── [Phase 1+] Refactored workers using runtime
+│   ├── Dockerfile.worker-base    # ✅ Shared base image (Phase 2)
+│   ├── crank_streaming.py        # ✅ Migrated to WorkerApplication
+│   ├── crank_doc_converter.py    # ✅ Migrated to WorkerApplication
+│   ├── crank_email_classifier.py # ✅ Migrated to WorkerApplication
+│   ├── crank_email_parser.py     # ✅ Migrated to WorkerApplication
+│   └── [5 more migrated workers] # ✅ All using worker runtime
 ├── tests/                        # Test suite
 ├── docs/                         # Documentation
 │   ├── planning/                 # Architecture plans
