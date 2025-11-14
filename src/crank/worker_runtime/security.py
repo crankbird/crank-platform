@@ -1,6 +1,13 @@
 """
 Worker Security and Certificate Management
 
+⚠️  DEPRECATED: This module is deprecated as of November 2025.
+    Use `crank.security` instead for unified certificate management.
+
+    Migration:
+        from crank.worker_runtime.security import CertificateManager  # OLD
+        from crank.security import CertificateManager                 # NEW
+
 Handles:
 - Certificate retrieval from controller
 - mTLS configuration
@@ -13,9 +20,19 @@ from the controller (the only privileged component).
 
 import logging
 import os
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
+
+# Issue deprecation warning when module is imported
+warnings.warn(
+    "crank.worker_runtime.security is deprecated. "
+    "Use crank.security for unified certificate management. "
+    "See docs/architecture/security-module-consolidation.md",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 logger = logging.getLogger(__name__)
 

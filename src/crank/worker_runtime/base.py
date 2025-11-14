@@ -29,13 +29,13 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
 from crank.capabilities.schema import CapabilityDefinition
+from crank.security import CertificateManager
 from crank.worker_runtime.lifecycle import (
     HealthCheckManager,
     HealthStatus,
     ShutdownHandler,
 )
 from crank.worker_runtime.registration import ControllerClient
-from crank.worker_runtime.security import CertificateManager
 
 logger = logging.getLogger(__name__)
 
