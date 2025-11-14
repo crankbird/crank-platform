@@ -5,13 +5,47 @@ Centralized security-related constants for the Crank Platform.
 All services use HTTPS with mTLS - no HTTP capability exists.
 """
 
+import os
 from pathlib import Path
 
+
+def _running_in_container() -> bool:
+    """Return True if common container markers are present."""
+    return (
+        os.path.exists("/.dockerenv")
+        or os.path.exists("/run/.containerenv")
+        or os.getenv("KUBERNETES_SERVICE_HOST") is not None
+    )
+
+
+def get_default_cert_dir() -> Path:
+    """
+    Determine the default certificate directory.
+
+    Priority order:
+    1. CERT_DIR environment variable (explicit override)
+    2. /etc/certs if it exists and is writable (standard production mounts)
+    3. /etc/certs if running in a container (fail fast if mounts are missing)
+    4. ~/.crank/certs (stable, user-writable development default)
+    """
+    env_override = os.getenv("CERT_DIR")
+    if env_override:
+        return Path(env_override).expanduser()
+
+    etc_certs = Path("/etc/certs")
+    if etc_certs.exists() and os.access(etc_certs, os.W_OK):
+        return etc_certs
+
+    if _running_in_container():
+        # In containers we expect /etc/certs to be mounted; keep pointing there so
+        # a missing volume produces a clear, actionable error.
+        return etc_certs
+
+    return Path.home() / ".crank" / "certs"
+
+
 # Certificate Directories
-# Use /etc/certs for stable absolute path across all contexts (repo root, workers, containers)
-# Development: either run as root, use sudo, or set CERT_DIR=./certs explicitly
-# Production: Docker mounts /etc/certs, no env var needed
-DEFAULT_CERT_DIR = Path("/etc/certs")
+DEFAULT_CERT_DIR = get_default_cert_dir()
 SHARED_CA_CERT_DIR = Path("/shared/ca-certs")
 
 # Certificate Filenames

@@ -10,16 +10,20 @@
 #   ./scripts/dev-setup-certs.sh         # Just creates ./certs directory
 #
 
-set -euo pipefail
+# Only set strict mode if running as script (not sourced)
+# This prevents polluting the caller's shell environment
+if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
+    set -euo pipefail
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-DEV_CERT_DIR="$PROJECT_ROOT/certs"
+DEV_CERT_DIR="$HOME/.crank/certs"
 
 echo "🔐 Crank Platform - Development Certificate Setup"
 echo ""
 echo "Production default: /etc/certs (requires root or Docker mounts)"
-echo "Development override: CERT_DIR=./certs (user-writable)"
+echo "Development default: CERT_DIR=$DEV_CERT_DIR (user-writable)"
 echo ""
 
 # Create development cert directory

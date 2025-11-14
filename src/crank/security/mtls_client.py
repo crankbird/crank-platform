@@ -14,7 +14,7 @@ import logging
 from pathlib import Path
 from typing import Any, Optional
 
-import httpx
+import httpx  # type: ignore[import-not-found]
 
 from .config import get_security_config
 from .constants import (
@@ -29,8 +29,6 @@ logger = logging.getLogger(__name__)
 
 class CertificateVerificationError(Exception):
     """Raised when certificate verification fails or certificates are missing."""
-
-    pass
 
 
 def verify_certificate_chain(cert_dir: Optional[Path] = None) -> tuple[Path, Path, Path]:
@@ -54,7 +52,7 @@ def verify_certificate_chain(cert_dir: Optional[Path] = None) -> tuple[Path, Pat
     key_file = cert_dir / config.cert_filenames["client_key"]
     ca_file = cert_dir / config.cert_filenames["ca"]
 
-    missing = []
+    missing: list[str] = []
     if not cert_file.exists():
         missing.append(str(cert_file))
     if not key_file.exists():

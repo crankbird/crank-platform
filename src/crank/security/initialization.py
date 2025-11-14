@@ -18,7 +18,7 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
-import aiohttp
+import aiohttp  # type: ignore[import-not-found]
 
 from .config import get_security_config
 from .constants import (

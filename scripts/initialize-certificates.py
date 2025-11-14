@@ -18,6 +18,10 @@ from typing import Any
 import aiohttp
 from aiohttp import ClientTimeout
 
+# Add project root to path to import from src/crank/security
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from src.crank.security.constants import get_default_cert_dir
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -107,9 +111,14 @@ async def main() -> None:
     """Main certificate initialization routine."""
     # Get configuration from environment
     ca_service_url = os.getenv("CA_SERVICE_URL", "https://cert-authority:9090")
-    # Use /etc/certs to match new security module default
-    # Development: Set CERT_DIR=./certs for user-writable location
-    cert_dir = Path(os.getenv("CERT_DIR", "/etc/certs"))
+
+    # Smart default: auto-detect container vs local development
+    # Always override with CERT_DIR if set
+    if "CERT_DIR" in os.environ:
+        cert_dir = Path(os.environ["CERT_DIR"])
+    else:
+        cert_dir = get_default_cert_dir()
+
     environment = os.getenv("CRANK_ENVIRONMENT", "development")
 
     logger.info("🔐 Initializing certificates for environment: %s", environment)

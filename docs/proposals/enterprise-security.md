@@ -63,7 +63,6 @@ This proposal aligns with the *Enterprise Readiness* and *Security & Authorizati
 - Automated alerting to platform observability layer (Grafana/Datadog).
 - Root-cause tagging for incident forensics.
 
-
 ### 4. Certificate & Identity Management
 
 **Objective:** Establish automated certificate lifecycle and cryptographic trust.

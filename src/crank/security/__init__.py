@@ -64,43 +64,37 @@ from .mtls_client import (
 )
 
 __all__ = [
-    # Configuration
-    "SecurityConfig",
-    "CertificatePaths",
-    "get_security_config",
-    "reset_security_config",
-    # Constants
-    "DEFAULT_CERT_DIR",
-    "DEFAULT_CA_SERVICE_URL",
     "CA_CERT_FILENAME",
-    "PLATFORM_CERT_FILENAME",
-    "PLATFORM_KEY_FILENAME",
     "CLIENT_CERT_FILENAME",
     "CLIENT_KEY_FILENAME",
-    # Certificate Management
-    "CertificateManager",
+    "DEFAULT_CA_SERVICE_URL",
+    "DEFAULT_CERT_DIR",
+    "PLATFORM_CERT_FILENAME",
+    "PLATFORM_KEY_FILENAME",
     "CertificateBundle",
-    # Initialization
-    "initialize_worker_certificates",
-    "initialize_certificates_from_env",
-    "wait_for_ca_service",
-    "get_ca_certificate",
-    "generate_csr",
-    "submit_csr",
-    "CertificateInitializationError",
-    # mTLS Client
-    "create_mtls_client",
-    "create_ca_bootstrap_client",
-    "verify_certificate_chain",
-    "CertificateVerificationError",
-    # Events & Observability
     "CertificateEvent",
     "CertificateEventContext",
+    "CertificateInitializationError",
+    "CertificateManager",
+    "CertificatePaths",
+    "CertificateVerificationError",
+    "SecurityConfig",
+    "create_ca_bootstrap_client",
+    "create_mtls_client",
     "emit_certificate_event",
-    "register_event_handler",
-    "record_cert_issuance",
-    "record_cert_expiration",
+    "generate_csr",
+    "get_ca_certificate",
+    "get_security_config",
+    "initialize_certificates_from_env",
+    "initialize_worker_certificates",
     "record_ca_unavailable",
+    "record_cert_expiration",
+    "record_cert_issuance",
+    "register_event_handler",
+    "reset_security_config",
+    "submit_csr",
+    "verify_certificate_chain",
+    "wait_for_ca_service",
 ]
 
 __version__ = "0.1.0"

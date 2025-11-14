@@ -6,12 +6,12 @@ Unified security module for certificate management and mTLS across all Crank Pla
 
 ### Production (Docker/Kubernetes)
 
-Certificates are mounted at `/etc/certs` (default). No environment variables needed.
+Certificates are auto-detected at `/etc/certs` when properly mounted. No environment variables needed.
 
 ```python
 from crank.security import initialize_worker_certificates, create_mtls_client
 
-# Bootstrap certificates from CA service
+# Bootstrap certificates from CA service (writes to /etc/certs automatically)
 cert, key, ca = await initialize_worker_certificates("streaming-worker-1")
 
 # Create mTLS-enabled HTTP client
@@ -22,41 +22,42 @@ async with client.get("https://platform:8443/health") as response:
 
 ### Development (Local)
 
-Set `CERT_DIR=./certs` for user-writable certificate storage:
+Auto-detects `~/.crank/certs` for user-writable storage—works out of the box. Set `CERT_DIR` only if you need explicit control.
 
 ```bash
-# Option 1: Export in your shell
-export CERT_DIR=./certs
+# Certificates land in ~/.crank/certs by default
 python scripts/initialize-certificates.py
 
-# Option 2: Use helper script
-source scripts/dev-setup-certs.sh
-python scripts/initialize-certificates.py
-
-# Option 3: Set inline
-CERT_DIR=./certs python scripts/initialize-certificates.py
+# Then start your worker (uses the same directory automatically)
+python services/crank_streaming.py
 ```
 
-Then use the same `CERT_DIR` when running workers:
+**Optional:** Override `CERT_DIR` for custom locations:
 
 ```bash
-CERT_DIR=./certs python services/crank_streaming.py
+export CERT_DIR=/custom/path/to/certs
+python scripts/initialize-certificates.py
 ```
 
 ## Architecture
 
-### Certificate Paths
+### Certificate Paths - Smart Defaults
 
-**Production Default:** `/etc/certs`
-- Stable absolute path
-- Works across all contexts (repo root, workers, containers)
-- Matches Docker volume mounts in `docker-compose.*.yml`
-- Matches Kubernetes ConfigMap/Secret mounts
+The security module automatically detects the environment and chooses the appropriate default:
 
-**Development Override:** `CERT_DIR=./certs`
-- User-writable without root
-- Relative to project root
-- Must be consistent across bootstrap and runtime
+- **Manual Override (highest priority):** `CERT_DIR` environment variable.
+- **Production (Docker/Kubernetes):** `/etc/certs`
+  - Used when `/etc/certs` exists and is writable (correctly mounted secrets)
+  - Also used when running inside a container so missing mounts fail fast
+- **Development (Local):** `~/.crank/certs`
+  - Stable, absolute path within the user home directory
+  - Writable without root, independent of current working directory
+
+Detection logic:
+1. If `CERT_DIR` is set → use it.
+2. Else if `/etc/certs` exists and is writable → use `/etc/certs`.
+3. Else if we're inside a container → still use `/etc/certs` (expecting mounts).
+4. Otherwise → use `~/.crank/certs`.
 
 ### Module Structure
 
@@ -177,7 +178,7 @@ from crank.security import (
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `CERT_DIR` | `/etc/certs` | Certificate directory (use `./certs` for dev) |
+| `CERT_DIR` | `/etc/certs` | Certificate directory (auto-falls back to `~/.crank/certs` locally) |
 | `CA_SERVICE_URL` | `https://cert-authority:9090` | Certificate Authority endpoint |
 | `CRANK_ENVIRONMENT` | `development` | Environment name (for logging) |
 
@@ -195,10 +196,10 @@ from crank.security import (
 
 ### PermissionError: Cannot create /etc/certs
 
-**Development:** Set `CERT_DIR=./certs`
+**Development:** Certificates are stored in `~/.crank/certs`. Set `CERT_DIR` only if you need a custom path.
 
 ```bash
-export CERT_DIR=./certs
+export CERT_DIR=~/.crank/certs
 python scripts/initialize-certificates.py
 ```
 
@@ -210,9 +211,9 @@ python scripts/initialize-certificates.py
 
 ```bash
 # Ensure same CERT_DIR for both
-export CERT_DIR=./certs
+export CERT_DIR=~/.crank/certs
 python scripts/initialize-certificates.py  # Bootstrap
-CERT_DIR=./certs python services/crank_streaming.py  # Runtime
+CERT_DIR=~/.crank/certs python services/crank_streaming.py  # Runtime
 ```
 
 ### CA Service Unavailable
