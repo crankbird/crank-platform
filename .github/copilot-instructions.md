@@ -9,9 +9,10 @@
 
 **CRITICAL**: This platform is migrating from "platform-centric" to "controller + worker + capability" architecture (Nov 2025). Always check the current phase:
 
-- ✅ **Phase 0 Complete**: Capability schema + worker runtime foundation (Issue #27, Nov 10)
-- ✅ **Phase 1 Complete**: Streaming worker migrated - 44% code reduction (Issue #28, Nov 10)
-- 🔄 **Phase 2 Next**: Base worker image + hybrid deployment (Issue #29)
+- ✅ **Phase 0 Complete**: Capability schema + worker runtime foundation (Issue #27, Nov 10 - CLOSED)
+- ✅ **Phase 1 Complete**: 8 workers migrated - 40.4% code reduction (Issue #28, Nov 10 - CLOSED)
+- ✅ **Phase 2 Complete**: Base worker image + hybrid deployment (Issue #29, Nov 10 - CLOSED)
+- 🔜 **Phase 3 Ready**: Controller extraction from platform (Issue #30 - foundation ready)
 - **Legacy code**: Archived in `archive/2025-11-09-pre-controller-refactor/`
 
 ### Core Concepts

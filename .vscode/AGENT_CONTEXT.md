@@ -39,11 +39,14 @@ More text after the list.
 
 ## ⚠️ MAJOR ARCHITECTURE REFACTOR IN PROGRESS (Nov 2025)
 
-**Current Status**: Migrating from platform-centric to **controller/worker/capability** model
+**Current Status**: ✅ **Phases 0-2 Complete** | 🔜 **Phase 3 Ready** (controller extraction)
 
-### Active Work
+### Completed Work
 
-- **Phase 0** (Issue #27): Building capability schema + worker runtime foundation
+- ✅ **Phase 0** (Issue #27): Capability schema + worker runtime foundation - 64/64 tests passing
+- ✅ **Phase 1** (Issue #28): 8 workers migrated to `WorkerApplication` base class
+- ✅ **Phase 2** (Issue #29): Base worker image + hybrid deployment + CI integration
+- 🔜 **Phase 3** (Issue #30): Controller extraction (foundation ready, not yet started)
 - Old architecture archived in `archive/2025-11-09-pre-controller-refactor/`
 - See `docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md` for complete roadmap
 

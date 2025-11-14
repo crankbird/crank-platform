@@ -15,7 +15,7 @@
 4. `/sonnet-curated-workspace/01-zettels/` - Sonnet thematic organization (49 files)
 5. `/sonnet-second-pass/content/zettels-*/` - Sonnet categorized split (4 directories)
 6. `/codex-second-pass/content/zettels/` - Codex processed versions 
-7. `/unified-knowledge-base/golden/zettels/` - Incomplete "golden" attempt
+7. `/unified-knowledge-base/golden/zettels/` - Completed and archived (see `archive/2025-11-14-golden-repository/`)
 
 **Problem**: Multiple containers without clear purpose, duplication, scattered work
 

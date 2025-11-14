@@ -1,11 +1,11 @@
-"""
-Philosophical Analyzer Worker Service
+"""Philosophical Analyzer Worker Service
 
 This worker provides philosophical content analysis capabilities using
 the canonical schema for DNA marker detection and coherence scoring.
 
-The service integrates the golden/philosophical-analyzer code with the
-crank worker runtime infrastructure.
+The service evolved from the experimental philosophical analyzer
+(archived in archive/2025-11-14-golden-repository/) and integrates
+with the crank worker runtime infrastructure.
 """
 
 import asyncio
@@ -26,8 +26,8 @@ class PhilosophicalAnalyzer:
     """
     Core philosophical analysis engine.
 
-    Adapts the golden/philosophical-analyzer code to work with
-    the semantic configuration from the crank platform.
+    Implements the philosophical DNA marker detection patterns
+    using the semantic configuration from the crank platform.
     """
 
     def __init__(self):

@@ -46,8 +46,8 @@
 
 - **Philosophical analysis test data (Golden integration)**
   - Curated text samples from docs/knowledge/ for philosophical DNA marker validation
-  - Semantic schema test cases from golden/semantic-config/
-  - BDD feature files from golden/gherkins/ → tests/bdd/features/philosophical/
+  - Semantic schema test cases from `src/crank/capabilities/semantic_config.py`
+  - BDD feature files archived in `archive/2025-11-14-golden-repository/golden/gherkins/`
 
 ## Integration with existing test suite
 

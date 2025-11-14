@@ -1,6 +1,7 @@
 # Phase 2: Base Worker Image & Hybrid Deployment
 
-**Status**: ✅ **IMPLEMENTATION READY** (Nov 10, 2025)
+**Status**: ✅ **COMPLETED** (Nov 10, 2025)
+**Archived**: November 14, 2025 (Issues #27, #28, #29 closed)
 
 **Goal**: Eliminate Dockerfile duplication and enable native (non-containerized) worker execution per the taxonomy vision.
 

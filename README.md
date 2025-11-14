@@ -2,9 +2,9 @@
 
 **A distributed capability-based ML execution platform with controller/worker architecture**
 
-> ⚠️ **Major Architecture Refactor in Progress** (Nov 2025)
-> Migrating from platform-centric to controller/worker model. See `docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md`
-> Old architecture archived in `archive/2025-11-09-pre-controller-refactor/`
+> ✅ **Architecture Refactor: Phases 0-2 Complete** (Nov 2025)
+> Worker runtime and capability schema foundation complete. Phase 3 (controller extraction) ready to start.
+> See `docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md` | Old architecture: `archive/2025-11-09-pre-controller-refactor/`
 
 ## Architecture Vision
 
@@ -36,15 +36,21 @@ All services communicate over HTTPS with mutual TLS (mTLS) for enhanced security
 
 ## Current Status
 
-**Active Development**: Controller/Worker architecture refactor - **Phase 2 Complete** (Nov 2025)
+**Active Development**: Controller/Worker architecture refactor - **Phases 0-2 Complete** ✅ (Nov 2025)
 
 - ✅ Old architecture archived and functional
 - ✅ Migration plan documented ([CONTROLLER_WORKER_REFACTOR_PLAN.md](docs/planning/CONTROLLER_WORKER_REFACTOR_PLAN.md))
-- ✅ **Phase 0 Complete** (Nov 10): Capability schema + worker runtime foundation (Issue #27)
-- ✅ **Phase 1 Complete** (Nov 10): Worker migrations - 8 workers using `WorkerApplication` (Issue #28)
+- ✅ **Phase 0 Complete** (Nov 10): Capability schema + worker runtime foundation (Issue #27 - closed)
+  - 29/29 capability schema tests passing
+  - 35/35 worker runtime tests passing
+- ✅ **Phase 1 Complete** (Nov 10): Worker migrations - 8 workers using `WorkerApplication` (Issue #28 - closed)
   - Streaming, email classifier, email parser, doc converter, hello world, philosophical analyzer, zettel workers
-- ✅ **Phase 2 Complete** (Nov 10): Base worker image + hybrid deployment + E2E tests (Issue #29)
-- 🔄 **Phase 3 Next**: Extract controller from platform (Issue #30)
+  - 40.4% code reduction while adding type safety + production features
+- ✅ **Phase 2 Complete** (Nov 10): Base worker image + hybrid deployment + E2E tests (Issue #29 - closed)
+  - `Dockerfile.worker-base` eliminates 40+ lines per worker
+  - Makefile targets for native macOS execution
+  - CI builds all workers from base image
+- 🔜 **Phase 3 Ready**: Extract controller from platform (Issue #30 - foundation complete)
 - ⏳ **Phase 4**: Integration tests & documentation (Issue #31)
 
 ## Documentation

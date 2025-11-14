@@ -1,8 +1,8 @@
 # Controller + Worker Architecture Refactor Plan
 
 **Date**: November 9, 2025
-**Last Updated**: November 10, 2025
-**Status**: 🏗️ **Phase 1 In Progress** (Worker Runtime Implementation)
+**Last Updated**: November 14, 2025
+**Status**: ✅ **Phases 0-2 Complete** | 🔜 **Phase 3 Ready to Start** (Controller Extraction)
 **Related**: `docs/planning/crank-taxonomy-and-deployment.md`
 
 ## Executive Summary
@@ -331,8 +331,8 @@ We need to collapse these into the proper controller/worker separation.
 
 1. **Create `services/crank_philosophical_analyzer.py`**
    - First NEW worker built from scratch using worker_runtime foundation
-   - Implements `PHILOSOPHICAL_ANALYSIS` capability (from golden/semantic-config)
-   - Integrates golden/philosophical-analyzer/ code as service logic
+   - Implements `PHILOSOPHICAL_ANALYSIS` capability (semantic DNA markers)
+   - Production service in `services/crank_philosophical_analyzer.py`
    - Proves new capability schema and worker pattern works end-to-end
 
 2. **Container & Deployment Integration**
@@ -341,9 +341,9 @@ We need to collapse these into the proper controller/worker separation.
    - Integration with existing mTLS/certificate system
 
 3. **Golden Knowledge Base Integration**
-   - golden/zettels/ → docs/knowledge/ (organized zettel knowledge vault)
-   - BDD integration: golden/gherkins/ → tests/bdd/features/philosophical/
-   - Semantic configuration: golden/semantic-config/ → docs/schemas/philosophical/
+   - Zettel knowledge vault: `docs/knowledge/` (MASTER-ZETTEL-VAULT)
+   - BDD features: Archived in `archive/2025-11-14-golden-repository/golden/gherkins/`
+   - Semantic configuration: `src/crank/capabilities/semantic_config.py`
 
 **Acceptance Criteria**:
 
@@ -439,12 +439,14 @@ After Phase 1 worker migrations validated the pattern, applied code quality impr
 
 **Acceptance Criteria**:
 
-- [ ] `Dockerfile.worker-base` exists and builds successfully
-- [ ] At least one worker migrated to use base image
-- [ ] Image size reduction measured and documented
-- [ ] Native macOS deployment tested
-- [ ] CI builds all workers from base
-- [ ] Migration plan for remaining workers documented
+- [x] `Dockerfile.worker-base` exists and builds successfully
+- [x] At least one worker migrated to use base image
+- [x] Image size reduction measured and documented
+- [x] Native macOS deployment tested
+- [x] CI builds all workers from base
+- [x] Migration plan for remaining workers documented
+
+**Status**: ✅ **COMPLETE** (Nov 10, 2025 - Commit d45212a)
 
 **Why Third**: Reduces maintenance burden, enables hybrid deployment pattern from taxonomy.
 
