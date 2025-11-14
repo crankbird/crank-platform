@@ -8,7 +8,9 @@ All services use HTTPS with mTLS - no HTTP capability exists.
 from pathlib import Path
 
 # Certificate Directories
-DEFAULT_CERT_DIR = Path("/etc/certs")
+# Use ./certs for user-writable development default
+# Production deployments should set CERT_DIR=/etc/certs via environment
+DEFAULT_CERT_DIR = Path("./certs")
 SHARED_CA_CERT_DIR = Path("/shared/ca-certs")
 
 # Certificate Filenames
