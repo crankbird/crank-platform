@@ -29,9 +29,15 @@ from .constants import (
     DEFAULT_CA_SERVICE_URL,
     RSA_KEY_SIZE,
 )
-from .events import CertificateEvent, emit_certificate_event
+from .events import CertificateEvent, emit_certificate_event, record_ca_unavailable
 
 logger = logging.getLogger(__name__)
+
+
+# Retry configuration
+MAX_RETRIES = 3
+INITIAL_BACKOFF = 1.0  # seconds
+MAX_BACKOFF = 16.0  # seconds
 
 
 class CertificateInitializationError(Exception):
@@ -80,6 +86,16 @@ async def wait_for_ca_service(
 
         await asyncio.sleep(1)
 
+    # Emit CA unavailable event
+    emit_certificate_event(
+        CertificateEvent.CA_UNAVAILABLE,
+        worker_id="system",
+        correlation_id=correlation_id,
+        metadata={"ca_service_url": ca_service_url, "timeout": timeout},
+        log_level=logging.ERROR,
+    )
+    record_ca_unavailable("system")
+
     logger.error("❌ Certificate Authority Service not available after %d seconds", timeout)
     return False
 
@@ -99,39 +115,83 @@ async def get_ca_certificate(
         CA certificate PEM string
 
     Raises:
-        CertificateInitializationError: If CA cert retrieval fails
+        CertificateInitializationError: If CA cert retrieval fails after retries
     """
-    try:
-        # Use insecure connection (we don't have CA cert yet)
-        async with aiohttp.ClientSession(
-            connector=aiohttp.TCPConnector(ssl=False)
-        ) as session:
-            async with session.get(f"{ca_service_url}/ca/certificate") as response:
-                if response.status == 200:
-                    ca_data = await response.json()
-                    ca_cert: str = ca_data["ca_certificate"]
-                    logger.info("✅ CA certificate obtained for verification")
-                    return ca_cert
+    logger.info("📥 Retrieving CA certificate from %s", ca_service_url)
 
-                error_text = await response.text()
-                raise CertificateInitializationError(
-                    f"Failed to get CA certificate: {response.status} - {error_text}"
+    for attempt in range(MAX_RETRIES):
+        try:
+            # Use insecure connection (we don't have CA cert yet)
+            async with aiohttp.ClientSession(
+                connector=aiohttp.TCPConnector(ssl=False),
+                timeout=aiohttp.ClientTimeout(total=5),
+            ) as session:
+                async with session.get(f"{ca_service_url}/ca/certificate") as response:
+                    if response.status == 200:
+                        ca_data = await response.json()
+                        ca_cert: str = ca_data["ca_certificate"]
+                        logger.info("✅ CA certificate obtained for verification")
+                        return ca_cert
+
+                    error_text = await response.text()
+                    raise CertificateInitializationError(
+                        f"Failed to get CA certificate: {response.status} - {error_text}"
+                    )
+        except Exception as e:
+            if attempt < MAX_RETRIES - 1:
+                backoff = min(INITIAL_BACKOFF * (2 ** attempt), MAX_BACKOFF)
+                logger.warning(
+                    "⚠️ Failed to get CA certificate (attempt %d/%d), retrying in %.1fs: %s",
+                    attempt + 1, MAX_RETRIES, backoff, e
                 )
-    except Exception as e:
-        if isinstance(e, CertificateInitializationError):
-            raise
-        raise CertificateInitializationError(f"CA certificate retrieval failed: {e}") from e
+                emit_certificate_event(
+                    CertificateEvent.CA_UNAVAILABLE,
+                    worker_id="system",
+                    correlation_id=correlation_id,
+                    metadata={
+                        "ca_service_url": ca_service_url,
+                        "attempt": attempt + 1,
+                        "max_retries": MAX_RETRIES,
+                        "error": str(e),
+                    },
+                    log_level=logging.WARNING,
+                )
+                record_ca_unavailable("system")
+                await asyncio.sleep(backoff)
+            else:
+                logger.error("❌ Failed to retrieve CA certificate after %d attempts", MAX_RETRIES)
+                emit_certificate_event(
+                    CertificateEvent.CA_UNAVAILABLE,
+                    worker_id="system",
+                    correlation_id=correlation_id,
+                    metadata={
+                        "ca_service_url": ca_service_url,
+                        "attempts": MAX_RETRIES,
+                        "error": str(e),
+                    },
+                    log_level=logging.ERROR,
+                )
+                record_ca_unavailable("system")
+                if isinstance(e, CertificateInitializationError):
+                    raise
+                raise CertificateInitializationError(f"CA certificate retrieval failed: {e}") from e
+
+    # Should never reach here
+    raise CertificateInitializationError("Unexpected retry loop exit")
 
 
-def generate_csr(
+async def generate_csr(
     worker_id: str,
     additional_san_names: Optional[list[str]] = None,
 ) -> tuple[str, str]:
     """
-    Generate RSA key pair and Certificate Signing Request locally.
+    Generate RSA key pair and Certificate Signing Request locally (async).
 
     SECURITY: Private key is generated locally and NEVER transmitted.
     Only the CSR (containing public key) is sent to the CA service.
+
+    NOTE: Runs CPU-intensive OpenSSL operations in thread pool to avoid
+    blocking the event loop. RSA-4096 key generation can take seconds.
 
     Args:
         worker_id: Worker/service identifier (becomes CN in certificate)
@@ -144,41 +204,43 @@ def generate_csr(
         CertificateInitializationError: If CSR generation fails
 
     Example:
-        >>> private_key, csr = generate_csr("streaming-worker-1")
+        >>> private_key, csr = await generate_csr("streaming-worker-1")
         >>> # private_key stays local, only csr is sent to CA
     """
     logger.info("🔑 Generating local RSA key pair and CSR for %s...", worker_id)
 
-    try:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_path = Path(temp_dir)
-            private_key_path = temp_path / "service.key"
-            csr_path = temp_path / "service.csr"
-            config_path = temp_path / "csr.conf"
+    def _generate_csr_sync() -> tuple[str, str]:
+        """Synchronous CSR generation (runs in thread pool)."""
+        try:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_path = Path(temp_dir)
+                private_key_path = temp_path / "service.key"
+                csr_path = temp_path / "service.csr"
+                config_path = temp_path / "csr.conf"
 
-            # Generate RSA private key locally (NEVER leaves this machine)
-            subprocess.run(
-                [
-                    "openssl",
-                    "genrsa",
-                    "-out",
-                    str(private_key_path),
-                    str(RSA_KEY_SIZE),
-                ],
-                check=True,
-                capture_output=True,
-            )
-            logger.info("✅ Private key generated locally (%d-bit RSA)", RSA_KEY_SIZE)
+                # Generate RSA private key locally (NEVER leaves this machine)
+                subprocess.run(
+                    [
+                        "openssl",
+                        "genrsa",
+                        "-out",
+                        str(private_key_path),
+                        str(RSA_KEY_SIZE),
+                    ],
+                    check=True,
+                    capture_output=True,
+                )
+                logger.info("✅ Private key generated locally (%d-bit RSA)", RSA_KEY_SIZE)
 
-            # Build Subject Alternative Names list
-            san_names = [worker_id, "localhost"]
-            if additional_san_names:
-                san_names.extend(additional_san_names)
+                # Build Subject Alternative Names list
+                san_names = [worker_id, "localhost"]
+                if additional_san_names:
+                    san_names.extend(additional_san_names)
 
-            san_list = ",".join([f"DNS:{name}" for name in san_names])
+                san_list = ",".join([f"DNS:{name}" for name in san_names])
 
-            # Create OpenSSL config for CSR with SAN extensions
-            config_content = f"""[req]
+                # Create OpenSSL config for CSR with SAN extensions
+                config_content = f"""[req]
 distinguished_name = req_distinguished_name
 req_extensions = v3_req
 prompt = no
@@ -194,45 +256,56 @@ keyUsage = nonRepudiation, digitalSignature, keyEncipherment
 subjectAltName = {san_list}
 """
 
-            config_path.write_text(config_content)
+                config_path.write_text(config_content)
 
-            # Generate CSR with SAN extensions
-            subprocess.run(
-                [
-                    "openssl",
-                    "req",
-                    "-new",
-                    "-key",
-                    str(private_key_path),
-                    "-out",
-                    str(csr_path),
-                    "-config",
-                    str(config_path),
-                ],
-                check=True,
-                capture_output=True,
-            )
-            logger.info("✅ CSR generated with SAN: %s", san_list)
+                # Generate CSR with SAN extensions
+                subprocess.run(
+                    [
+                        "openssl",
+                        "req",
+                        "-new",
+                        "-key",
+                        str(private_key_path),
+                        "-out",
+                        str(csr_path),
+                        "-config",
+                        str(config_path),
+                    ],
+                    check=True,
+                    capture_output=True,
+                )
+                logger.info("✅ CSR generated with SAN: %s", san_list)
 
-            # Emit observability event
-            emit_certificate_event(
-                CertificateEvent.CSR_GENERATED,
-                worker_id=worker_id,
-                metadata={"san_names": san_names},
-            )
+                # Read generated key and CSR
+                private_key_pem = private_key_path.read_text()
+                csr_pem = csr_path.read_text()
 
-            # Read generated key and CSR
-            private_key_pem = private_key_path.read_text()
-            csr_pem = csr_path.read_text()
+                return private_key_pem, csr_pem
+
+        except subprocess.CalledProcessError as e:
+            raise CertificateInitializationError(
+                f"OpenSSL CSR generation failed: {e.stderr.decode() if e.stderr else str(e)}"
+            ) from e
+        except Exception as e:
+            raise CertificateInitializationError(f"CSR generation failed: {e}") from e
+
+    try:
+        # Run blocking OpenSSL operations in thread pool to avoid blocking event loop
+        private_key_pem, csr_pem = await asyncio.to_thread(_generate_csr_sync)
+
+        # Emit observability event (now that we're back in async context)
+        emit_certificate_event(
+            CertificateEvent.CSR_GENERATED,
+            worker_id=worker_id,
+            metadata={"key_size": RSA_KEY_SIZE},
+        )
 
         return private_key_pem, csr_pem
 
-    except subprocess.CalledProcessError as e:
-        raise CertificateInitializationError(
-            f"OpenSSL CSR generation failed: {e.stderr.decode() if e.stderr else str(e)}"
-        ) from e
+    except CertificateInitializationError:
+        raise
     except Exception as e:
-        raise CertificateInitializationError(f"CSR generation failed: {e}") from e
+        raise CertificateInitializationError(f"Async CSR generation failed: {e}") from e
 
 
 async def submit_csr(
@@ -254,61 +327,91 @@ async def submit_csr(
         Signed certificate in PEM format
 
     Raises:
-        CertificateInitializationError: If CSR submission/signing fails
+        CertificateInitializationError: If CSR submission/signing fails after retries
     """
     logger.info("📝 Submitting CSR to CA service for %s", worker_id)
 
-    try:
-        # Emit observability event
-        emit_certificate_event(
-            CertificateEvent.CSR_SUBMITTED,
-            worker_id=worker_id,
-            correlation_id=correlation_id,
-        )
+    # Emit observability event
+    emit_certificate_event(
+        CertificateEvent.CSR_SUBMITTED,
+        worker_id=worker_id,
+        correlation_id=correlation_id,
+    )
 
-        # Use insecure connection (we're getting our first cert)
-        async with aiohttp.ClientSession(
-            connector=aiohttp.TCPConnector(ssl=False)
-        ) as session:
-            async with session.post(
-                f"{ca_service_url}/certificates/csr",
-                json={
-                    "csr": csr_pem,
-                    "service_name": worker_id,
-                },
-            ) as response:
-                if response.status == 200:
-                    cert_response = await response.json()
-                    signed_cert: str = cert_response["certificate"]
-                    logger.info("✅ Certificate signed by CA service")
+    for attempt in range(MAX_RETRIES):
+        try:
+            # Use insecure connection (we're getting our first cert)
+            async with aiohttp.ClientSession(
+                connector=aiohttp.TCPConnector(ssl=False),
+                timeout=aiohttp.ClientTimeout(total=10),
+            ) as session:
+                async with session.post(
+                    f"{ca_service_url}/certificates/csr",
+                    json={
+                        "csr": csr_pem,
+                        "service_name": worker_id,
+                    },
+                ) as response:
+                    if response.status == 200:
+                        cert_response = await response.json()
+                        signed_cert: str = cert_response["certificate"]
+                        logger.info("✅ Certificate signed by CA service")
 
-                    # Emit success event
-                    emit_certificate_event(
-                        CertificateEvent.CERT_ISSUED,
-                        worker_id=worker_id,
-                        correlation_id=correlation_id,
-                        metadata={"cert_length": len(signed_cert)},
+                        # Emit success event
+                        emit_certificate_event(
+                            CertificateEvent.CERT_ISSUED,
+                            worker_id=worker_id,
+                            correlation_id=correlation_id,
+                            metadata={"cert_length": len(signed_cert)},
+                        )
+
+                        return signed_cert
+
+                    error_text = await response.text()
+                    raise CertificateInitializationError(
+                        f"CA service rejected CSR: {response.status} - {error_text}"
                     )
 
-                    return signed_cert
-
-                error_text = await response.text()
+        except Exception as e:
+            if attempt < MAX_RETRIES - 1:
+                backoff = min(INITIAL_BACKOFF * (2 ** attempt), MAX_BACKOFF)
+                logger.warning(
+                    "⚠️ Failed to submit CSR (attempt %d/%d), retrying in %.1fs: %s",
+                    attempt + 1, MAX_RETRIES, backoff, e
+                )
+                emit_certificate_event(
+                    CertificateEvent.CA_UNAVAILABLE,
+                    worker_id=worker_id,
+                    correlation_id=correlation_id,
+                    metadata={
+                        "ca_service_url": ca_service_url,
+                        "attempt": attempt + 1,
+                        "max_retries": MAX_RETRIES,
+                        "error": str(e),
+                    },
+                    log_level=logging.WARNING,
+                )
+                record_ca_unavailable(worker_id)
+                await asyncio.sleep(backoff)
+            else:
+                logger.error("❌ Failed to submit CSR after %d attempts", MAX_RETRIES)
                 # Emit failure event
                 emit_certificate_event(
                     CertificateEvent.CSR_FAILED,
                     worker_id=worker_id,
                     correlation_id=correlation_id,
-                    metadata={"status": response.status, "error": error_text},
+                    metadata={
+                        "attempts": MAX_RETRIES,
+                        "error": str(e),
+                    },
                     log_level=logging.ERROR,
                 )
-                raise CertificateInitializationError(
-                    f"CA service rejected CSR: {response.status} - {error_text}"
-                )
+                if isinstance(e, CertificateInitializationError):
+                    raise
+                raise CertificateInitializationError(f"CSR submission failed: {e}") from e
 
-    except Exception as e:
-        if isinstance(e, CertificateInitializationError):
-            raise
-        raise CertificateInitializationError(f"CSR submission failed: {e}") from e
+    # Should never reach here
+    raise CertificateInitializationError("Unexpected retry loop exit")
 
 
 async def initialize_worker_certificates(
@@ -365,8 +468,8 @@ async def initialize_worker_certificates(
         # Step 2: Get CA certificate for verification
         ca_cert_pem = await get_ca_certificate(ca_service_url, correlation_id=correlation_id)
 
-        # Step 3: Generate local key pair and CSR
-        private_key_pem, csr_pem = generate_csr(worker_id, additional_san_names)
+        # Step 3: Generate local key pair and CSR (async to avoid blocking event loop)
+        private_key_pem, csr_pem = await generate_csr(worker_id, additional_san_names)
 
         # Step 4: Submit CSR and get signed certificate
         signed_cert_pem = await submit_csr(
@@ -397,10 +500,30 @@ async def initialize_worker_certificates(
         logger.info("   Key:  %s", key_file)
         logger.info("   CA:   %s", ca_cert_file)
 
+        # Emit bootstrap success event
+        emit_certificate_event(
+            CertificateEvent.CERT_ISSUED,
+            worker_id=worker_id,
+            correlation_id=correlation_id,
+            metadata={
+                "cert_file": str(cert_file),
+                "key_file": str(key_file),
+                "ca_cert_file": str(ca_cert_file),
+            },
+        )
+
         return cert_file, key_file, ca_cert_file
 
     except Exception as e:
         logger.error("❌ Certificate initialization failed for %s: %s", worker_id, e)
+        # Emit failure event
+        emit_certificate_event(
+            CertificateEvent.CSR_FAILED,
+            worker_id=worker_id,
+            correlation_id=correlation_id,
+            metadata={"error": str(e)},
+            log_level=logging.ERROR,
+        )
         raise
 
 
