@@ -8,9 +8,10 @@ All services use HTTPS with mTLS - no HTTP capability exists.
 from pathlib import Path
 
 # Certificate Directories
-# Use ./certs for user-writable development default
-# Production deployments should set CERT_DIR=/etc/certs via environment
-DEFAULT_CERT_DIR = Path("./certs")
+# Use /etc/certs for stable absolute path across all contexts (repo root, workers, containers)
+# Development: either run as root, use sudo, or set CERT_DIR=./certs explicitly
+# Production: Docker mounts /etc/certs, no env var needed
+DEFAULT_CERT_DIR = Path("/etc/certs")
 SHARED_CA_CERT_DIR = Path("/shared/ca-certs")
 
 # Certificate Filenames

@@ -88,12 +88,12 @@ class SecurityConfig:
 
         Args:
             environment: "development" or "production" (default: from env)
-            cert_dir: Certificate directory (default: ./certs, or CERT_DIR env)
-                     Production should set CERT_DIR=/etc/certs explicitly
+            cert_dir: Certificate directory (default: /etc/certs, or CERT_DIR env)
+                     Development: Set CERT_DIR=./certs for user-writable location
         """
         self.environment = environment or os.getenv("CRANK_ENVIRONMENT", ENV_DEVELOPMENT)
-        # Use DEFAULT_CERT_DIR (./certs) for user-writable development default
-        # Production deployments should set CERT_DIR=/etc/certs via environment
+        # Use DEFAULT_CERT_DIR (/etc/certs) for stable absolute path
+        # Development can override with CERT_DIR=./certs for user-writable location
         self.cert_dir = cert_dir or Path(os.getenv("CERT_DIR", str(DEFAULT_CERT_DIR)))
 
         # Certificate paths

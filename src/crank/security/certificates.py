@@ -14,6 +14,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from .constants import DEFAULT_CERT_DIR
+
 logger = logging.getLogger(__name__)
 
 
@@ -87,12 +89,13 @@ class CertificateManager:
 
         Args:
             worker_id: Unique identifier for this worker
-            cert_dir: Directory for certificate storage (defaults to ./certs, or CERT_DIR env)
+            cert_dir: Directory for certificate storage (default: /etc/certs, or CERT_DIR env)
+                     Development: Set CERT_DIR=./certs for user-writable location
         """
         self.worker_id = worker_id
-        # Use ./certs as default for user-writable development/testing
-        # Production deployments should set CERT_DIR=/etc/certs explicitly
-        self.cert_dir = cert_dir or Path(os.getenv("CERT_DIR", "./certs"))
+        # Use DEFAULT_CERT_DIR (/etc/certs) for stable absolute path (matches production mounts)
+        # Development can override with CERT_DIR=./certs for user-writable location
+        self.cert_dir = cert_dir or Path(os.getenv("CERT_DIR", str(DEFAULT_CERT_DIR)))
         self.cert_dir.mkdir(parents=True, exist_ok=True)
 
     def get_cert_path(self) -> Path:
