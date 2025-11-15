@@ -57,7 +57,7 @@ RUN echo '#!/usr/bin/env python3' > run_worker.py && \
     echo '    ' >> run_worker.py && \
     echo '    # Start worker application' >> run_worker.py && \
     echo '    import crank_sonnet_zettel_manager' >> run_worker.py && \
-    echo '    asyncio.run(crank_sonnet_zettel_manager.main())' >> run_worker.py && \
+    echo '    crank_sonnet_zettel_manager.main()' >> run_worker.py && \
     chmod +x run_worker.py
 
 # Security hardening

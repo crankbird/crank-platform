@@ -20,6 +20,7 @@ Extension Points (for future implementation):
 """
 
 import logging
+import os
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -345,16 +346,13 @@ class SonnetZettelEngine:
 class SonnetZettelManagerWorker(WorkerApplication):
     """Worker providing zettel management capabilities."""
 
-    def __init__(self, worker_id: str | None = None, storage_path: Path | None = None) -> None:
-        """
-        Initialize zettel manager worker.
-
-        Args:
-            worker_id: Optional unique identifier for this worker instance
-            storage_path: Optional custom storage path for zettels
-        """
-        super().__init__(worker_id=worker_id)
-        self.engine = SonnetZettelEngine(storage_path=storage_path)
+    def __init__(self) -> None:
+        """Initialize zettel manager worker."""
+        super().__init__(
+            service_name="sonnet-zettel-manager",
+            https_port=int(os.getenv("SONNET_ZETTEL_MANAGER_HTTPS_PORT", "8700")),
+        )
+        self.engine = SonnetZettelEngine()
         logger.info("Sonnet Zettel Manager worker initialized with ID: %s", self.worker_id)
 
     def get_capabilities(self) -> list[CapabilityDefinition]:
@@ -412,84 +410,11 @@ class SonnetZettelManagerWorker(WorkerApplication):
 # Phase D: End-to-End Integration & Main Entry
 # =============================================
 
-async def main() -> None:
-    """Main entry point for running the sonnet zettel manager worker."""
-    import uvicorn
-
-    # Create worker instance
+def main() -> None:
+    """Main entry point - creates and runs sonnet zettel manager worker."""
     worker = SonnetZettelManagerWorker()
-
-    logger.info("Starting Sonnet Zettel Manager worker server")
-    logger.info("Worker capabilities: %s", [cap.name for cap in worker.get_capabilities()])
-
-    # Configure and start server
-    config = uvicorn.Config(
-        app=worker.app,
-        host="0.0.0.0",
-        port=8501,  # Different port from hello world worker
-        log_level="info"
-    )
-
-    server = uvicorn.Server(config)
-
-    try:
-        await server.serve()
-    except KeyboardInterrupt:
-        logger.info("Received shutdown signal")
+    worker.run()
 
 
 if __name__ == "__main__":
-    import asyncio
-    import sys
-
-    # Test mode for development validation
-    if len(sys.argv) > 1 and sys.argv[1] == "--test":
-        print("=== Sonnet Zettel Manager Test Mode ===")
-
-        # Test worker instantiation
-        worker = SonnetZettelManagerWorker(worker_id="test-sonnet-zettel")
-        print(f"✅ Worker created with ID: {worker.worker_id}")
-
-        # Test capabilities
-        capabilities = worker.get_capabilities()
-        print(f"✅ Capabilities: {[cap.name for cap in capabilities]}")
-
-        # Test routes setup
-        worker.setup_routes()
-        total_routes = len(worker.app.routes)
-        print(f"✅ Routes configured: {total_routes} total routes")
-
-        # Test core engine functionality
-        engine = SonnetZettelEngine()
-        store_request = StoreZettelRequest(
-            content="# Test Zettel\n\nThis is a test zettel created by the sonnet worker.",
-            title="Test Zettel",
-            source_agent="test",
-            tags=["test", "sonnet"]
-        )
-        result = engine.store_zettel(store_request)
-        print(f"✅ Engine test: {result.message}")
-        print(f"   Zettel ID: {result.zettel_id}")
-
-        # Test retrieval
-        if result.zettel_id:
-            retrieve_request = RetrieveZettelRequest(zettel_id=result.zettel_id)
-            retrieved = engine.retrieve_zettel(retrieve_request)
-            print(f"✅ Retrieval test: {retrieved.message}")
-
-        # Test listing
-        list_request = ListZettelsRequest(tags=["test"])
-        list_result = engine.list_zettels(list_request)
-        print(f"✅ List test: {list_result.message}")
-
-        print("\n🎉 All tests passed! Sonnet Zettel Manager is ready.")
-        print("\n🚀 Extension points ready for future AI enhancements:")
-        print("   - Auto-title generation")
-        print("   - Category-based directory organization")
-        print("   - Similarity clustering")
-        print("   - Semantic search capabilities")
-        print("   - Filtered publishing workflows")
-
-    else:
-        # Production mode
-        asyncio.run(main())
+    main()

@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -208,23 +209,13 @@ class CodexZettelService:
 class CodexZettelRepositoryWorker(WorkerApplication):
     """Worker wiring for the Codex zettel repository capability."""
 
-    def __init__(
-        self,
-        worker_id: str | None = None,
-        service_name: str | None = None,
-        https_port: int = 8500,
-        repository_root: Path | str | None = None,
-    ) -> None:
-        self.repository_config = ZettelRepositoryConfig(
-            base_path=Path(repository_root).expanduser()
-            if repository_root
-            else Path("zettels_repository")
-        )
+    def __init__(self) -> None:
+        """Initialize codex zettel repository worker."""
+        self.repository_config = ZettelRepositoryConfig(base_path=Path("zettels_repository"))
         self.service = CodexZettelService(ZettelRepository(self.repository_config))
         super().__init__(
-            worker_id=worker_id,
-            service_name=service_name or "codex-zettel-repository",
-            https_port=https_port,
+            service_name="codex-zettel-repository",
+            https_port=int(os.getenv("CODEX_ZETTEL_REPOSITORY_HTTPS_PORT", "8800")),
         )
 
     def setup_routes(self) -> None:
@@ -253,39 +244,11 @@ class CodexZettelRepositoryWorker(WorkerApplication):
         await super().on_shutdown()
 
 
-async def main() -> None:
-    """Entrypoint for running the worker via `python services/...`."""
-    import uvicorn
-
+def main() -> None:
+    """Main entry point - creates and runs codex zettel repository worker."""
     worker = CodexZettelRepositoryWorker()
-    config = uvicorn.Config(
-        worker.app,
-        host="0.0.0.0",
-        port=8002,
-        log_level="info",
-    )
-    server = uvicorn.Server(config)
-
-    try:
-        await server.serve()
-    except KeyboardInterrupt:
-        logger.info("Received shutdown signal")
+    worker.run()
 
 
 if __name__ == "__main__":
-    import sys
-
-    if len(sys.argv) > 1 and sys.argv[1] == "--test":
-        worker = CodexZettelRepositoryWorker(repository_root=Path("zettels_repository_test"))
-        print(f"Worker capabilities: {[cap.id for cap in worker.get_capabilities()]}")
-        sample_payload = {
-            "title": "Test zettel",
-            "content": "This is a quick test of the Codex zettel repository worker.",
-            "category": "experiments",
-            "tags": ["test", "codex"],
-            "source_agent": "codex-cli",
-        }
-        response = worker.service.ingest(sample_payload)
-        print(f"Stored test zettel at {response['relative_path']}")
-    else:
-        asyncio.run(main())
+    main()

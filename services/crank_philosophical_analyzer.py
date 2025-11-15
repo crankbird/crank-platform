@@ -10,6 +10,7 @@ with the crank worker runtime infrastructure.
 
 import asyncio
 import logging
+import os
 from typing import Any
 
 from fastapi import HTTPException
@@ -177,11 +178,11 @@ class PhilosophicalAnalyzer:
 class PhilosophicalAnalyzerWorker(WorkerApplication):
     """Worker service providing philosophical analysis capabilities."""
 
-    def __init__(self, worker_id: str | None = None, service_name: str | None = None, https_port: int = 8500):
+    def __init__(self) -> None:
+        """Initialize philosophical analyzer worker."""
         super().__init__(
-            worker_id=worker_id,
-            service_name=service_name or "philosophical-analyzer",
-            https_port=https_port,
+            service_name="philosophical-analyzer",
+            https_port=int(os.getenv("PHILOSOPHICAL_ANALYZER_HTTPS_PORT", "8600")),
         )
         self.analyzer = PhilosophicalAnalyzer()
 
@@ -229,38 +230,11 @@ class PhilosophicalAnalyzerWorker(WorkerApplication):
         await super().on_shutdown()
 
 
-async def main():
-    """Entry point for running the philosophical analyzer worker."""
-    import uvicorn
-
+def main() -> None:
+    """Main entry point - creates and runs philosophical analyzer worker."""
     worker = PhilosophicalAnalyzerWorker()
-
-    # Run the FastAPI application
-    config = uvicorn.Config(
-        worker.app,
-        host="0.0.0.0",
-        port=8001,  # Use different port from controller
-        log_level="info",
-    )
-    server = uvicorn.Server(config)
-
-    try:
-        await server.serve()
-    except KeyboardInterrupt:
-        logger.info("Received shutdown signal")
+    worker.run()
 
 
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) > 1 and sys.argv[1] == "--test":
-        # Test mode - just verify imports and basic functionality
-        worker = PhilosophicalAnalyzerWorker()
-        print(f"Worker capabilities: {[cap.name for cap in worker.get_capabilities()]}")
-
-        # Test analysis
-        test_result = worker.analyzer.analyze_text(
-            "This is a test of context-dependent intelligence that emerges from distributed agents working in different temporal contexts."
-        )
-        print(f"Test analysis result: {test_result['analysis_summary']}")
-    else:
-        asyncio.run(main())
+    main()
