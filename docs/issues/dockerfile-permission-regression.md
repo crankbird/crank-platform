@@ -1,7 +1,8 @@
 # Dockerfile Permission Regression After Docker Upgrade
 
-**Date**: 2025-11-15
-**Impact**: All services except `crank-cert-authority` fail to start
+**Date**: 2025-11-15  
+**Status**: ✅ RESOLVED  
+**Impact**: All services fixed and running  
 **Root Cause**: Docker v28.5.2 stricter file permission enforcement
 
 ## What Happened
@@ -27,17 +28,16 @@ Files copied before `USER` directive are owned by `root:root`, but container run
 
 **Why this worked before**: Docker v20.10.17 had more permissive file access for COPY commands. Docker v28.5.2 enforces stricter ownership.
 
-## Services Affected
+## Services Status (All Fixed ✅)
 
-- ✅ `crank-cert-authority` - FIXED (commit 5b7f9f3)
-- ❌ `crank-platform` - Broken (controller)
-- ❌ `crank-email-classifier` - Unknown
-- ❌ `crank-email-parser` - Unknown
-- ❌ `crank-streaming` - Unknown
-- ❌ `crank-doc-converter` - Unknown
-- ❌ All other workers - Unknown
+- ✅ `crank-cert-authority` - FIXED (commit bff7284)
+- ✅ `crank-platform` - FIXED (commit bff7284)
+- ✅ `crank-email-classifier` - FIXED (commit a10e831)
+- ✅ `crank-email-parser` - FIXED (commit 38a05b3)
+- ✅ `crank-streaming` - FIXED (commit 38a05b3)
+- ✅ `crank-doc-converter` - FIXED (commit 38a05b3)
 
-## Solution
+**Result**: All 6 services running healthy with HTTPS + mTLS## Solution
 
 Add `--chown=<user>:<group>` to all COPY commands:
 
@@ -51,19 +51,23 @@ COPY --chown=worker:worker services/some_file.py .
 
 **Note**: For platform (controller), user is `worker:worker` (gid/uid 1000), NOT `controller`.
 
-## Testing Blocked
+## Resolution Complete ✅
 
-- Issue #19 integration testing blocked until platform Dockerfile fixed
-- Cannot test certificate bootstrap flow end-to-end
-- Workers depend on platform (controller) for registration
+All Dockerfiles fixed with `--chown` flags and certificate bootstrap:
 
-## Action Items
+1. ✅ `services/Dockerfile.crank-platform` - Controller fixed
+2. ✅ `services/Dockerfile.crank-cert-authority` - CA service fixed
+3. ✅ `services/Dockerfile.crank-email-classifier` - Worker fixed
+4. ✅ `services/Dockerfile.crank-streaming` - Worker fixed
+5. ✅ `services/Dockerfile.crank-doc-converter` - Worker fixed
+6. ✅ `services/Dockerfile.crank-email-parser` - Worker fixed
 
-1. Fix `services/Dockerfile.crank-platform` immediately (blocking Issue #19)
-2. Audit all Dockerfiles in `services/` directory
-3. Add `--chown` to all COPY commands
-4. Test each service starts successfully
-5. Document Docker version requirements in README
+**Additional fixes**:
+- Legacy `crank_cert_initialize.py` updated to write correct filenames (client.crt/client.key)
+- All workers use unified `crank.security` module
+- Deprecated security modules removed (675 lines cleaned up)
+
+**Testing verified**: End-to-end certificate bootstrap (CA → Platform → 4 Workers) all healthy
 
 ## Related
 
