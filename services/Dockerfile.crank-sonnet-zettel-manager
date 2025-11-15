@@ -27,11 +27,15 @@ COPY --chown=worker:worker services/crank_cert_initialize.py ./scripts/
 # Create certificates directory with proper ownership
 RUN mkdir -p /etc/certs && chown worker:worker /etc/certs
 
+# Create zettel storage directory with proper ownership
+RUN mkdir -p /app/docs/knowledge/zettels && chown -R worker:worker /app/docs
+
 # Create worker startup script with certificate initialization
 RUN echo '#!/usr/bin/env python3' > run_worker.py && \
     echo 'import subprocess' >> run_worker.py && \
     echo 'import sys' >> run_worker.py && \
     echo 'import os' >> run_worker.py && \
+    echo 'import asyncio' >> run_worker.py && \
     echo '' >> run_worker.py && \
     echo 'def initialize_certificates():' >> run_worker.py && \
     echo '    """Initialize certificates from CA service."""' >> run_worker.py && \
@@ -53,7 +57,7 @@ RUN echo '#!/usr/bin/env python3' > run_worker.py && \
     echo '    ' >> run_worker.py && \
     echo '    # Start worker application' >> run_worker.py && \
     echo '    import crank_sonnet_zettel_manager' >> run_worker.py && \
-    echo '    crank_sonnet_zettel_manager.main()' >> run_worker.py && \
+    echo '    asyncio.run(crank_sonnet_zettel_manager.main())' >> run_worker.py && \
     chmod +x run_worker.py
 
 # Security hardening
