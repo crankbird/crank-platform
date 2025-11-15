@@ -15,22 +15,22 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
-COPY services/requirements.txt .
+COPY --chown=worker:worker services/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy all service files and dependencies
-COPY *.py ./
-COPY src/ src/
-COPY services/crank_platform_app.py ./scripts/
-COPY services/crank_platform_service.py ./
-COPY services/dependencies.py ./
-COPY services/mesh_diagnostics_v2.py ./
-COPY services/mesh_interface_v2.py ./
-COPY services/security_config.py ./
-COPY services/resilient_discovery_service.py ./
-COPY services/universal_protocol_service.py ./
-COPY services/universal_protocol_support.py ./
-COPY services/crank_cert_initialize.py ./scripts/
+COPY --chown=worker:worker *.py ./
+COPY --chown=worker:worker src/ src/
+COPY --chown=worker:worker services/crank_platform_app.py ./scripts/
+COPY --chown=worker:worker services/crank_platform_service.py ./
+COPY --chown=worker:worker services/dependencies.py ./
+COPY --chown=worker:worker services/mesh_diagnostics_v2.py ./
+COPY --chown=worker:worker services/mesh_interface_v2.py ./
+COPY --chown=worker:worker services/security_config.py ./
+COPY --chown=worker:worker services/resilient_discovery_service.py ./
+COPY --chown=worker:worker services/universal_protocol_service.py ./
+COPY --chown=worker:worker services/universal_protocol_support.py ./
+COPY --chown=worker:worker services/crank_cert_initialize.py ./scripts/
 
 # Create certificates directory with proper ownership
 RUN mkdir -p /etc/certs && chown worker:worker /etc/certs

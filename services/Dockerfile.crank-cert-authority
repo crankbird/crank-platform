@@ -20,10 +20,10 @@ COPY services/requirements-crank-cert-authority.txt .
 RUN pip install --no-cache-dir -r requirements-crank-cert-authority.txt
 
 # Copy certificate service code
-COPY services/crank_cert_authority_service.py .
-COPY services/crank_cert_authority_app.py .
-COPY services/security_config.py .
-COPY services/crank_cert_initialize.py ./scripts/initialize_certificates.py
+COPY --chown=certuser:certuser services/crank_cert_authority_service.py .
+COPY --chown=certuser:certuser services/crank_cert_authority_app.py .
+COPY --chown=certuser:certuser services/security_config.py .
+COPY --chown=certuser:certuser services/crank_cert_initialize.py ./scripts/initialize_certificates.py
 
 # Create certificate storage directory (CA service expects /app/certificates)
 RUN mkdir -p /app/certificates && chown certuser:certuser /app/certificates
