@@ -7,8 +7,11 @@ name = "crank-platform"
 version = "0.1.0"
 description = "Anti-fragile distributed AI platform with GPU management"
 authors = [
-    {name = "Crank Platform Team"}
+    {name = "Richard Martin", email = "your-email@example.com"},
+    {name = "Crank Platform Contributors"}
 ]
+license = {text = "Proprietary"}
+readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     # Core framework

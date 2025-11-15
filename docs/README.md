@@ -1,6 +1,6 @@
 # Crank Platform Documentation
 
-**Last Updated**: 2025-11-10
+**Last Updated**: 2025-11-16
 **Purpose**: Navigation hub for all platform documentation
 
 ## 📖 Documentation Structure
@@ -8,7 +8,8 @@
 This documentation is organized into **AS-IS** (current architecture), **TO-BE** (planned features), and **HISTORICAL** (completed work). Each subdirectory has a README explaining its purpose and scope:
 
 - **[proposals/](proposals/)** - Strategic ideas and future vision
-- **[planning/](planning/)** - Active work decomposition  
+- **[decisions/](decisions/)** - Architecture Decision Records (ADRs)
+- **[planning/](planning/)** - Active work decomposition
 - **[issues/](issues/)** - Execution tracking and context
 - **[operations/](operations/)** - Production runbooks and procedures
 - **[development/](development/)** - Coding standards and setup guides
@@ -18,7 +19,8 @@ This documentation is organized into **AS-IS** (current architecture), **TO-BE**
 
 ### Current Architecture (AS-IS)
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Current system design, JEMM principles
-- **[requirements-traceability.md](architecture/requirements-traceability.md)** - Requirements → Tests mapping, micronarratives
+- **[REQUIREMENTS_TRACEABILITY.md](architecture/REQUIREMENTS_TRACEABILITY.md)** - Requirements → Tests mapping, micronarratives
+- **[decisions/](decisions/)** - Architecture Decision Records (ADRs)
 
 ### Future Plans (TO-BE)
 - **[enhancement-roadmap.md](proposals/enhancement-roadmap.md)** - Strategic roadmap Q1-Q4 2026
@@ -30,16 +32,22 @@ This documentation is organized into **AS-IS** (current architecture), **TO-BE**
 
 ### Planning & Requirements
 - [proposals/enhancement-roadmap.md](proposals/enhancement-roadmap.md) - Strategic roadmap (TO-BE)
-- [architecture/requirements-traceability.md](architecture/requirements-traceability.md) - Requirements engineering (Active)
+- [architecture/REQUIREMENTS_TRACEABILITY.md](architecture/REQUIREMENTS_TRACEABILITY.md) - Requirements engineering (Active)
 - [planning/phase-3-controller-extraction.md](planning/phase-3-controller-extraction.md) - Active refactor work
-- [planning/test-data-corpus.md](planning/test-data-corpus.md) - Test data strategy
+- [planning/TEST_DATA_CORPUS.md](planning/TEST_DATA_CORPUS.md) - Test data strategy
 - [archive/assessments/2025-11-10-enterprise-readiness.md](archive/assessments/2025-11-10-enterprise-readiness.md) - Gap analysis (Historical)
 - [archive/completed/](archive/completed/) - Completed refactor phases 0-2
 
 ### Architecture & Design
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Current system design (AS-IS)
+- [architecture/CONTROLLER_WORKER_MODEL.md](architecture/CONTROLLER_WORKER_MODEL.md) - Core architectural pattern
 - [architecture/MESH_INTERFACE_DESIGN.md](architecture/MESH_INTERFACE_DESIGN.md) - Service mesh patterns
 - [architecture/FASTAPI_DEPENDENCY_INJECTION.md](architecture/FASTAPI_DEPENDENCY_INJECTION.md) - DI patterns
+
+### Architecture Decision Records
+- [decisions/0001-use-controller-worker-model.md](decisions/0001-use-controller-worker-model.md) - Controller/Worker architecture
+- [decisions/0002-adopt-mtls-for-all-services.md](decisions/0002-adopt-mtls-for-all-services.md) - Security model
+- [decisions/0003-consolidate-security-module.md](decisions/0003-consolidate-security-module.md) - Security implementation
 
 ### Security
 - [security/README.md](security/README.md) - Security architecture overview
@@ -53,7 +61,8 @@ This documentation is organized into **AS-IS** (current architecture), **TO-BE**
 - [operations/MONITORING_STRATEGY.md](operations/MONITORING_STRATEGY.md) - Observability patterns
 
 ### Development
-- [development/code-quality-strategy.md](development/code-quality-strategy.md) - Three-ring type safety
+- [development/CODE_QUALITY_STRATEGY.md](development/CODE_QUALITY_STRATEGY.md) - Three-ring type safety
+- [development/TESTING_STRATEGY.md](development/TESTING_STRATEGY.md) - Testing philosophy and patterns
 - [development/GPU_SETUP_GUIDE.md](development/GPU_SETUP_GUIDE.md) - GPU environment setup
 
 ### Reports (Historical)
