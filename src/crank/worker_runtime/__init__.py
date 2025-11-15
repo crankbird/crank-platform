@@ -29,7 +29,7 @@ from crank.worker_runtime.registration import (
     ControllerClient,
     WorkerRegistration,
 )
-from crank.worker_runtime.security import CertificateBundle, CertificateManager
+from crank.security import CertificateBundle, CertificateManager
 
 __all__: list[str] = [
     "CertificateBundle",

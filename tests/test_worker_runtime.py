@@ -26,7 +26,7 @@ from crank.worker_runtime import (
     WorkerRegistration,
 )
 from crank.worker_runtime.lifecycle import HealthCheckManager
-from crank.worker_runtime.security import CertificateBundle, CertificateManager
+from crank.security import CertificateBundle, CertificateManager
 
 
 class TestWorkerRegistration:
