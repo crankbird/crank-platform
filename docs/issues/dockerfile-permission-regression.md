@@ -10,6 +10,7 @@
 Upgraded Docker from v20.10.17 → v28.5.2 to resolve docker-compose v1/v2 compatibility issues during Issue #19 (Security Configuration Consolidation) testing.
 
 After upgrade, all service containers fail with:
+
 ```
 /usr/local/bin/python: can't open file '/app/scripts/crank_cert_initialize.py': [Errno 13] Permission denied
 ```
@@ -17,6 +18,7 @@ After upgrade, all service containers fail with:
 ## Root Cause
 
 Dockerfiles use pattern:
+
 ```dockerfile
 RUN adduser --uid 1000 --gid 1000 --disabled-password worker
 COPY services/some_file.py .           # ❌ Owned by root

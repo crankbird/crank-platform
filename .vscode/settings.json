@@ -10,9 +10,6 @@
   // Mypy configuration for editor integration
   // Use project's mypy.ini which already excludes scripts/ and has ignore_errors for them
   "mypy-type-checker.importStrategy": "fromEnvironment",
-  "mypy-type-checker.interpreter": [
-    "${workspaceFolder}/.venv/bin/python"
-  ],
   "mypy-type-checker.args": [
     "--config-file=${workspaceFolder}/mypy.ini"
   ],

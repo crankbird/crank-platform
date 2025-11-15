@@ -26,6 +26,7 @@ COPY --chown=worker:worker services/crank_platform_service.py ./
 COPY --chown=worker:worker services/dependencies.py ./
 COPY --chown=worker:worker services/mesh_diagnostics_v2.py ./
 COPY --chown=worker:worker services/mesh_interface_v2.py ./
+COPY --chown=worker:worker services/security_config.py ./
 COPY --chown=worker:worker services/resilient_discovery_service.py ./
 COPY --chown=worker:worker services/universal_protocol_service.py ./
 COPY --chown=worker:worker services/universal_protocol_support.py ./
