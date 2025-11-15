@@ -1,7 +1,7 @@
 # Proposals Directory
 
-**Status**: Active  
-**Purpose**: Capture strategic ideas, technical specifications, and future direction before they become executable work.  
+**Status**: Active
+**Purpose**: Capture strategic ideas, technical specifications, and future direction before they become executable work.
 **Audience**: Anyone exploring "what could we build?" or "how should this work?"
 
 ---
@@ -106,7 +106,7 @@ Behavior-driven development scenarios that:
 - **Clear prefixes** for categorization (`faas-`, `identity-`)
 - **Avoid numbered prefixes** (1_, 2_) — use descriptive names
 
-**Good**: `identity-spiffe_id.md`, `faas-worker-specification.md`  
+**Good**: `identity-spiffe_id.md`, `faas-worker-specification.md`
 **Avoid**: `1_identity.md`, `spec.md`, `new-idea-v2.md`
 
 ---

@@ -1,7 +1,7 @@
 # Crank Platform Proposals Index
 
-**Purpose**: Directory of strategic proposals, specifications, and future direction documents  
-**Last Updated**: November 16, 2025  
+**Purpose**: Directory of strategic proposals, specifications, and future direction documents
+**Last Updated**: November 16, 2025
 **Organization**: Flat structure with category prefixes for clarity
 
 ---

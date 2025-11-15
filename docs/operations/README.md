@@ -1,7 +1,7 @@
 # Operations Directory
 
-**Status**: Active, needs cleanup pass  
-**Purpose**: Runbooks and patterns that keep the Crank Platform deployed, observable, and recoverable across environments.  
+**Status**: Active, needs cleanup pass
+**Purpose**: Runbooks and patterns that keep the Crank Platform deployed, observable, and recoverable across environments.
 **Audience**: Operators, platform engineers, and AI agents executing day-2 tasks.
 
 ---

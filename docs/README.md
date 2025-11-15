@@ -5,7 +5,14 @@
 
 ## 📖 Documentation Structure
 
-This documentation is organized into **AS-IS** (current architecture), **TO-BE** (planned features), and **HISTORICAL** (completed work). See [DOCUMENTATION_RATIONALIZATION.md](DOCUMENTATION_RATIONALIZATION.md) for complete structure and standards.
+This documentation is organized into **AS-IS** (current architecture), **TO-BE** (planned features), and **HISTORICAL** (completed work). Each subdirectory has a README explaining its purpose and scope:
+
+- **[proposals/](proposals/)** - Strategic ideas and future vision
+- **[planning/](planning/)** - Active work decomposition  
+- **[issues/](issues/)** - Execution tracking and context
+- **[operations/](operations/)** - Production runbooks and procedures
+- **[development/](development/)** - Coding standards and setup guides
+- **[knowledge/](knowledge/)** - Cross-cutting patterns and principles
 
 ## 🎯 Critical Documents (Tier 1 - Start Here)
 
