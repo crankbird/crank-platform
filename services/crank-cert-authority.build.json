@@ -8,7 +8,6 @@
         "runtime_files": [
             "services/crank_cert_authority_app.py",
             "services/crank_cert_authority_service.py",
-            "services/security_config.py",
             "services/crank_cert_initialize.py"
         ],
         "requirements_file": "services/requirements-crank-cert-authority.txt",

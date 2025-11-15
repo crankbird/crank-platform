@@ -16,17 +16,17 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy requirements and install Python dependencies
-COPY services/requirements-crank-image-classifier.txt .
+COPY --chown=worker:worker services/requirements-crank-image-classifier.txt .
 RUN pip install --no-cache-dir -r requirements-crank-image-classifier.txt
 
 # Copy service files
-COPY services/relaxed-checking/crank_image_classifier.py ./crank_image_classifier_simple.py
+COPY --chown=worker:worker services/relaxed-checking/crank_image_classifier.py ./crank_image_classifier_simple.py
 
 # Copy the new package structure
-COPY src/ ./src/
+COPY --chown=worker:worker src/ ./src/
 
 # Copy certificate initialization script (legacy fallback)
-COPY services/crank_cert_initialize.py ./scripts/
+COPY --chown=worker:worker services/crank_cert_initialize.py ./scripts/
 
 # Add src to Python path
 ENV PYTHONPATH="/app/src"
