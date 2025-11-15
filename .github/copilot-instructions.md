@@ -49,20 +49,37 @@ from crank.typing_interfaces import *           # Core types
 
 **Setup**: Run `./scripts/dev-universal.sh setup` for complete environment or manual `uv sync --all-extras && uv pip install -e .`
 
-### Worker Development (NEW Pattern)
+### Worker Development (CLEAN MINIMAL PATTERN)
 
-Workers should inherit from `src/crank/worker_runtime/` base classes, NOT duplicate registration/heartbeat logic found in legacy `services/crank_*.py` files.
+**Reference**: `services/crank_hello_world.py` - 3-line main function with automatic HTTPS+mTLS
 
 ```python
-# NEW: Use shared runtime (Phase 1+)
-from crank.worker_runtime import BaseWorker
-from crank.capabilities import CapabilitySchema
+# CLEAN PATTERN (Issue #19 - Nov 2025):
+from crank.worker_runtime import WorkerApplication
 
+def main() -> None:
+    port = int(os.getenv("WORKER_HTTPS_PORT", "8500"))
+    worker = MyWorker(https_port=port)
+    worker.run()  # Handles SSL, certificates, uvicorn automatically
+
+if __name__ == "__main__":
+    main()
+```
+
+**Key Points**:
+- Use `WorkerApplication` base class (provides `.run()` method)
+- Pass `https_port` to worker `__init__` and to `super().__init__()`
+- Call `worker.run()` - it handles SSL/certificates/uvicorn
+- `main()` is sync, not async
+- Workers automatically get HTTPS+mTLS via `crank.security` module
+
+```python
 # LEGACY: Avoid duplicating this pattern
 class SomeWorker:
     def __init__(self):
         self._setup_heartbeat()  # ❌ Code duplication
         self._setup_certificates()  # ❌ Code duplication
+        # Manual uvicorn config  # ❌ Bypasses SSL setup
 ```
 
 ### Type Safety Patterns
@@ -92,14 +109,23 @@ self.app.get("/health")(handler)  # ✅ Explicit binding instead of @decorator
 
 See `docs/development/LINTING_AND_TYPE_CHECKING.md` for complete patterns.
 
-### Certificate-First Security
+### Certificate-First Security (Issue #19 Complete - Nov 2025)
 
-All services use **mutual TLS (mTLS)**:
+All services use **unified `crank.security` module** with automatic mTLS:
 
-- Initialize: `python scripts/initialize-certificates.py`
-- Certificate authority: Service on port 9090
-- All worker communication: HTTPS with client certs
+- **Certificate Authority**: Service on port 9090 (signs worker CSRs)
+- **Worker Pattern**: Call `worker.run()` - automatic HTTPS+mTLS setup
+- **Certificate Bootstrap**: Workers generate CSR → CA signs → worker stores cert
+- **Smart Path Detection**: Auto-detects containers vs native execution
+- **All 9 workers**: Production + reference workers using unified security
+- Initialize CA: `python scripts/initialize-certificates.py`
 - Config: `HTTPS_ONLY=true` in all environments
+
+**Security Consolidation** (675 lines deprecated code removed):
+- ✅ `src/crank/security/` - unified security module (7 files)
+- ✅ All workers use `WorkerApplication.run()` for automatic SSL
+- ✅ Certificate path detection: env → writable dirs → container defaults
+- ❌ Never manually configure uvicorn SSL - use `.run()` method
 
 ## 🧪 Testing Framework
 
@@ -188,6 +214,10 @@ From unified Sonnet+Codex analysis (`docs/development/AI_DEPLOYMENT_OPERATIONAL_
 | Pylance "not accessed" warnings | Use explicit route binding: `app.get("/path")(handler)` |
 | Certificate failures | Initialize: `python scripts/initialize-certificates.py` |
 | Worker registration duplication | Subclass `WorkerApplication`, don't copy legacy patterns |
+| **Worker runs HTTP not HTTPS** | Use `worker.run()` method, NOT manual uvicorn config |
+| **Worker unhealthy in docker** | Ensure `main()` is sync, passes `https_port` to worker |
+| **422 heartbeat errors** | Send form data (service_type, load_score), not empty POST |
+| **Permission denied in container** | Use `--chown=worker:worker` on all COPY commands in Dockerfile |
 | Deployment inconsistencies | Use `deployment/worker-migration-checklist.yml` template |
 
 ## 💡 AI Agent Workflow

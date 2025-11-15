@@ -46,6 +46,10 @@ More text after the list.
 - ✅ **Phase 0** (Issue #27): Capability schema + worker runtime foundation - 64/64 tests passing
 - ✅ **Phase 1** (Issue #28): 8 workers migrated to `WorkerApplication` base class
 - ✅ **Phase 2** (Issue #29): Base worker image + hybrid deployment + CI integration
+- ✅ **Security Consolidation** (Issue #19, Nov 15): All 9 workers using unified `crank.security`
+  - Clean minimal pattern: 3-line main function with automatic HTTPS+mTLS
+  - Reference: `services/crank_hello_world.py` - simplest possible worker
+  - 675 lines deprecated code removed, Docker v28 compatibility
 - 🔜 **Phase 3** (Issue #30): Controller extraction (foundation ready, not yet started)
 - Old architecture archived in `archive/2025-11-09-pre-controller-refactor/`
 - See `docs/architecture/controller-worker-model.md` for architecture and `docs/planning/phase-3-controller-extraction.md` for current roadmap
@@ -53,11 +57,48 @@ More text after the list.
 ### Critical Rules for New Code
 
 1. **Do NOT modify archived services** in `archive/2025-11-09-pre-controller-refactor/`
-2. **New workers MUST use** `src/crank/worker_runtime/` base classes (when ready)
-3. **Capabilities MUST be defined** in `src/crank/capabilities/schema.py` (when ready)
+2. **New workers MUST use** `WorkerApplication` base class with `.run()` method
+3. **Capabilities MUST be defined** in `src/crank/capabilities/schema.py`
 4. **Tests MUST validate** capability-based routing, not direct service calls
 5. **Follow architecture** in `docs/architecture/controller-worker-model.md`
 6. **Follow linting patterns** in `docs/development/LINTING_AND_TYPE_CHECKING.md`
+7. **Security pattern**: Use `worker.run()` for automatic HTTPS+mTLS (never manual uvicorn)
+
+### Clean Minimal Worker Pattern (Issue #19 - Nov 2025)
+
+**Reference Implementation**: `services/crank_hello_world.py`
+
+```python
+from crank.worker_runtime import WorkerApplication
+import os
+
+class MyWorker(WorkerApplication):
+    def __init__(self, worker_id: str | None = None,
+                 service_name: str | None = None,
+                 https_port: int = 8500):
+        super().__init__(
+            worker_id=worker_id,
+            service_name=service_name or "my-service",
+            https_port=https_port
+        )
+        # Setup routes, capabilities, etc.
+
+def main() -> None:
+    port = int(os.getenv("MY_WORKER_HTTPS_PORT", "8500"))
+    worker = MyWorker(https_port=port)
+    worker.run()  # Automatic HTTPS+mTLS via crank.security
+
+if __name__ == "__main__":
+    main()
+```
+
+**Key Points**:
+- `main()` is sync, not async
+- Read port from environment variable
+- Pass `https_port` to worker constructor
+- Worker constructor passes all params to `super().__init__()`
+- Call `worker.run()` - it handles SSL, certificates, uvicorn
+- ❌ NEVER manually configure uvicorn with SSL - bypasses unified security
 
 ### Architecture Principles (NEW)
 

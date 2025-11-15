@@ -3,6 +3,8 @@
 **A distributed capability-based ML execution platform with controller/worker architecture**
 
 > ✅ **Architecture Refactor: Phases 0-2 Complete** (Nov 2025)
+> ✅ **Security Consolidation: Complete** (Issue #19, Nov 15, 2025)
+> All 9 workers using unified `crank.security` module with automatic HTTPS+mTLS.
 > Worker runtime and capability schema foundation complete. Phase 3 (controller extraction) ready to start.
 > Current work: `docs/planning/phase-3-controller-extraction.md` | Completed phases: `docs/archive/completed/` | Old architecture: `archive/2025-11-09-pre-controller-refactor/`
 
@@ -50,6 +52,12 @@ All services communicate over HTTPS with mutual TLS (mTLS) for enhanced security
   - `Dockerfile.worker-base` eliminates 40+ lines per worker
   - Makefile targets for native macOS execution
   - CI builds all workers from base image
+- ✅ **Security Consolidation Complete** (Nov 15): All 9 workers using unified security (Issue #19 - closed)
+  - Unified `src/crank/security/` module (7 files) replaces scattered patterns
+  - All workers use `WorkerApplication.run()` for automatic HTTPS+mTLS
+  - Certificate bootstrap via CA service (port 9090)
+  - Clean minimal worker pattern: 3-line main function (see `crank_hello_world.py`)
+  - 675 lines deprecated code removed, Docker v28 compatibility
 - 🔜 **Phase 3 Ready**: Extract controller from platform (Issue #30 - foundation complete)
 - ⏳ **Phase 4**: Integration tests & documentation (Issue #31)
 
