@@ -1,6 +1,6 @@
 # Master Zettel Vault: The Definitive Collection
 
-**Purpose**: Single source of truth for all zettel knowledge, ending the chaos of scattered collections.
+**Purpose**: Single source of truth for all zettel knowledge, ending the chaos of scattered collections and fueling future Gherkin scenarios.
 
 ## 🎯 Anti-Chaos Principles
 
@@ -24,6 +24,15 @@ MASTER-ZETTEL-VAULT/
 └── MASTER-ZETTEL.md         # Central hub with navigation
 ```
 
+### Directory Contents at a Glance
+
+- `philosophy/`, `business/`, `cognitive-science/`, `brand-science/` — High-signal theories that inform platform positioning
+- `technical/` — Architecture notes, historical refactors, algorithm sketches
+- `personas/` — Stakeholder narratives and mascot perspectives
+- `coordination/` — Meta-work on process, decision logs, and evolution of the team
+- `zettels/` — Raw imports that still need cross-linking; treat as staging
+- `INDEX.md` — Curated entry point with backlinks to the most referenced zettels
+
 ## 🔍 Content Provenance
 
 - **Total Zettels**: 162 unique pieces of intellectual property
@@ -37,6 +46,26 @@ MASTER-ZETTEL-VAULT/
 2. **Start with**: MASTER-ZETTEL.md (central navigation hub)
 3. **Explore**: Follow thematic directories and cross-links
 4. **Graph View**: Color-coded by domain (philosophy=purple, business=green, etc.)
+
+## 🧪 Feeding BDD & Gherkin Work
+
+- **Harvest** candidate scenarios by scanning `technical/` and `coordination/` for decisions with explicit inputs/outputs.
+- **Traceability**: Reference the originating zettel slug inside `docs/proposals/` or `docs/planning/` when converting knowledge to requirements.
+- **Curation Loop**:
+  1. Highlight promising passages in the zettel.
+  2. Create a planning note summarizing assumptions + open questions.
+  3. Promote the distilled requirement into a Gherkin under `docs/proposals/` or the relevant repo directory.
+
+This keeps the vault as the "rich source of Gherkins" without letting partially formed ideas leak directly into specs.
+
+## ✍️ Contribution Workflow
+
+1. **Draft in `zettels/`** with minimal structure.
+2. **Annotate provenance** (source conversation, research link).
+3. **Promote** into the appropriate thematic folder once cross-linked.
+4. **Update `INDEX.md`** or another navigation file if the concept should be discoverable by agents.
+
+When removing or superseding a zettel, leave a short pointer instead of deleting outright so lineage stays intact.
 
 ## ⚡ Integration Ready
 

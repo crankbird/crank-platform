@@ -1,7 +1,7 @@
 # Crank Platform Proposals Index
 
-**Purpose**: Directory of strategic proposals, specifications, and future direction documents
-**Last Updated**: November 16, 2025
+**Purpose**: Directory of strategic proposals, specifications, and future direction documents  
+**Last Updated**: November 16, 2025  
 **Organization**: Flat structure with category prefixes for clarity
 
 ---
@@ -13,6 +13,24 @@ All proposals are in a flat directory with clear naming prefixes:
 - **No prefix**: Strategic/conceptual proposals (long-term vision)
 - **`faas-*`**: FaaS worker technical specifications
 - **`identity-*`**: Identity and security quick-wins
+
+**See**: [README.md](README.md) for contribution guidelines and lifecycle details
+
+---
+
+## 🔄 Proposal Lifecycle
+
+```text
+1. Draft        → Initial idea captured in proposals/
+2. Planning     → Decomposed in docs/planning/ with dependencies
+3. Execution    → Tracked in docs/issues/ or GitHub Issues
+4. Operations   → Mature procedures → docs/operations/
+5. Development  → Coding standards → docs/development/
+6. Archive      → Completed/superseded → docs/archive/
+```
+
+**Example Flow**:
+- `enterprise-security.md` (proposal) → `docs/planning/cap-integration.md` → Issue #19 → `docs/development/WORKER_SECURITY_PATTERN.md`
 
 ---
 

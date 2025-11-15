@@ -13,6 +13,15 @@
 2. **[../ARCHITECTURE.md](../ARCHITECTURE.md)** — Understand the system design
 3. **[../.vscode/AGENT_CONTEXT.md](../../.vscode/AGENT_CONTEXT.md)** — Critical context for AI coding assistants
 
+## 🧭 Directory Purpose & Boundaries
+
+- **Use this directory for**: local environment setup, coding standards, workflows, and agent instructions that affect developer experience.
+- **Do NOT store** production runbooks (→ `docs/operations/`), speculative ideas (→ `docs/proposals/`), or historical reports (→ `docs/reports/`).
+- **Naming**: Uppercase files (`ENVIRONMENT_SETUP.md`, `DOCKER_CONFIGS.md`) are canonical references; lowercase files are working memos that should either graduate to uppercase or be archived after they stabilize.
+- **Lifecycle**: When a memo becomes an accepted practice, promote it (rename to ALL_CAPS and refresh metadata). If it is tied to a resolved issue, summarize the learning here and move the deep dive to `docs/issues/`.
+
+This keeps development docs actionable for humans and AI agents who need a concise view of how to work on the platform today.
+
 ## 📖 Core Development Guides
 
 ### Environment Setup
