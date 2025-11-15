@@ -14,19 +14,47 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy requirements and install Python dependencies
-COPY services/requirements-crank-streaming.txt .
+COPY --chown=worker:worker services/requirements-crank-streaming.txt .
 RUN pip install --no-cache-dir -r requirements-crank-streaming.txt
 
 # Copy shared platform code (for crank_platform.security imports)
-COPY src/ src/
+COPY --chown=worker:worker src/ src/
 
 # Copy service files
-COPY services/crank_streaming.py .
+COPY --chown=worker:worker services/crank_streaming.py .
+COPY --chown=worker:worker services/crank_cert_initialize.py ./scripts/
 
 # Create certificates directory with proper ownership
 RUN mkdir -p /etc/certs && chown worker:worker /etc/certs
 
-# No startup script needed - main() handles everything
+# Create worker startup script with certificate initialization
+RUN echo '#!/usr/bin/env python3' > run_worker.py && \
+    echo 'import subprocess' >> run_worker.py && \
+    echo 'import sys' >> run_worker.py && \
+    echo 'import os' >> run_worker.py && \
+    echo '' >> run_worker.py && \
+    echo 'def initialize_certificates():' >> run_worker.py && \
+    echo '    """Initialize certificates from CA service."""' >> run_worker.py && \
+    echo '    ca_service_url = os.getenv("CA_SERVICE_URL")' >> run_worker.py && \
+    echo '    if ca_service_url:' >> run_worker.py && \
+    echo '        print("🔐 Initializing certificates from Certificate Authority Service...")' >> run_worker.py && \
+    echo '        try:' >> run_worker.py && \
+    echo '            result = subprocess.run([sys.executable, "scripts/crank_cert_initialize.py"], check=True)' >> run_worker.py && \
+    echo '            print("✅ Certificates initialized successfully")' >> run_worker.py && \
+    echo '        except subprocess.CalledProcessError as e:' >> run_worker.py && \
+    echo '            print(f"❌ Certificate initialization failed: {e}")' >> run_worker.py && \
+    echo '            sys.exit(1)' >> run_worker.py && \
+    echo '    else:' >> run_worker.py && \
+    echo '        print("🔧 No CA service configured, using legacy certificate generation")' >> run_worker.py && \
+    echo '' >> run_worker.py && \
+    echo 'if __name__ == "__main__":' >> run_worker.py && \
+    echo '    # Initialize certificates first' >> run_worker.py && \
+    echo '    initialize_certificates()' >> run_worker.py && \
+    echo '    ' >> run_worker.py && \
+    echo '    # Start worker application' >> run_worker.py && \
+    echo '    import crank_streaming' >> run_worker.py && \
+    echo '    crank_streaming.main()' >> run_worker.py && \
+    chmod +x run_worker.py
 
 # Security hardening
 USER worker
@@ -41,5 +69,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
 # Set PYTHONPATH to include src directory
 ENV PYTHONPATH="/app/src:/app"
 
-# Run streaming worker directly
-CMD ["python", "crank_streaming.py"]
+# Run streaming worker with certificate bootstrap
+CMD ["python", "run_worker.py"]
