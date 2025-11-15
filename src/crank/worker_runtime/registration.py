@@ -200,12 +200,18 @@ class ControllerClient:
         heartbeat_url = f"{self.controller_url}/v1/workers/{self.worker_id}/heartbeat"
         headers = {
             "Authorization": f"Bearer {self.auth_token}",
-            "Content-Type": "application/json",
+        }
+
+        # Platform expects form data with service_type and load_score
+        service_type = self._derive_service_type()
+        form_data = {
+            "service_type": service_type,
+            "load_score": "0.0",
         }
 
         try:
             client = await self._get_http_client()
-            response = await client.post(heartbeat_url, headers=headers)
+            response = await client.post(heartbeat_url, data=form_data, headers=headers)
 
             if response.status_code == 200:
                 logger.debug(f"💓 Heartbeat sent for worker {self.worker_id}")

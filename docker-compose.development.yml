@@ -323,6 +323,146 @@ services:
     restart: unless-stopped
     networks:
       - crank-local-net
+  crank-philosophical-analyzer-dev:
+    build:
+      context: .
+      dockerfile: services/Dockerfile.crank-philosophical-analyzer
+    container_name: crank-philosophical-analyzer-dev
+    environment:
+      - CRANK_ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - PHILOSOPHICAL_ANALYZER_HTTPS_PORT=8600
+      - CA_SERVICE_URL=https://crank-cert-authority-dev:9090
+      - HTTPS_ONLY=true
+      - PLATFORM_URL=https://crank-platform-dev:8443
+      - PLATFORM_AUTH_TOKEN=${PLATFORM_AUTH_TOKEN:-local-dev-key}
+    ports:
+      - ${CRANK_PHILOSOPHICAL_ANALYZER_HTTPS_PORT:-8600}:8600
+    volumes:
+      - ./services:/app/services:ro
+      - ./shared:/app/shared:ro
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - -k
+        - https://localhost:8600/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      crank-platform-dev:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - crank-local-net
+  crank-sonnet-zettel-manager-dev:
+    build:
+      context: .
+      dockerfile: services/Dockerfile.crank-sonnet-zettel-manager
+    container_name: crank-sonnet-zettel-manager-dev
+    environment:
+      - CRANK_ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - SONNET_ZETTEL_MANAGER_HTTPS_PORT=8700
+      - CA_SERVICE_URL=https://crank-cert-authority-dev:9090
+      - HTTPS_ONLY=true
+      - PLATFORM_URL=https://crank-platform-dev:8443
+      - PLATFORM_AUTH_TOKEN=${PLATFORM_AUTH_TOKEN:-local-dev-key}
+    ports:
+      - ${CRANK_SONNET_ZETTEL_MANAGER_HTTPS_PORT:-8700}:8700
+    volumes:
+      - ./services:/app/services:ro
+      - ./shared:/app/shared:ro
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - -k
+        - https://localhost:8700/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      crank-platform-dev:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - crank-local-net
+  crank-codex-zettel-repository-dev:
+    build:
+      context: .
+      dockerfile: services/Dockerfile.crank-codex-zettel-repository
+    container_name: crank-codex-zettel-repository-dev
+    environment:
+      - CRANK_ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - CODEX_ZETTEL_REPOSITORY_HTTPS_PORT=8800
+      - CA_SERVICE_URL=https://crank-cert-authority-dev:9090
+      - HTTPS_ONLY=true
+      - PLATFORM_URL=https://crank-platform-dev:8443
+      - PLATFORM_AUTH_TOKEN=${PLATFORM_AUTH_TOKEN:-local-dev-key}
+    ports:
+      - ${CRANK_CODEX_ZETTEL_REPOSITORY_HTTPS_PORT:-8800}:8800
+    volumes:
+      - ./services:/app/services:ro
+      - ./shared:/app/shared:ro
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - -k
+        - https://localhost:8800/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      crank-platform-dev:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - crank-local-net
+  crank-hello-world-dev:
+    build:
+      context: .
+      dockerfile: services/Dockerfile.crank-hello-world
+    container_name: crank-hello-world-dev
+    environment:
+      - CRANK_ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - HELLO_WORLD_HTTPS_PORT=8900
+      - CA_SERVICE_URL=https://crank-cert-authority-dev:9090
+      - HTTPS_ONLY=true
+      - PLATFORM_URL=https://crank-platform-dev:8443
+      - PLATFORM_AUTH_TOKEN=${PLATFORM_AUTH_TOKEN:-local-dev-key}
+    ports:
+      - ${CRANK_HELLO_WORLD_HTTPS_PORT:-8900}:8900
+    volumes:
+      - ./services:/app/services:ro
+      - ./shared:/app/shared:ro
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - -k
+        - https://localhost:8900/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      crank-platform-dev:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - crank-local-net
 networks:
   crank-local-net:
     driver: bridge

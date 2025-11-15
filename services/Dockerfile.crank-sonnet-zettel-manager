@@ -1,0 +1,73 @@
+# Use standard Python base image
+FROM python:3.11-slim
+
+# Create non-root user
+RUN addgroup --gid 1000 worker && \
+    adduser --uid 1000 --gid 1000 --disabled-password worker
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install Python dependencies
+COPY --chown=worker:worker services/requirements-crank-sonnet-zettel-manager.txt .
+RUN pip install --no-cache-dir -r requirements-crank-sonnet-zettel-manager.txt
+
+# Copy shared platform code (for crank.security imports)
+COPY --chown=worker:worker src/ src/
+
+# Copy service files
+COPY --chown=worker:worker services/crank_sonnet_zettel_manager.py .
+COPY --chown=worker:worker services/crank_cert_initialize.py ./scripts/
+
+# Create certificates directory with proper ownership
+RUN mkdir -p /etc/certs && chown worker:worker /etc/certs
+
+# Create worker startup script with certificate initialization
+RUN echo '#!/usr/bin/env python3' > run_worker.py && \
+    echo 'import subprocess' >> run_worker.py && \
+    echo 'import sys' >> run_worker.py && \
+    echo 'import os' >> run_worker.py && \
+    echo '' >> run_worker.py && \
+    echo 'def initialize_certificates():' >> run_worker.py && \
+    echo '    """Initialize certificates from CA service."""' >> run_worker.py && \
+    echo '    ca_service_url = os.getenv("CA_SERVICE_URL")' >> run_worker.py && \
+    echo '    if ca_service_url:' >> run_worker.py && \
+    echo '        print("🔐 Initializing certificates from Certificate Authority Service...")' >> run_worker.py && \
+    echo '        try:' >> run_worker.py && \
+    echo '            result = subprocess.run([sys.executable, "scripts/crank_cert_initialize.py"], check=True)' >> run_worker.py && \
+    echo '            print("✅ Certificates initialized successfully")' >> run_worker.py && \
+    echo '        except subprocess.CalledProcessError as e:' >> run_worker.py && \
+    echo '            print(f"❌ Certificate initialization failed: {e}")' >> run_worker.py && \
+    echo '            sys.exit(1)' >> run_worker.py && \
+    echo '    else:' >> run_worker.py && \
+    echo '        print("🔧 No CA service configured, using legacy certificate generation")' >> run_worker.py && \
+    echo '' >> run_worker.py && \
+    echo 'if __name__ == "__main__":' >> run_worker.py && \
+    echo '    # Initialize certificates first' >> run_worker.py && \
+    echo '    initialize_certificates()' >> run_worker.py && \
+    echo '    ' >> run_worker.py && \
+    echo '    # Start worker application' >> run_worker.py && \
+    echo '    import crank_sonnet_zettel_manager' >> run_worker.py && \
+    echo '    crank_sonnet_zettel_manager.main()' >> run_worker.py && \
+    chmod +x run_worker.py
+
+# Security hardening
+USER worker
+
+# Expose worker HTTPS port
+EXPOSE 8700
+
+# Health check for HTTPS-only mode
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+    CMD curl -k -f https://localhost:${SONNET_ZETTEL_MANAGER_HTTPS_PORT:-8700}/health || exit 1
+
+# Set PYTHONPATH to include src directory
+ENV PYTHONPATH="/app/src:/app"
+
+# Run sonnet zettel manager worker with certificate bootstrap
+CMD ["python", "run_worker.py"]
