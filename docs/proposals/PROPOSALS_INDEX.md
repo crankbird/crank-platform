@@ -2,12 +2,26 @@
 
 **Purpose**: Directory of strategic proposals, specifications, and future direction documents
 **Last Updated**: November 16, 2025
+**Organization**: Flat structure with category prefixes for clarity
 
 ---
 
-## 📚 Strategic Proposals
+## 📂 Directory Organization
 
-### 1. [Repository Split Strategy](repository-split-strategy.md)
+All proposals are in a flat directory with clear naming prefixes:
+
+- **No prefix**: Strategic/conceptual proposals (long-term vision)
+- **`faas-*`**: FaaS worker technical specifications
+- **`identity-*`**: Identity and security quick-wins
+
+---
+
+## 🎯 Strategic Proposals
+
+High-level vision and multi-quarter roadmaps for platform evolution.
+
+### [Repository Split Strategy](repository-split-strategy.md)
+
 **Status**: Draft | **Timeline**: Q1 2026
 
 Proposes separating `crank-platform` (application) from `crank-infrastructure` (DevOps) for:
@@ -20,7 +34,8 @@ Proposes separating `crank-platform` (application) from `crank-infrastructure` (
 
 ---
 
-### 2. [Access Model Evolution](crank-mesh-access-model-evolution.md)
+### [Access Model Evolution](crank-mesh-access-model-evolution.md)
+
 **Status**: Conceptual Framework | **Timeline**: Long-term vision
 
 Outlines evolution from traditional access control to capability-based security:
@@ -38,7 +53,8 @@ Outlines evolution from traditional access control to capability-based security:
 
 ---
 
-### 3. [Job Scheduling to Capability Markets](from-job-scheduling-to-capability-markets.md)
+### [Job Scheduling to Capability Markets](from-job-scheduling-to-capability-markets.md)
+
 **Status**: Conceptual Framework | **Timeline**: Q1-Q2 2026 (early experiments)
 
 Vision for moving beyond classical job scheduling to economic capability markets:
@@ -57,7 +73,8 @@ Vision for moving beyond classical job scheduling to economic capability markets
 
 ---
 
-### 4. [Enhancement Roadmap](enhancement-roadmap.md)
+### [Enhancement Roadmap](enhancement-roadmap.md)
+
 **Status**: Active Roadmap | **Timeline**: Q1 2026 → Q4 2026+
 
 Phased enterprise readiness plan with clear metrics:
@@ -84,7 +101,8 @@ Phased enterprise readiness plan with clear metrics:
 
 ---
 
-### 5. [Enterprise Security & Certification](enterprise-security.md)
+### [Enterprise Security & Certification](enterprise-security.md)
+
 **Status**: Ready to Execute | **Timeline**: Q1 2026 start → Q4 2026 certification
 
 SOC 2, ISO 27001, GDPR/HIPAA compliance program:
@@ -109,7 +127,8 @@ SOC 2, ISO 27001, GDPR/HIPAA compliance program:
 
 ---
 
-### 6. [Gherkin Feature Specifications](crank-gherkins.feature.md)
+### [Gherkin Feature Specifications](crank-gherkins.feature.md)
+
 **Status**: User Story Collection | **Timeline**: Ongoing reference
 
 User-facing features for GPT + Crank integration:
@@ -122,11 +141,12 @@ User-facing features for GPT + Crank integration:
 
 ---
 
-## 🔧 Technical Specifications
+## 🔧 FaaS Worker Specifications
 
-### FaaS Worker Specifications (`crank-specs/`)
+Technical specifications for Function-as-a-Service worker implementation (`faas-*` prefix).
 
-#### [FaaS Worker v0](crank-specs/faas-worker-v0.md)
+### [FaaS Worker v0](faas-worker-specification.md)
+
 Minimal Python-only FaaS worker for Crank-Mesh:
 - Python 3.11 sandbox execution
 - Environment profile support
@@ -158,7 +178,8 @@ Minimal Python-only FaaS worker for Crank-Mesh:
 
 ---
 
-#### [Environment Profiles](crank-specs/env-profiles.md)
+### [Environment Profiles](faas-environment-profiles.md)
+
 Python execution environment specifications:
 
 **python-core**:
@@ -183,7 +204,8 @@ Python execution environment specifications:
 
 ---
 
-#### [CPU vs GPU Worker](crank-specs/cpu-gpu-split.md)
+### [CPU vs GPU Workers](faas-cpu-gpu-workers.md)
+
 Same codebase, different deployment capabilities:
 
 **CPU Worker Capability**:
@@ -217,7 +239,8 @@ Same codebase, different deployment capabilities:
 
 ---
 
-#### [Agent Instructions](crank-specs/agent-instructions.md)
+### [Agent Guidelines](faas-agent-guidelines.md)
+
 Guidelines for AI agents generating Crank execution code:
 
 **Rules**:
@@ -229,74 +252,84 @@ Guidelines for AI agents generating Crank execution code:
 
 ---
 
-## 🔐 Identity & Security Quick Wins (`identity-easy-wins/`)
+## 🔐 Identity & Security Quick Wins
 
-Collection of 10 incremental improvements for Crankbird identity system:
+Incremental improvements for Crankbird identity system (`identity-*` prefix).
 
-### 1. [SPIFFE ID Alignment](identity-easy-wins/1_spiffe_id.md)
+### [SPIFFE ID Alignment](identity-spiffe_id.md)
+
 Adopt SPIFFE-style identity URIs for industry compatibility
 
 **Connection**: Aligns with Access Model Evolution proposal
 
 ---
 
-### 2. [JWT Signing](identity-easy-wins/2_jwt_tokens.md)
+### [JWT Signing](identity-jwt_tokens.md)
+
 Add cert-server JWT issuance for capability tokens
 
 **Connection**: Enables capability markets and budget tokens
 
 ---
 
-### 3. [Trust Bundle Endpoint](identity-easy-wins/3_trust_bundle.md)
+### [Trust Bundle Endpoint](identity-trust_bundle.md)
+
 Expose `/trust-bundle` endpoint for certificate distribution
 
 **Connection**: Foundation for federated mesh trust
 
 ---
 
-### 4. [Role Assumption](identity-easy-wins/4_role_assumption.md)
+### [Role Assumption](identity-role_assumption.md)
+
 STS-like temporary role capability tokens
 
 **Connection**: Enables fine-grained delegation in capability markets
 
 ---
 
-### 5. [NIST 800-207 Mapping](identity-easy-wins/5_nist_doc.md)
+### [NIST 800-207 Mapping](identity-nist_doc.md)
+
 Document Zero Trust Architecture (ZTA) alignment
 
 **Connection**: Required for enterprise certification (SOC 2, ISO 27001)
 
 ---
 
-### 6. [Certificate Metadata](identity-easy-wins/6_cert_metadata.md)
+### [Certificate Metadata](identity-cert_metadata.md)
+
 Add workload-type OID to certificates for capability binding
 
 **Connection**: Strengthens capability verification in markets
 
 ---
 
-### 7. [Attestation Vocabulary](identity-easy-wins/7_attestation_vocab.md)
+### [Attestation Vocabulary](identity-attestation_vocab.md)
+
 Rename endpoints to use attestation semantics
 
 **Connection**: SPIFFE/SPIRE compatibility, industry standards
 
 ---
 
-### 8. [Workload Instance ID](identity-easy-wins/8_instance_id.md)
+### [Workload Instance ID](identity-instance_id.md)
+
 Add UUIDv7 instance IDs for worker tracking
 
 **Connection**: Enables performance tracking for SLO bidding
 
 ---
 
-### 9. [Node Attestation](identity-easy-wins/9_node_attestation.md)
+### [Node Attestation](identity-node_attestation.md)
+
 Lightweight node attestation via certificate thumbprints
 
 **Connection**: Multi-node controller trust (Phase 3 work)
 
 ---
 
-### 10. [Trust Domain Spec](identity-easy-wins/10_trust_domain_spec.md)
+### [Trust Domain Spec](identity-trust_domain_spec.md)
+
 Define Crankbird trust domain specification
 
 **Connection**: Foundation for cross-organization federation
@@ -304,6 +337,26 @@ Define Crankbird trust domain specification
 ---
 
 ## 🔗 Cross-References
+
+**Connection**: Foundation for cross-organization federation
+
+---
+
+### 9. [Node Attestation](identity-easy-wins/9_node_attestation.md)
+
+Lightweight node attestation via certificate thumbprints
+
+**Connection**: Multi-node controller trust (Phase 3 work)
+
+---
+
+### 10. [Trust Domain Spec](identity-easy-wins/10_trust_domain_spec.md)
+
+Define Crankbird trust domain specification
+
+**Connection**: Foundation for cross-organization federation
+
+---
 
 ### Security Foundation → Proposals
 - **Issue #19** (Security Consolidation) ✅ COMPLETE → Unblocks:
