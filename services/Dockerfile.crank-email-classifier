@@ -20,7 +20,6 @@ RUN pip install --no-cache-dir -r requirements-crank-email-classifier.txt
 
 # Copy worker code and metadata
 COPY --chown=worker:worker services/crank_email_classifier.py .
-COPY --chown=worker:worker services/security_config.py .
 COPY --chown=worker:worker services/crank-email-classifier.plugin.yaml ./plugin.yaml
 
 # Copy the new package structure instead of individual scripts

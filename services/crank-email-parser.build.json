@@ -7,7 +7,6 @@
     "dependencies": {
         "runtime_files": [
             "services/crank_email_parser.py",
-            "services/security_config.py",
             "services/crank_cert_initialize.py",
             "services/crank-email-parser.plugin.yaml"
         ],

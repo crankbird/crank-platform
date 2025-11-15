@@ -21,7 +21,6 @@ RUN pip install --no-cache-dir -r requirements-crank-email-parser.txt
 # Copy worker code and metadata
 COPY --chown=worker:worker src/ src/
 COPY --chown=worker:worker services/crank_email_parser.py .
-COPY --chown=worker:worker services/security_config.py .
 COPY --chown=worker:worker services/crank-email-parser.plugin.yaml ./plugin.yaml
 
 # Copy certificate initialization script (needed for in-process initialization)

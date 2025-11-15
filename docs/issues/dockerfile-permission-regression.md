@@ -1,8 +1,8 @@
 # Dockerfile Permission Regression After Docker Upgrade
 
-**Date**: 2025-11-15  
-**Status**: ✅ RESOLVED  
-**Impact**: All services fixed and running  
+**Date**: 2025-11-15
+**Status**: ✅ RESOLVED
+**Impact**: All services fixed and running
 **Root Cause**: Docker v28.5.2 stricter file permission enforcement
 
 ## What Happened
