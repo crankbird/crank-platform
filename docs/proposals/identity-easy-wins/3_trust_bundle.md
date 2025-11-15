@@ -1,0 +1,3 @@
+# 3. Trust Bundle Endpoint
+
+Expose /trust-bundle...

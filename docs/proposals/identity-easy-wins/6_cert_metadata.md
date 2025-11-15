@@ -1,0 +1,3 @@
+# 6. Certificate Metadata
+
+Add workload-type OID...

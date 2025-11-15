@@ -1,0 +1,3 @@
+# 9. Lightweight Node Attestation
+
+Track node cert thumbprints...

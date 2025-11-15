@@ -1,0 +1,3 @@
+# 10. Trust Domain Spec
+
+Define Crankbird trust domain...

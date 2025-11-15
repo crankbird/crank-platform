@@ -1,0 +1,3 @@
+# 4. Role Assumption
+
+STS-like temporary roles...

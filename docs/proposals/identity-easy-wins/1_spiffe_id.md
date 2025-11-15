@@ -1,0 +1,3 @@
+# 1. SPIFFE ID Alignment
+
+Adopt SPIFFE-style identity URIs...

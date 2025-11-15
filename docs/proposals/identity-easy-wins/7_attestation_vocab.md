@@ -1,0 +1,3 @@
+# 7. Attestation Vocabulary
+
+Rename endpoints to attestation semantics...
