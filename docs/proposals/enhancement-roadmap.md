@@ -27,7 +27,7 @@ Following the **JEMM principle** - we use the simplest architecture that solves 
 
 *Constraint-driven, measurable, reversible decisions over architectural purity.*
 
-## �🎯 Current Status (Q4 2025)
+## 🎯 Current Status (Q4 2025)
 
 ### ✅ Completed (Phase 1)
 
@@ -44,6 +44,13 @@ Following the **JEMM principle** - we use the simplest architecture that solves 
 - **Azure Strategy**: Complete deployment plan with auto-scaling
 
 - **Testing Suite**: Adversarial testing for security and performance
+
+- **Security Consolidation** (Issue #19, Nov 15, 2025): Unified `crank.security` module
+  - All 9 workers using automatic HTTPS+mTLS via `WorkerApplication.run()`
+  - Clean minimal worker pattern (3-line main function)
+  - Certificate bootstrap end-to-end (CA → Platform → Workers)
+  - 675 lines deprecated code removed, Docker v28 compatibility
+  - Reference: `services/crank_hello_world.py`, `docs/development/WORKER_SECURITY_PATTERN.md`
 
 ### 🚧 In Progress (Phase 2)
 
