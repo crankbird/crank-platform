@@ -6,6 +6,7 @@
   ],
   "python.terminal.activateEnvironment": true,
   "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.shellIntegration.enabled": true,
   // Mypy configuration for editor integration
   // Use project's mypy.ini which already excludes scripts/ and has ignore_errors for them
   "mypy-type-checker.importStrategy": "fromEnvironment",

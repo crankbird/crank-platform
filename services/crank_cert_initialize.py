@@ -343,16 +343,18 @@ async def main() -> None:
         os.makedirs(cert_dir, exist_ok=True)
 
         # Write certificate files (local to this container only)
-        with open(f"{cert_dir}/platform.crt", "w") as f:
+        # Use 'client' prefix for workers, 'platform' prefix for controller
+        cert_prefix = "platform" if "platform" in os.getenv("HOSTNAME", "").lower() else "client"
+        with open(f"{cert_dir}/{cert_prefix}.crt", "w") as f:
             f.write(signed_certificate)
-        with open(f"{cert_dir}/platform.key", "w") as f:
+        with open(f"{cert_dir}/{cert_prefix}.key", "w") as f:
             f.write(private_key_pem)
         with open(f"{cert_dir}/ca.crt", "w") as f:
             f.write(ca_cert)
 
         # Set proper permissions (readable by worker user only)
-        os.chmod(f"{cert_dir}/platform.key", 0o600)  # Private key: owner read only
-        os.chmod(f"{cert_dir}/platform.crt", 0o644)  # Certificate: owner read, others read
+        os.chmod(f"{cert_dir}/{cert_prefix}.key", 0o600)  # Private key: owner read only
+        os.chmod(f"{cert_dir}/{cert_prefix}.crt", 0o644)  # Certificate: owner read, others read
         os.chmod(f"{cert_dir}/ca.crt", 0o644)  # CA cert: owner read, others read
 
         logger.info("🔐 Certificates stored in memory and written to local disk")

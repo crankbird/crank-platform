@@ -15,19 +15,19 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Install Python dependencies (worker-specific)
-COPY services/requirements-crank-email-classifier.txt .
+COPY --chown=worker:worker services/requirements-crank-email-classifier.txt .
 RUN pip install --no-cache-dir -r requirements-crank-email-classifier.txt
 
 # Copy worker code and metadata
-COPY services/crank_email_classifier.py .
-COPY services/security_config.py .
-COPY services/crank-email-classifier.plugin.yaml ./plugin.yaml
+COPY --chown=worker:worker services/crank_email_classifier.py .
+COPY --chown=worker:worker services/security_config.py .
+COPY --chown=worker:worker services/crank-email-classifier.plugin.yaml ./plugin.yaml
 
 # Copy the new package structure instead of individual scripts
-COPY src/ ./src/
+COPY --chown=worker:worker src/ ./src/
 
 # Copy certificate initialization script (legacy fallback)
-COPY services/crank_cert_initialize.py ./scripts/
+COPY --chown=worker:worker services/crank_cert_initialize.py ./scripts/
 
 # Add src to Python path
 ENV PYTHONPATH="/app/src"
@@ -35,11 +35,33 @@ ENV PYTHONPATH="/app/src"
 # Create certificates directory with proper ownership
 RUN mkdir -p /etc/certs && chown worker:worker /etc/certs
 
-# Create simplified startup script - NO subprocess initialization
+# Create worker startup script with certificate initialization
 RUN echo '#!/usr/bin/env python3' > run_worker.py && \
-    echo '# Simple direct startup - certificate initialization in main()' >> run_worker.py && \
-    echo 'import crank_email_classifier' >> run_worker.py && \
-    echo 'crank_email_classifier.main()' >> run_worker.py && \
+    echo 'import subprocess' >> run_worker.py && \
+    echo 'import sys' >> run_worker.py && \
+    echo 'import os' >> run_worker.py && \
+    echo '' >> run_worker.py && \
+    echo 'def initialize_certificates():' >> run_worker.py && \
+    echo '    """Initialize certificates from CA service."""' >> run_worker.py && \
+    echo '    ca_service_url = os.getenv("CA_SERVICE_URL")' >> run_worker.py && \
+    echo '    if ca_service_url:' >> run_worker.py && \
+    echo '        print("🔐 Initializing certificates from Certificate Authority Service...")' >> run_worker.py && \
+    echo '        try:' >> run_worker.py && \
+    echo '            result = subprocess.run([sys.executable, "scripts/crank_cert_initialize.py"], check=True)' >> run_worker.py && \
+    echo '            print("✅ Certificates initialized successfully")' >> run_worker.py && \
+    echo '        except subprocess.CalledProcessError as e:' >> run_worker.py && \
+    echo '            print(f"❌ Certificate initialization failed: {e}")' >> run_worker.py && \
+    echo '            sys.exit(1)' >> run_worker.py && \
+    echo '    else:' >> run_worker.py && \
+    echo '        print("🔧 No CA service configured, using legacy certificate generation")' >> run_worker.py && \
+    echo '' >> run_worker.py && \
+    echo 'if __name__ == "__main__":' >> run_worker.py && \
+    echo '    # Initialize certificates first' >> run_worker.py && \
+    echo '    initialize_certificates()' >> run_worker.py && \
+    echo '    ' >> run_worker.py && \
+    echo '    # Start worker application' >> run_worker.py && \
+    echo '    import crank_email_classifier' >> run_worker.py && \
+    echo '    crank_email_classifier.main()' >> run_worker.py && \
     chmod +x run_worker.py
 
 # Security hardening
