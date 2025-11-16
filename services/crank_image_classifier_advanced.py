@@ -26,7 +26,7 @@ import numpy as np
 import torch
 import uvicorn
 import yaml
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import File, FastAPI, Form, HTTPException, UploadFile
 
 # Import our boundary shims for type safety
 from ml_boundary_shims import (

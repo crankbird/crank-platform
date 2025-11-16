@@ -14,7 +14,7 @@ from typing import Any, Optional
 from uuid import uuid4
 
 import httpx
-from fastapi import Form, HTTPException, UploadFile
+from fastapi import File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from crank.capabilities.schema import DOCUMENT_CONVERSION, CapabilityDefinition
