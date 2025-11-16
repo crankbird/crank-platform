@@ -1,0 +1,26 @@
+# Capability Manifest: Email Classifier Worker
+# Purpose: Email intent classification and sentiment analysis
+# Last Updated: 2025-11-16
+
+worker_id: email_classifier
+service_name: crank-email-classifier
+default_port: 8201
+
+minimum_capabilities: 1
+
+required_capabilities:
+  - id: "email.classify"
+    version_min: "1.0.0"
+    description: "Email classification for spam, bills, sentiment"
+
+contract_requirements:
+  all_capabilities_have_input_schema: true
+  all_capabilities_have_output_schema: true
+  all_capabilities_have_version: true
+  all_capabilities_have_id: true
+
+allow_additional_capabilities: true
+
+notes: |
+  Email classifier uses ML models for intent detection.
+  Requires nltk and scikit-learn dependencies.

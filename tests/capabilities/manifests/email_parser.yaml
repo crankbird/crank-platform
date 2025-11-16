@@ -1,0 +1,26 @@
+# Capability Manifest: Email Parser Worker
+# Purpose: Parse email archives (mbox, EML) and extract metadata
+# Last Updated: 2025-11-16
+
+worker_id: email_parser
+service_name: crank-email-parser
+default_port: 8301
+
+minimum_capabilities: 1
+
+required_capabilities:
+  - id: "email.parse"
+    version_min: "1.0.0"
+    description: "Parse email archives and extract structured data"
+
+contract_requirements:
+  all_capabilities_have_input_schema: true
+  all_capabilities_have_output_schema: true
+  all_capabilities_have_version: true
+  all_capabilities_have_id: true
+
+allow_additional_capabilities: true
+
+notes: |
+  Email parser handles large file processing (mbox, EML formats).
+  Supports streaming for memory efficiency.

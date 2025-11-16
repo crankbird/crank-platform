@@ -1,0 +1,31 @@
+# Capability Manifest: Streaming Worker
+# Purpose: Streaming email classification and event processing
+# Last Updated: 2025-11-16
+
+worker_id: streaming
+service_name: crank-streaming
+default_port: 8500
+
+# Minimum number of capabilities this worker must provide
+minimum_capabilities: 1
+
+# Required capabilities (worker MUST provide these)
+required_capabilities:
+  - id: "streaming.email.classify"
+    version_min: "1.0.0"
+    description: "Real-time streaming email classification"
+
+# Contract requirements (all capabilities must meet these)
+contract_requirements:
+  all_capabilities_have_input_schema: true
+  all_capabilities_have_output_schema: true
+  all_capabilities_have_version: true
+  all_capabilities_have_id: true
+
+# Allowed capability additions (won't fail tests if added)
+allow_additional_capabilities: true
+
+# Notes for reviewers
+notes: |
+  Streaming worker provides real-time classification capabilities.
+  Future additions might include SSE events, WebSocket streaming.

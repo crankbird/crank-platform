@@ -1,0 +1,26 @@
+# Capability Manifest: Document Converter Worker
+# Purpose: Document format conversion using Pandoc
+# Last Updated: 2025-11-16
+
+worker_id: doc_converter
+service_name: crank-doc-converter
+default_port: 8401
+
+minimum_capabilities: 1
+
+required_capabilities:
+  - id: "document.convert"
+    version_min: "1.0.0"
+    description: "Convert documents between formats (PDF, DOCX, TXT, etc.)"
+
+contract_requirements:
+  all_capabilities_have_input_schema: true
+  all_capabilities_have_output_schema: true
+  all_capabilities_have_version: true
+  all_capabilities_have_id: true
+
+allow_additional_capabilities: true
+
+notes: |
+  Document converter uses Pandoc for format transformations.
+  Supports PDF, DOCX, TXT, HTML, Markdown, and more.

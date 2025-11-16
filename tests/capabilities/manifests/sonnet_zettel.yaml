@@ -1,0 +1,27 @@
+# Capability Manifest: Sonnet Zettel Manager Worker
+# Purpose: Zettelkasten note management with AI integration
+# Last Updated: 2025-11-16
+
+worker_id: sonnet_zettel
+service_name: crank-sonnet-zettel-manager
+default_port: 8700
+
+minimum_capabilities: 1
+
+required_capabilities:
+  - id: "knowledge.sonnet_zettel_management"
+    version_min: "1.0.0"
+    description: "Manage zettelkasten notes with AI capabilities"
+    expected_tags: ["knowledge", "zettel", "notes", "storage", "ai-extensible"]
+
+contract_requirements:
+  all_capabilities_have_input_schema: true
+  all_capabilities_have_output_schema: true
+  all_capabilities_have_version: true
+  all_capabilities_have_id: true
+
+allow_additional_capabilities: true
+
+notes: |
+  Sonnet zettel manager provides AI-enhanced note management.
+  Integrates with knowledge graph and linking systems.

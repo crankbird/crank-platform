@@ -1,0 +1,26 @@
+# Capability Manifest: Hello World Worker
+# Purpose: Reference implementation and testing
+# Last Updated: 2025-11-16
+
+worker_id: hello_world
+service_name: hello-world
+default_port: 8900
+
+minimum_capabilities: 1
+
+required_capabilities:
+  - id: "example.hello_world"
+    version_min: "1.0.0"
+    description: "Simple greeting service for testing and examples"
+
+contract_requirements:
+  all_capabilities_have_input_schema: true
+  all_capabilities_have_output_schema: true
+  all_capabilities_have_version: true
+  all_capabilities_have_id: true
+
+allow_additional_capabilities: true
+
+notes: |
+  Hello World is the reference implementation.
+  Used for testing worker runtime patterns.

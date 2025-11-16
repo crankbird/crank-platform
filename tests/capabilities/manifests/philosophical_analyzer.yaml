@@ -1,0 +1,27 @@
+# Capability Manifest: Philosophical Analyzer Worker
+# Purpose: Philosophical content analysis using ML
+# Last Updated: 2025-11-16
+
+worker_id: philosophical_analyzer
+service_name: crank-philosophical-analyzer
+default_port: 8601
+
+minimum_capabilities: 1
+
+required_capabilities:
+  - id: "content.philosophical_analysis"
+    version_min: "1.0.0"
+    description: "Analyze content for philosophical concepts and themes"
+    expected_tags: ["content", "analysis", "philosophy", "ml"]
+
+contract_requirements:
+  all_capabilities_have_input_schema: true
+  all_capabilities_have_output_schema: true
+  all_capabilities_have_version: true
+  all_capabilities_have_id: true
+
+allow_additional_capabilities: true
+
+notes: |
+  Philosophical analyzer uses ML for concept extraction.
+  Requires philosophical knowledge embeddings.

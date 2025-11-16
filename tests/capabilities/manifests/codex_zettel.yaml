@@ -1,0 +1,27 @@
+# Capability Manifest: Codex Zettel Repository Worker
+# Purpose: Zettelkasten repository management and storage
+# Last Updated: 2025-11-16
+
+worker_id: codex_zettel
+service_name: crank-codex-zettel-repository
+default_port: 8800
+
+minimum_capabilities: 1
+
+required_capabilities:
+  - id: "zettel.codex_repository"
+    version_min: "1.0.0"
+    description: "Repository management for zettelkasten collections"
+    expected_tags: ["zettelkasten", "knowledge", "codex", "content"]
+
+contract_requirements:
+  all_capabilities_have_input_schema: true
+  all_capabilities_have_output_schema: true
+  all_capabilities_have_version: true
+  all_capabilities_have_id: true
+
+allow_additional_capabilities: true
+
+notes: |
+  Codex zettel repository provides storage and retrieval.
+  Complements sonnet_zettel for full knowledge management.
