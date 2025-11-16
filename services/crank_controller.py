@@ -170,7 +170,7 @@ class ControllerService:
 
         # Health check endpoint
         @self.app.get("/health")
-        async def health_check() -> JSONResponse:
+        async def health_check() -> JSONResponse:  # pyright: ignore[reportUnusedFunction]
             """Controller health check."""
             return JSONResponse(
                 content={"status": "healthy", "service": self.service_name},
