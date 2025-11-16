@@ -37,16 +37,17 @@ def client(controller: ControllerService) -> TestClient:
 
 
 def test_health_check(client: TestClient) -> None:
-    """Test controller health endpoint."""
+    """Test controller health endpoint.
+    
+    Controller provides its own /health endpoint (not inherited from WorkerApplication).
+    Returns 200 with controller status.
+    """
     response = client.get("/health")
 
-    # Note: /health is provided by WorkerApplication base class
-    # It returns health manager status, which will be unhealthy until
-    # controller registers with itself (which doesn't happen in tests)
-    # For controller-specific health, use /workers or /status endpoints
-    assert response.status_code in [200, 503]  # Either is acceptable
+    assert response.status_code == 200
     data = response.json()
-    assert "status" in data
+    assert data["status"] == "healthy"
+    assert data["service"] == "crank-controller"
 def test_register_worker(client: TestClient) -> None:
     """Test worker registration."""
     registration = {
