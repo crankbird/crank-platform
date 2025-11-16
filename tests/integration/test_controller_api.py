@@ -26,10 +26,9 @@ def controller(temp_state_file: Path) -> ControllerService:
     import os
     os.environ["CONTROLLER_STATE_FILE"] = str(temp_state_file)
 
+    # ControllerService.__init__ now registers routes automatically
+    # (no longer extends WorkerApplication, so no duplicate registration)
     controller = ControllerService(https_port=9999)
-    # setup_routes() is normally called in .run(), but for testing
-    # we need to call it manually since we're using TestClient
-    controller.setup_routes()
     return controller
 @pytest.fixture
 def client(controller: ControllerService) -> TestClient:

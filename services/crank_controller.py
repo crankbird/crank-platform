@@ -20,16 +20,16 @@ Architecture:
 
 import logging
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Optional
 
-from fastapi import HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from crank.capabilities.schema import CapabilityDefinition
 from crank.controller.capability_registry import CapabilityRegistry, CapabilitySchema
-from crank.worker_runtime.base import WorkerApplication
+from crank.security import CertificateManager
 
 logger = logging.getLogger(__name__)
 
@@ -112,11 +112,11 @@ class WorkersResponse(BaseModel):
 # --- Controller Service ---
 
 
-class ControllerService(WorkerApplication):
+class ControllerService:
     """Controller service managing workers and capabilities.
 
-    This extends WorkerApplication to reuse SSL/certificate infrastructure,
-    but operates as the privileged controller rather than a worker.
+    This is a standalone FastAPI service (not a worker) that uses
+    crank.security for TLS/mTLS but has its own lifecycle.
     """
 
     def __init__(self, https_port: int = 9000):
@@ -125,8 +125,10 @@ class ControllerService(WorkerApplication):
         Args:
             https_port: HTTPS port for controller API (default: 9000)
         """
-        # Initialize capability registry BEFORE calling super().__init__
-        # because setup_routes() (called by parent) needs self.registry
+        self.https_port = https_port
+        self.service_name = "crank-controller"
+
+        # Initialize capability registry
         state_file = Path(os.getenv("CONTROLLER_STATE_FILE", "state/controller/registry.jsonl"))
         heartbeat_timeout = int(os.getenv("CONTROLLER_HEARTBEAT_TIMEOUT", "120"))
         self.registry = CapabilityRegistry(
@@ -134,36 +136,46 @@ class ControllerService(WorkerApplication):
             heartbeat_timeout=heartbeat_timeout,
         )
 
-        logger.info("Controller initialized with state file: %s", state_file)
-
-        # Now call parent __init__ which will call setup_routes()
-        super().__init__(
-            service_name="crank-controller",
-            https_port=https_port,
+        # Initialize certificate manager for SSL
+        self.cert_manager = CertificateManager(
+            worker_id="crank-controller",  # Fixed ID for controller
         )
 
-    # --- Abstract Method Implementations ---
+        # Create FastAPI app with lifespan for cleanup
+        @asynccontextmanager
+        async def lifespan(app: FastAPI):
+            """Controller lifespan: startup and shutdown hooks."""
+            logger.info("🚀 Controller starting on port %d", self.https_port)
+            # Startup: registry already initialized
+            yield
+            # Shutdown: registry auto-persists on each operation
+            logger.info("🛑 Controller shutting down")
 
-    def get_capabilities(self) -> list[CapabilityDefinition]:
-        """Controller doesn't provide worker capabilities.
+        self.app = FastAPI(
+            title="Crank Controller",
+            description="Node-local worker supervisor and capability router",
+            version="0.1.0",
+            lifespan=lifespan,
+        )
 
-        The controller manages capabilities but doesn't expose them as a worker.
-        Return empty list to satisfy WorkerApplication interface.
-        """
-        return []
-
-    def setup_routes(self) -> None:
-        """Setup controller API routes.
-
-        Called by WorkerApplication during initialization.
-        Delegates to _register_routes() for actual implementation.
-        """
+        # Register routes
         self._register_routes()
+
+        logger.info("Controller initialized with state file: %s", state_file)
 
     # --- Route Registration ---
 
     def _register_routes(self) -> None:
         """Register controller API endpoints."""
+
+        # Health check endpoint
+        @self.app.get("/health")
+        async def health_check() -> JSONResponse:
+            """Controller health check."""
+            return JSONResponse(
+                content={"status": "healthy", "service": self.service_name},
+                status_code=200,
+            )
 
         # Worker registration endpoint
         async def register_worker(request: RegisterRequest) -> JSONResponse:
@@ -319,8 +331,37 @@ class ControllerService(WorkerApplication):
 
         self.app.get("/workers")(get_workers)
 
-        # Note: /health endpoint is provided by WorkerApplication base class
-        # For controller-specific health info, use /status or /workers endpoints
+    # --- Run Method ---
+
+    def run(self, host: str = "0.0.0.0", log_level: str = "info") -> None:
+        """Run the controller service with HTTPS.
+
+        Args:
+            host: Host to bind to (default: 0.0.0.0)
+            log_level: Uvicorn log level (default: info)
+        """
+        import uvicorn
+
+        # Get SSL configuration from cert manager
+        ssl_config = self.cert_manager.get_ssl_context()
+
+        logger.info(
+            "🚀 Starting controller %s on https://%s:%d",
+            self.service_name,
+            host,
+            self.https_port,
+        )
+
+        # Run with uvicorn and mTLS
+        uvicorn.run(
+            self.app,
+            host=host,
+            port=self.https_port,
+            log_level=log_level,
+            ssl_certfile=ssl_config["ssl_certfile"],
+            ssl_keyfile=ssl_config["ssl_keyfile"],
+            ssl_ca_certs=ssl_config["ssl_ca_certs"],
+        )
 
 
 # --- Main Entry Point ---
