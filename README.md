@@ -4,9 +4,10 @@
 
 > ✅ **Architecture Refactor: Phases 0-2 Complete** (Nov 2025)
 > ✅ **Security Consolidation: Complete** (Issue #19, Nov 15, 2025)
+> 🚀 **Phase 3: 60% Complete** (Sessions 1-3 ✅, Nov 15-16, 2025)
 > All 9 workers using unified `crank.security` module with automatic HTTPS+mTLS.
-> Worker runtime and capability schema foundation complete. Phase 3 (controller extraction) ready to start.
-> Current work: `docs/planning/phase-3-controller-extraction.md` | Completed phases: `docs/archive/completed/` | Old architecture: `archive/2025-11-09-pre-controller-refactor/`
+> Controller service operational with capability registry and worker registration.
+> Current work: Phase 3 Session 4 (migrate remaining workers) | Docs: `docs/planning/PHASE_3_ATTACK_PLAN.md`
 
 ## Architecture Vision
 
@@ -38,10 +39,10 @@ All services communicate over HTTPS with mutual TLS (mTLS) for enhanced security
 
 ## Current Status
 
-**Active Development**: Controller/Worker architecture refactor - **Phases 0-2 Complete** ✅ (Nov 2025)
+**Active Development**: Controller/Worker architecture refactor - **Phase 3: 60% Complete** 🚀 (Nov 2025)
 
 - ✅ Old architecture archived and functional
-- ✅ Migration plan documented (Phases 0-2: [docs/archive/completed/](docs/archive/completed/), Phase 3: [phase-3-controller-extraction.md](docs/planning/phase-3-controller-extraction.md))
+- ✅ Migration plan documented (Phases 0-2: [docs/archive/completed/](docs/archive/completed/), Phase 3: [PHASE_3_ATTACK_PLAN.md](docs/planning/PHASE_3_ATTACK_PLAN.md))
 - ✅ **Phase 0 Complete** (Nov 10): Capability schema + worker runtime foundation (Issue #27 - closed)
   - 29/29 capability schema tests passing
   - 35/35 worker runtime tests passing
@@ -58,7 +59,13 @@ All services communicate over HTTPS with mutual TLS (mTLS) for enhanced security
   - Certificate bootstrap via CA service (port 9090)
   - Clean minimal worker pattern: 3-line main function (see `crank_hello_world.py`)
   - 675 lines deprecated code removed, Docker v28 compatibility
-- 🔜 **Phase 3 Ready**: Extract controller from platform (Issue #30 - foundation complete)
+- 🚀 **Phase 3: 60% Complete** (Nov 15-16, 2025)
+  - ✅ **Session 1**: Capability registry with extended schema (18 tests passing)
+  - ✅ **Session 2**: Controller FastAPI service (11 tests passing, Codex-approved)
+  - ✅ **Session 3**: Worker registration pattern (`crank_hello_world`, 4 integration tests)
+  - 🔜 **Session 4**: Migrate remaining 8 workers (heartbeat, deregistration)
+  - 🔜 **Session 5**: Platform cleanup and documentation
+  - **Docs**: [PHASE_3_ATTACK_PLAN.md](docs/planning/PHASE_3_ATTACK_PLAN.md)
 - ⏳ **Phase 4**: Integration tests & documentation (Issue #31)
 
 ## Documentation

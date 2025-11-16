@@ -1,9 +1,10 @@
 # Phase 3 Attack Plan: Controller Extraction
 
-**Status**: 🎯 Ready to Execute
+**Status**: 🚀 **60% Complete** (Sessions 1-3 ✅, Sessions 4-5 pending)
 **Goal**: Extract controller from platform, implement capability-based routing (ADR-0023)
 **Timeline**: 5 focused sessions (~8-12 hours total)
 **Prerequisite**: Phases 0-2 complete ✅
+**Completed**: Sessions 1-3 (Nov 15-16, 2025)
 
 ---
 
@@ -52,30 +53,38 @@
 
 ## The 5 Sessions
 
-### Session 1: Capability Registry (Core of ADR-0023)
-**Time**: 2 hours
+### ✅ Session 1: Capability Registry (Core of ADR-0023) - COMPLETE
+**Time**: 2 hours (actual)
 **Goal**: Create registry that tracks worker capabilities
-**Shippable**: Standalone registry with tests
+**Status**: ✅ Complete (Nov 15, 2025)
+**Deliverable**: `src/crank/controller/capability_registry.py`, 18 tests passing
+**Docs**: `docs/planning/phase-3-session-1-COMPLETE.md`
 
-### Session 2: Controller Service
-**Time**: 1.5 hours
+### ✅ Session 2: Controller Service - COMPLETE
+**Time**: 1.5 hours (actual)
 **Goal**: New controller service with registration endpoint
-**Shippable**: One worker can register, tests pass
+**Status**: ✅ Complete (Nov 15, 2025)
+**Deliverable**: `services/crank_controller.py`, 11 tests passing (Codex-approved)
+**Notes**: Refactored to standalone FastAPI app (not WorkerApplication)
 
-### Session 3: Routing Implementation
-**Time**: 2 hours
-**Goal**: Capability-based routing logic
-**Shippable**: Controller routes requests to workers
+### ✅ Session 3: Worker Integration - COMPLETE
+**Time**: 2 hours (actual)
+**Goal**: Real worker registration with controller
+**Status**: ✅ Complete (Nov 16, 2025)
+**Deliverable**: `crank_hello_world` worker integration, 4 integration tests passing
+**Docs**: `docs/planning/phase-3-session-3-COMPLETE.md`
+**Security**: HTTPS-only enforcement validated, anti-patterns documented
 
-### Session 4: Migrate Workers
-**Time**: 1.5 hours
-**Goal**: All 9 workers register with controller
-**Shippable**: Full system works through controller
+### 🔜 Session 4: Migrate Remaining Workers
+**Time**: 1.5 hours (estimated)
+**Goal**: All 8 remaining workers register with controller
+**Status**: Ready to start
+**Plan**: Add heartbeat loops, deregistration on shutdown, multi-worker routing
 
-### Session 5: Cleanup
-**Time**: 1 hour
-**Goal**: Remove controller logic from platform
-**Shippable**: Clean separation, docs updated
+### 🔜 Session 5: Cleanup & Documentation
+**Time**: 1 hour (estimated)
+**Goal**: Remove controller logic from platform, finalize docs
+**Status**: Blocked by Session 4
 
 ---
 
