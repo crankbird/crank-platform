@@ -95,20 +95,37 @@ def test_worker_registers_with_controller(
     assert len(workers) == 1
     assert workers[0]["worker_id"] == worker.worker_id
     assert workers[0]["worker_url"] == worker.worker_url
-@pytest.mark.asyncio
-async def test_controller_routes_to_registered_worker(
+def test_controller_routes_to_registered_worker(
     controller_client: TestClient,
     worker: HelloWorldWorker,
 ) -> None:
     """Test capability-based routing to registered worker.
 
     Flow:
-    1. Worker registers with controller
+    1. Worker registers with controller (manual via TestClient)
     2. Request routing for capability
     3. Controller returns worker endpoint
+
+    Note: Uses manual registration because TestClient is in-process,
+    not a real HTTPS server that async httpx.AsyncClient can reach.
     """
-    # Register worker
-    await worker.on_startup()
+    # Register worker manually (simulates what on_startup() does)
+    capabilities = [
+        {
+            "name": cap.id,
+            "verb": "invoke",
+            "version": f"{cap.version.major}.{cap.version.minor}.{cap.version.patch}",
+        }
+        for cap in worker.get_capabilities()
+    ]
+
+    registration = {
+        "worker_id": worker.worker_id,
+        "worker_url": worker.worker_url,
+        "capabilities": capabilities,
+    }
+    response = controller_client.post("/register", json=registration)
+    assert response.status_code == 200
 
     # Request routing for hello world capability
     route_request = {
@@ -125,30 +142,47 @@ async def test_controller_routes_to_registered_worker(
     assert route["capability"] == "invoke:example.hello_world"
 
 
-@pytest.mark.asyncio
-async def test_controller_lists_worker_capabilities(
+def test_controller_lists_worker_capabilities(
     controller_client: TestClient,
     worker: HelloWorldWorker,
 ) -> None:
     """Test controller capability introspection.
 
     Flow:
-    1. Worker registers with capabilities
+    1. Worker registers with capabilities (manual via TestClient)
     2. Query controller for all capabilities
     3. Verify hello world capability present
+
+    Note: Uses manual registration because TestClient is in-process,
+    not a real HTTPS server that async httpx.AsyncClient can reach.
     """
-    # Register worker
-    await worker.on_startup()
+    # Register worker manually (simulates what on_startup() does)
+    capabilities = [
+        {
+            "name": cap.id,
+            "verb": "invoke",
+            "version": f"{cap.version.major}.{cap.version.minor}.{cap.version.patch}",
+        }
+        for cap in worker.get_capabilities()
+    ]
+
+    registration = {
+        "worker_id": worker.worker_id,
+        "worker_url": worker.worker_url,
+        "capabilities": capabilities,
+    }
+    response = controller_client.post("/register", json=registration)
+    assert response.status_code == 200
 
     # Query capabilities
     response = controller_client.get("/capabilities")
     assert response.status_code == 200
 
-    capabilities = response.json()["capabilities"]
+    capabilities_data = response.json()["capabilities"]
 
     # Verify hello world capability registered
-    assert "invoke:example.hello_world" in capabilities
-    cap_info = capabilities["invoke:example.hello_world"]
+    assert "invoke:example.hello_world" in capabilities_data
+    cap_info = capabilities_data["invoke:example.hello_world"]
     assert cap_info["workers"] == 1
     assert cap_info["healthy_workers"] == 1
 
