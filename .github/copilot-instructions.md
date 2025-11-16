@@ -36,6 +36,36 @@ Crank-Node (host environment)
 - **Windows/Linux**: Full containerization with GPU passthrough
 - **Mobile/IoT**: Embedded workers in app sandbox
 
+## 🚨 Security Anti-Patterns (CRITICAL)
+
+**NEVER use these patterns - they violate the HTTPS-only architecture:**
+
+❌ **HTTP URLs**: `http://localhost:9000` → ✅ Use `https://localhost:9000`
+❌ **Disabled verification**: `verify=False` → ✅ Use `cert_manager.get_ssl_context()`
+❌ **Manual SSL config**: Custom uvicorn SSL → ✅ Use `worker.run()` method
+❌ **HTTP in tests**: `TestClient` with http:// → ✅ Use https:// even in tests
+
+**Correct Pattern for HTTP Clients**:
+
+```python
+# ✅ CORRECT: HTTPS with mTLS
+import httpx
+ssl_config = self.cert_manager.get_ssl_context()
+async with httpx.AsyncClient(
+    cert=(ssl_config["ssl_certfile"], ssl_config["ssl_keyfile"]),
+    verify=ssl_config["ssl_ca_certs"],
+) as client:
+    response = await client.post(f"{url}/endpoint", json=data)
+
+# ❌ WRONG: HTTP or disabled verification
+async with httpx.AsyncClient(verify=False) as client:  # NEVER DO THIS
+    response = await client.post(f"http://{url}/endpoint", json=data)
+```
+
+**Why**: All communication uses HTTPS with mTLS (mutual TLS) - no HTTP capability exists even in development. This is enforced by `HTTPS_ONLY=true` in all environments.
+
+---
+
 ## 🎯 Development Patterns
 
 ### Package Structure (Import-Critical)
@@ -232,6 +262,7 @@ From unified Sonnet+Codex analysis (`docs/development/AI_DEPLOYMENT_OPERATIONAL_
 | Worker registration duplication | Subclass `WorkerApplication`, don't copy legacy patterns |
 | **Worker runs HTTP not HTTPS** | Use `worker.run()` method, NOT manual uvicorn config |
 | **Worker unhealthy in docker** | Ensure `main()` is sync, passes `https_port` to worker |
+| **HTTP URL or verify=False** | ❌ SECURITY VIOLATION - use HTTPS + `cert_manager.get_ssl_context()` |
 | **422 heartbeat errors** | Send form data (service_type, load_score), not empty POST |
 | **Permission denied in container** | Use `--chown=worker:worker` on all COPY commands in Dockerfile |
 | Deployment inconsistencies | Use `deployment/worker-migration-checklist.yml` template |
