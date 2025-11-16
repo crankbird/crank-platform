@@ -105,7 +105,7 @@ def test_oliver_validation() -> None:
     try:
         # Run Oliver on services directory only
         result = subprocess.run(
-            ["python3", "oliver_pattern_checker.py", "services/"],
+            ["python3", "scripts/oliver_pattern_checker.py", "services/"],
             check=False,
             capture_output=True,
             text=True,

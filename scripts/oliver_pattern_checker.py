@@ -149,6 +149,8 @@ class OliverPatternChecker:
         violations = []
         lines = content.split("\n")
 
+        is_dockerfile = "Dockerfile" in file_path
+
         # Common hardcoded patterns Oliver flags
         hardcoded_patterns = [
             (r"port\s*=\s*\d+", "hardcoded port number"),
@@ -159,6 +161,10 @@ class OliverPatternChecker:
         ]
 
         for line_num, line in enumerate(lines, 1):
+            # Skip Dockerfile EXPOSE and HEALTHCHECK statements (they're metadata/checks, not runtime config)
+            if is_dockerfile and (line.strip().startswith("EXPOSE") or line.strip().startswith("HEALTHCHECK")):
+                continue
+
             for pattern, description in hardcoded_patterns:
                 if re.search(pattern, line, re.IGNORECASE):
                     authority = self.authority_sources["hardcoded_config"]

@@ -265,8 +265,10 @@ class TestCertificateManager:
         """Test certificate path generation."""
         manager = CertificateManager("test-worker", cert_dir=tmp_path)
 
-        assert manager.get_cert_path() == tmp_path / "test-worker.crt"
-        assert manager.get_key_path() == tmp_path / "test-worker.key"
+        # Certificate manager uses standard client.crt/client.key names
+        # (matches initialize_worker_certificates output)
+        assert manager.get_cert_path() == tmp_path / "client.crt"
+        assert manager.get_key_path() == tmp_path / "client.key"
         assert manager.get_ca_cert_path() == tmp_path / "ca.crt"
 
     def test_certificates_exist_check(self, tmp_path: Path) -> None:

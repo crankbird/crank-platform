@@ -33,9 +33,15 @@ def test_health_endpoint() -> None:
 
     if result.returncode == 0:
         data = json.loads(result.stdout)
-        print(f"✅ Service: {data['service']}")
-        print(f"✅ Status: {data['status']}")
-        print(f"✅ Capabilities: {', '.join(data['capabilities'])}")
+        # Handle both old and new response formats
+        service_name = data.get('service') or data.get('worker_id', 'unknown')
+        status = data.get('status', 'unknown')
+        capabilities = data.get('capabilities', [])
+
+        print(f"✅ Service: {service_name}")
+        print(f"✅ Status: {status}")
+        if capabilities:
+            print(f"✅ Capabilities: {', '.join(capabilities)}")
     else:
         print(f"❌ Health check failed: {result.stderr}")
         pytest.fail(f"Health check failed: {result.stderr}")

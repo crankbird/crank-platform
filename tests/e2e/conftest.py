@@ -191,15 +191,17 @@ def request_timer() -> RequestTimer:
 # pytest-bdd Configuration
 # ============================================================================
 
+# NOTE: pytest-bdd hook commented out - requires pytest-bdd package installation
+# Uncomment when pytest-bdd is added to dependencies
 
-def pytest_bdd_apply_tag(tag: str, function: Any) -> None:
-    """
-    Apply pytest markers based on Gherkin tags.
-
-    Example:
-        @sync -> pytest.mark.sync
-        @latency -> pytest.mark.latency
-    """
-    marker = tag.lstrip("@")
-    if hasattr(pytest.mark, marker):
-        getattr(pytest.mark, marker)(function)
+# def pytest_bdd_apply_tag(tag: str, function: Any) -> None:
+#     """
+#     Apply pytest markers based on Gherkin tags.
+#
+#     Example:
+#         @sync -> pytest.mark.sync
+#         @latency -> pytest.mark.latency
+#     """
+#     marker = tag.lstrip("@")
+#     if hasattr(pytest.mark, marker):
+#         getattr(pytest.mark, marker)(function)
