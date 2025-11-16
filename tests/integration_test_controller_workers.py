@@ -857,7 +857,7 @@ class ControllerIntegrationTest:
         passed = 0
         failed = 0
 
-        for _archetype_key, status in summary["archetype_status"].items():
+        for _worker_key, status in summary["worker_status"].items():
             if status:
                 passed += 1
             else:
@@ -869,13 +869,13 @@ class ControllerIntegrationTest:
         # Overall success
         summary["overall_success"] = (
             len(summary["critical_failures"]) == 0
-            and passed >= len(self.archetypes) * 0.8  # 80% success rate
+            and passed >= len(self.workers) * 0.8  # 80% success rate
         )
 
     def print_results(self, results: dict[str, Any]) -> None:
         """Print comprehensive test results"""
         print("\n" + "=" * 80)
-        print("📊 ENHANCED SMOKE TEST RESULTS")
+        print("📊 CONTROLLER + WORKERS INTEGRATION TEST RESULTS")
         print("=" * 80)
 
         summary = results["summary"]
@@ -888,9 +888,9 @@ class ControllerIntegrationTest:
         print(f"🚨 Critical Failures: {len(summary['critical_failures'])}")
         print(f"🎯 Overall Success: {'✅ YES' if summary['overall_success'] else '❌ NO'}")
 
-        print("\n🎮 ARCHETYPE STATUS:")
-        for archetype_key, status in summary["archetype_status"].items():
-            config = self.archetypes[archetype_key]
+        print("\n🎮 WORKER STATUS:")
+        for worker_key, status in summary["worker_status"].items():
+            config = self.workers[worker_key]
             status_icon = "✅" if status else "❌"
             print(f"  {status_icon} {config.name}")
 
@@ -923,10 +923,10 @@ class ControllerIntegrationTest:
             "detailed_results": {
                 "container_status": results["container_status"],
                 "health_checks": results["health_checks"],
-                "platform_registration": results["platform_registration"],
+                "controller_registration": results["controller_registration"],
                 "api_functionality": results["api_functionality"],
-                "archetype_validation": results["archetype_validation"],
-                "archetype_status": results["summary"]["archetype_status"],
+                "worker_validation": results["worker_validation"],
+                "worker_status": results["summary"]["worker_status"],
             },
         }
 
