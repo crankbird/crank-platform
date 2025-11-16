@@ -21,7 +21,6 @@ from crank.controller.capability_registry import (
     CapabilitySchema,
 )
 
-
 # --- Fixtures ---
 
 
@@ -88,8 +87,8 @@ def test_register_worker_minimal_capability(
         capabilities=[minimal_capability],
     )
 
-    assert "worker-1" in registry._workers
-    worker = registry._workers["worker-1"]
+    worker = registry.get_worker("worker-1")
+    assert worker is not None
     assert worker.worker_id == "worker-1"
     assert len(worker.capabilities) == 1
     assert worker.capabilities[0].name == "hello_world"
@@ -105,7 +104,8 @@ def test_register_worker_extended_capability(
         capabilities=[extended_capability],
     )
 
-    worker = registry._workers["worker-doc"]
+    worker = registry.get_worker("worker-doc")
+    assert worker is not None
     cap = worker.capabilities[0]
 
     # Verify core fields
@@ -115,13 +115,16 @@ def test_register_worker_extended_capability(
     # Verify FaaS metadata
     assert cap.runtime == "python3.11"
     assert cap.env_profile == "memory-intensive"
+    assert cap.constraints is not None
     assert cap.constraints["min_memory_mb"] == 2048
 
     # Verify SLO
+    assert cap.slo is not None
     assert cap.slo["latency_p95_ms"] == 500
 
     # Verify identity
     assert cap.spiffe_id == "spiffe://crank.local/worker/doc-conversion"
+    assert cap.required_capabilities is not None
     assert "classify:document_type" in cap.required_capabilities
 
     # Verify economic
@@ -129,6 +132,7 @@ def test_register_worker_extended_capability(
     assert cap.slo_bid == 2.0
 
     # Verify multi-controller
+    assert cap.controller_affinity is not None
     assert "controller-primary" in cap.controller_affinity
 
 
@@ -147,7 +151,8 @@ def test_register_multiple_capabilities(
         capabilities=caps,
     )
 
-    worker = registry._workers["worker-streaming"]
+    worker = registry.get_worker("worker-streaming")
+    assert worker is not None
     assert len(worker.capabilities) == 2
 
 
@@ -165,7 +170,6 @@ def test_route_finds_worker(
     )
 
     worker = registry.route(verb="greet", capability="hello_world")
-
     assert worker is not None
     assert worker.worker_id == "worker-1"
 
@@ -210,13 +214,17 @@ def test_heartbeat_updates_timestamp(registry: CapabilityRegistry) -> None:
         capabilities=[cap],
     )
 
-    original_time = registry._workers["worker-1"].last_heartbeat
+    worker = registry.get_worker("worker-1")
+    assert worker is not None
+    original_time = worker.last_heartbeat
     time.sleep(0.1)
 
     success = registry.heartbeat("worker-1")
 
+    worker_after = registry.get_worker("worker-1")
     assert success is True
-    assert registry._workers["worker-1"].last_heartbeat > original_time
+    assert worker_after is not None
+    assert worker_after.last_heartbeat > original_time
 
 
 def test_heartbeat_unknown_worker_returns_false(
@@ -242,7 +250,8 @@ def test_worker_becomes_stale_after_timeout(
     )
 
     # Worker starts healthy
-    worker = registry._workers["worker-1"]
+    worker = registry.get_worker("worker-1")
+    assert worker is not None
     assert worker.is_healthy(registry.heartbeat_timeout) is True
 
     # Simulate timeout (manually set old timestamp)
@@ -262,14 +271,14 @@ def test_cleanup_stale_removes_workers(registry: CapabilityRegistry) -> None:
     )
 
     # Make worker stale
-    registry._workers["worker-stale"].last_heartbeat = datetime.now() - timedelta(
-        seconds=10
-    )
+    worker = registry.get_worker("worker-stale")
+    assert worker is not None
+    worker.last_heartbeat = datetime.now() - timedelta(seconds=10)
 
     removed = registry.cleanup_stale()
 
     assert removed == 1
-    assert "worker-stale" not in registry._workers
+    assert registry.get_worker("worker-stale") is None
 
 
 def test_route_excludes_stale_workers(registry: CapabilityRegistry) -> None:
@@ -282,9 +291,9 @@ def test_route_excludes_stale_workers(registry: CapabilityRegistry) -> None:
     )
 
     # Make worker stale
-    registry._workers["worker-stale"].last_heartbeat = datetime.now() - timedelta(
-        seconds=10
-    )
+    stale_worker = registry.get_worker("worker-stale")
+    assert stale_worker is not None
+    stale_worker.last_heartbeat = datetime.now() - timedelta(seconds=10)
 
     worker = registry.route(verb="test", capability="test")
     assert worker is None  # Stale worker not returned
@@ -302,11 +311,11 @@ def test_deregister_removes_worker(registry: CapabilityRegistry) -> None:
         capabilities=[cap],
     )
 
-    assert "worker-1" in registry._workers
+    assert registry.get_worker("worker-1") is not None
 
     registry.deregister("worker-1")
 
-    assert "worker-1" not in registry._workers
+    assert registry.get_worker("worker-1") is None
 
 
 # --- Persistence Tests ---
@@ -345,8 +354,9 @@ def test_state_loads_on_startup(
     # Create new registry (simulates restart)
     registry2 = CapabilityRegistry(state_file=temp_state_file)
 
-    assert "worker-1" in registry2._workers
-    assert len(registry2._workers["worker-1"].capabilities) == 1
+    worker = registry2.get_worker("worker-1")
+    assert worker is not None
+    assert len(worker.capabilities) == 1
 
 
 # --- Introspection Tests ---

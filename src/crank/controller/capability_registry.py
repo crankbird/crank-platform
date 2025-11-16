@@ -310,6 +310,10 @@ class CapabilityRegistry:
             for cap, worker_ids in self._capability_index.items()
         }
 
+    def get_worker(self, worker_id: str) -> Optional[WorkerEndpoint]:
+        """Get worker by ID (public accessor for tests and introspection)."""
+        return self._workers.get(worker_id)
+
     def get_all_workers(self) -> list[dict[str, Any]]:
         """Get all registered workers with health status."""
         return [
