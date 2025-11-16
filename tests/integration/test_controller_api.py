@@ -38,7 +38,7 @@ def client(controller: ControllerService) -> TestClient:
 
 def test_health_check(client: TestClient) -> None:
     """Test controller health endpoint.
-    
+
     Controller provides its own /health endpoint (not inherited from WorkerApplication).
     Returns 200 with controller status.
     """
