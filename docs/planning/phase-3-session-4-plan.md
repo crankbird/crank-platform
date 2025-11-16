@@ -49,7 +49,7 @@ class MyWorker(WorkerApplication):
             https_port=https_port,
             worker_id=f"crank-{service_name}",
         )
-        
+
         # Controller discovery
         self.controller_url = os.getenv("CONTROLLER_URL")
         self._registration_confirmed = False
@@ -93,10 +93,10 @@ class MyWorker(WorkerApplication):
                 await self._heartbeat_task
             except asyncio.CancelledError:
                 pass
-        
+
         if self.controller_url and self._registration_confirmed:
             await self._deregister_from_controller()
-        
+
         await super().on_shutdown()
 ```
 
@@ -111,9 +111,9 @@ class MyWorker(WorkerApplication):
             "worker_url": f"https://localhost:{self.https_port}",
             "capabilities": capabilities,
         }
-        
+
         ssl_config = self.cert_manager.get_ssl_context()
-        
+
         try:
             async with httpx.AsyncClient(
                 cert=(ssl_config["ssl_certfile"], ssl_config["ssl_keyfile"]),
@@ -145,10 +145,10 @@ class MyWorker(WorkerApplication):
         """Send periodic heartbeats to controller."""
         while True:
             await asyncio.sleep(30)  # 30 second interval
-            
+
             if not self._registration_confirmed:
                 continue
-            
+
             try:
                 ssl_config = self.cert_manager.get_ssl_context()
                 async with httpx.AsyncClient(
@@ -160,14 +160,14 @@ class MyWorker(WorkerApplication):
                         f"{self.controller_url}/heartbeat",
                         data={"worker_id": self.worker_id},
                     )
-                    
+
                     if response.status_code == 404:
                         # Controller doesn't know us - re-register
                         logger.warning("Controller lost our registration - re-registering")
                         await self._register_with_controller()
                     else:
                         response.raise_for_status()
-                        
+
             except Exception as e:
                 logger.warning("Heartbeat failed: %s", str(e))
 ```
@@ -221,7 +221,7 @@ For each worker:
 @pytest.mark.asyncio
 async def test_all_workers_register(controller_client):
     """Test all 9 workers can register with controller."""
-    
+
     # Simulate registration from all workers
     workers = [
         ("crank-hello-world", 8500, ["greet:hello_world"]),
@@ -229,7 +229,7 @@ async def test_all_workers_register(controller_client):
         ("crank-email-classifier", 8502, ["classify:email_intent"]),
         # ... all 9 workers
     ]
-    
+
     for worker_id, port, capabilities in workers:
         response = controller_client.post(
             "/register",
@@ -243,12 +243,12 @@ async def test_all_workers_register(controller_client):
             },
         )
         assert response.status_code == 200
-    
+
     # Verify all capabilities available
     response = controller_client.get("/capabilities")
     assert response.status_code == 200
     capabilities = response.json()
-    
+
     assert "greet:hello_world" in capabilities
     assert "stream:text_events" in capabilities
     assert "classify:email_intent" in capabilities
@@ -260,16 +260,16 @@ async def test_all_workers_register(controller_client):
 @pytest.mark.asyncio
 async def test_routing_with_multiple_workers_same_capability():
     """Test routing when multiple workers provide same capability."""
-    
+
     # Register CPU and GPU image classifiers (both provide classify:image_category)
     # ... registration code ...
-    
+
     # Route request
     response = controller_client.post(
         "/route",
         json={"verb": "classify", "capability": "image_category"},
     )
-    
+
     assert response.status_code == 200
     worker = response.json()
     assert worker["worker_id"] in ["crank-image-classifier", "crank-image-classifier-gpu"]
@@ -281,20 +281,20 @@ async def test_routing_with_multiple_workers_same_capability():
 @pytest.mark.asyncio
 async def test_heartbeat_auto_reregistration():
     """Test worker re-registers when controller loses state."""
-    
+
     # Register worker
     # ... registration code ...
-    
+
     # Manually clear controller registry
     registry.deregister("crank-hello-world")
-    
+
     # Send heartbeat - should get 404
     response = controller_client.post(
         "/heartbeat",
         data={"worker_id": "crank-hello-world"},
     )
     assert response.status_code == 404
-    
+
     # Worker should detect 404 and re-register
     # (This requires running real worker, not just TestClient)
 ```

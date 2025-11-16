@@ -18,6 +18,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import httpx
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
@@ -218,6 +219,15 @@ class CodexZettelRepositoryWorker(WorkerApplication):
             https_port=int(os.getenv("CODEX_ZETTEL_REPOSITORY_HTTPS_PORT", "8800")),
         )
 
+        # Controller registration
+        self.controller_url = os.getenv("CONTROLLER_URL")
+        self.registered_with_controller = False
+
+        if self.controller_url:
+            logger.info("Controller URL configured: %s", self.controller_url)
+        else:
+            logger.info("No controller URL - running standalone")
+
     def setup_routes(self) -> None:
         async def ingest_zettel(request: dict[str, Any]) -> JSONResponse:
             try:
@@ -235,9 +245,59 @@ class CodexZettelRepositoryWorker(WorkerApplication):
         return [CODEX_ZETTEL_REPOSITORY]
 
     async def on_startup(self) -> None:
+        """Register with controller on startup (if configured)."""
         logger.info("Codex zettel repository worker starting up")
         await super().on_startup()
+
+        if self.controller_url:
+            await self._register_with_controller()
+
         logger.info("Codex zettel repository ready")
+
+    async def _register_with_controller(self) -> None:
+        """Send registration request to controller."""
+        try:
+            capabilities = [
+                {
+                    "name": cap.id,
+                    "verb": "manage",
+                    "version": f"{cap.version.major}.{cap.version.minor}.{cap.version.patch}",
+                    "input_schema": cap.contract.input_schema,
+                    "output_schema": cap.contract.output_schema,
+                }
+                for cap in self.get_capabilities()
+            ]
+
+            registration_payload = {
+                "worker_id": self.worker_id,
+                "worker_url": self.worker_url,
+                "capabilities": capabilities,
+            }
+
+            logger.info("Registering with controller at %s", self.controller_url)
+            ssl_config = self.cert_manager.get_ssl_context()
+
+            async with httpx.AsyncClient(
+                cert=(ssl_config["ssl_certfile"], ssl_config["ssl_keyfile"]),
+                verify=ssl_config["ssl_ca_certs"],
+            ) as client:
+                response = await client.post(
+                    f"{self.controller_url}/register",
+                    json=registration_payload,
+                    timeout=10.0,
+                )
+                response.raise_for_status()
+                result = response.json()
+                self.registered_with_controller = True
+                logger.info(
+                    "✅ Registered with controller: %s capabilities",
+                    result.get("capabilities_registered", 0)
+                )
+        except Exception as e:
+            logger.error(
+                "❌ Failed to register with controller: %s (continuing anyway)",
+                str(e)
+            )
 
     async def on_shutdown(self) -> None:
         logger.info("Codex zettel repository worker shutting down")

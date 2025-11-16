@@ -83,7 +83,7 @@ class ClassificationResponse(BaseModel):
 
 class SimpleEmailClassifier:
     """Simple ML-based email classifier with multiple classification types.
-    
+
     This is the core business logic - pure ML functionality with no infrastructure.
     Uses sklearn pipelines for text classification (TF-IDF + Naive Bayes).
     """
@@ -311,7 +311,7 @@ class SimpleEmailClassifier:
 
 class EmailClassifierWorker(WorkerApplication):
     """Email classification worker using ML models.
-    
+
     Provides multiple classification types:
     - Spam detection (TF-IDF + Naive Bayes)
     - Bill/receipt detection (TF-IDF + Naive Bayes)
@@ -319,7 +319,7 @@ class EmailClassifierWorker(WorkerApplication):
     - Category classification (TF-IDF + Naive Bayes)
     - Priority classification (keyword-based)
     - Language detection (simplified)
-    
+
     All infrastructure (registration, heartbeat, health checks, certificates)
     is handled by the WorkerApplication base class.
     """
@@ -330,9 +330,77 @@ class EmailClassifierWorker(WorkerApplication):
             service_name="crank-email-classifier",
             https_port=int(os.getenv("EMAIL_CLASSIFIER_HTTPS_PORT", "8201")),
         )
-        
+
         # Initialize ML engine (business logic)
         self.classifier = SimpleEmailClassifier()
+
+        # Controller registration
+        self.controller_url = os.getenv("CONTROLLER_URL")
+        self.registered_with_controller = False
+
+        if self.controller_url:
+            logger.info("Controller URL configured: %s", self.controller_url)
+        else:
+            logger.info("No controller URL - running standalone")
+
+    async def on_startup(self) -> None:
+        """Register with controller on startup (if configured)."""
+        await super().on_startup()
+
+        if self.controller_url:
+            await self._register_with_controller()
+
+    async def _register_with_controller(self) -> None:
+        """Send registration request to controller."""
+        try:
+            # Convert capabilities to dict for registration
+            capabilities = [
+                {
+                    "name": cap.id,
+                    "verb": "classify",
+                    "version": f"{cap.version.major}.{cap.version.minor}.{cap.version.patch}",
+                    "input_schema": cap.contract.input_schema,
+                    "output_schema": cap.contract.output_schema,
+                }
+                for cap in self.get_capabilities()
+            ]
+
+            registration_payload = {
+                "worker_id": self.worker_id,
+                "worker_url": self.worker_url,
+                "capabilities": capabilities,
+            }
+
+            logger.info("Registering with controller at %s", self.controller_url)
+
+            # HTTPS with mTLS using worker certificates
+            ssl_config = self.cert_manager.get_ssl_context()
+
+            async with httpx.AsyncClient(
+                cert=(ssl_config["ssl_certfile"], ssl_config["ssl_keyfile"]),
+                verify=ssl_config["ssl_ca_certs"],
+            ) as client:
+                response = await client.post(
+                    f"{self.controller_url}/register",
+                    json=registration_payload,
+                    timeout=10.0,
+                )
+                response.raise_for_status()
+
+                result = response.json()
+                self.registered_with_controller = True
+
+                logger.info(
+                    "✅ Registered with controller: %s capabilities",
+                    result.get("capabilities_registered", 0)
+                )
+
+        except Exception as e:
+            logger.error(
+                "❌ Failed to register with controller: %s (continuing anyway)",
+                str(e)
+            )
+            # Worker continues running even if registration fails
 
     def get_capabilities(self) -> list[CapabilityDefinition]:
         """Return worker capabilities."""
@@ -340,10 +408,10 @@ class EmailClassifierWorker(WorkerApplication):
 
     def setup_routes(self) -> None:
         """Set up email classification routes.
-        
+
         IMPORTANT: Use explicit binding pattern self.app.METHOD("/path")(handler)
         instead of @self.app.METHOD decorators to avoid Pylance "not accessed" warnings.
-        
+
         Pattern documented in:
         - src/crank/worker_runtime/base.py (lines 11-13, 187-192)
         - .vscode/AGENT_CONTEXT.md (FastAPI Route Handler Pattern section)
