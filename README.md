@@ -82,6 +82,7 @@ All services communicate over HTTPS with mutual TLS (mTLS) for enhanced security
 - [**Mascot System**](mascots/README.md) - AI specialist roles (future human+AI collaboration model)
 - [**Quick Start**](scripts/QUICK_START.md) - Getting started guide
 - [**Requirements**](REQUIREMENTS.md) - Dependencies and setup
+- [**Testing Guide**](docs/development/TESTING.md) - Complete testing setup and patterns
 - [**Development Docs**](docs/development/) - Code quality, linting, GPU setup
 
 ### Security & Operations
@@ -146,17 +147,24 @@ docker-compose -f docker-compose.development.yml up --build
 
 ### Running Tests
 
-```bash
-# Install dependencies (if not already done)
-uv sync --all-extras
-uv pip install -e .
+**Important**: Tests require proper environment setup to resolve imports correctly.
 
-# Run unit tests
-pytest
+```bash
+# One-time setup (required for imports to work)
+uv sync --all-extras  # Install all dependencies
+uv pip install -e .   # Install package in editable mode
+
+# Verify setup
+uv pip list | grep crank-platform  # Should show editable install
+
+# Run tests (use 'uv run' to ensure correct Python environment)
+uv run pytest
 
 # Run with coverage
-pytest --cov=src --cov-report=html
+uv run pytest --cov=src --cov-report=html
 ```
+
+**Troubleshooting**: If you see `ModuleNotFoundError` for `crank.*` imports, you skipped the `uv pip install -e .` step. See [Testing Guide](docs/development/TESTING.md) for complete setup instructions.
 
 ## Deployment Models
 

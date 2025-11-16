@@ -129,6 +129,21 @@ All services use **unified `crank.security` module** with automatic mTLS:
 
 ## 🧪 Testing Framework
 
+### Environment Setup (CRITICAL)
+
+**All tests require proper environment setup first**:
+
+```bash
+uv sync --all-extras  # Install all dependencies (pytest, etc.)
+uv pip install -e .   # Install crank.* package in editable mode
+```
+
+**Why**: The `src/crank/` package structure requires editable installation for imports to resolve. Tests will fail with `ModuleNotFoundError` if skipped.
+
+**Always use**: `uv run pytest` not bare `pytest` (ensures correct Python interpreter).
+
+See `docs/development/TESTING.md` for complete guide.
+
 ### Mascot-Driven Testing
 
 Use specialized AI testing personas via VS Code tasks:
@@ -209,7 +224,8 @@ From unified Sonnet+Codex analysis (`docs/development/AI_DEPLOYMENT_OPERATIONAL_
 
 | Issue | Solution |
 |-------|----------|
-| Import errors (`crank.*` not found) | Run `uv pip install -e .` from project root |
+| Import errors (`crank.*` not found) | Run `uv sync --all-extras && uv pip install -e .` from project root |
+| `TypeError: Logger._log() got unexpected keyword` | Use `logger.info("msg %s", value)` NOT `logger.info("msg", value=value)` |
 | Type errors in tests | Add `-> None` return annotation to all test functions |
 | Pylance "not accessed" warnings | Use explicit route binding: `app.get("/path")(handler)` |
 | Certificate failures | Initialize: `python scripts/initialize-certificates.py` |
