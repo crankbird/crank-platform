@@ -10,8 +10,10 @@ Agents generate Python code. Crank executes it.
   - python-docs: pandoc workflows
   - python-ml: ML or numeric work
 - Specify accelerator needs:
+
   ```json
   "constraints": { "accelerator": "gpu" }
   ```
+
 - Do not use pip install.
 - Only assume tools listed in env profile.

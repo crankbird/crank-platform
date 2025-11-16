@@ -3,11 +3,11 @@ title: "The Essence of RevOps"
 slug: essence-of-revops
 date: 2025-10-23
 context:
-  - timezone: "Australia/Sydney"
-  - setting: "Evening synthesis"
-  - mood: "Structured, reflective"
-  - occasion: "After discussion on RevOps relevance"
-  - utc: "2025-10-23T08:30:00Z"
+- timezone: "Australia/Sydney"
+- setting: "Evening synthesis"
+- mood: "Structured, reflective"
+- occasion: "After discussion on RevOps relevance"
+- utc: "2025-10-23T08:30:00Z"
 summary: >
   Defines Revenue Operations as the connective tissue linking marketing, sales, and customer success through unified data, shared KPIs, and systemic feedback.
 tags: [revops, systems-thinking, alignment, data-integration]

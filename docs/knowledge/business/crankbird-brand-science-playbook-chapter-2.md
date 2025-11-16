@@ -104,7 +104,6 @@ brand_model:
     completion_rate: 0.94
 ```
 
-
 This schema allows machine agents to read, update, and test brand components autonomously while maintaining auditability—fulfilling the “back-of-the-cabinet” ethic of visible integrity.
 
 ---

@@ -123,6 +123,7 @@ supports the strategic proposals below.
 - Budget tokens need same security as capability tokens
 
 **Technical Foundation**:
+
 ```python
 # Worker heartbeat already includes load_score
 form_data = {

@@ -91,4 +91,3 @@ ai_provenance:
 - [ ] Design visual badge or signal for "AI-Readable Provenance Compliant"
 - [ ] Add GitHub Action to validate memo metadata structure
 - [ ] Consider contribution guidelines for future human+AI collaborations
-

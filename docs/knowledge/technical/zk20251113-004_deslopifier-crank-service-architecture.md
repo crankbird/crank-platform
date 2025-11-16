@@ -40,6 +40,7 @@ related_people: []
 ## Core Functionality
 
 ### Input Interface
+
 ```python
 @crank_service
 def analyze_philosophical_content(
@@ -51,6 +52,7 @@ def analyze_philosophical_content(
 ```
 
 ### Output Schema
+
 ```python
 class PhilosophicalAnalysis:
     primary_markers: Dict[str, float]     # SHM, TUD, AID, DHG, IIP, NET
@@ -64,6 +66,7 @@ class PhilosophicalAnalysis:
 ## Service Architecture
 
 ### Container Configuration
+
 ```dockerfile
 FROM python:3.11-slim
 WORKDIR /app
@@ -75,6 +78,7 @@ CMD ["uvicorn", "src.philosophical_analyzer_service:app", "--host", "0.0.0.0"]
 ```
 
 ### FastAPI Service Definition
+
 ```python
 from crank_platform import CrankService
 from philosophical_analyzer import PhilosophicalAnalyzer
@@ -112,6 +116,7 @@ def analyze_content(request: AnalysisRequest) -> PhilosophicalAnalysis:
 ## Integration Patterns
 
 ### Zettel Processing Pipeline
+
 ```python
 # Automatic integration with content pipelines
 content_stream = CrankMesh.discover("zettel-processing")
@@ -124,6 +129,7 @@ for zettel in content_stream.new_content():
 ```
 
 ### Quality Control Service
+
 ```python
 # Batch authenticity checking
 authenticity_service = CrankMesh.discover("philosophical-analyzer")
@@ -143,6 +149,7 @@ def validate_content_authenticity(content_batch):
 ## Schema Evolution
 
 ### Configurable Pattern Recognition
+
 ```python
 # Allow custom philosophical DNA patterns
 custom_schema = {
@@ -160,6 +167,7 @@ analyzer = PhilosophicalAnalyzer(schema=custom_schema)
 ```
 
 ### A/B Testing Integration
+
 ```python
 # Test different pattern weights
 @crank_service

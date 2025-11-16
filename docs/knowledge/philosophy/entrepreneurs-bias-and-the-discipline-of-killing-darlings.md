@@ -3,11 +3,11 @@ title: "Entrepreneur’s Bias and the Discipline of Killing Darlings"
 slug: entrepreneurs-bias-and-the-discipline-of-killing-darlings
 date: 2025-10-23
 context:
-  - timezone: "Australia/Sydney"
-  - setting: "Evening reflection after Wine & Dine lunch with Paul Iz"
-  - mood: "Ruminative, sober, slightly unsettled"
-  - occasion: "Post-conversation processing"
-  - utc: "2025-10-23T08:00:00Z"
+- timezone: "Australia/Sydney"
+- setting: "Evening reflection after Wine & Dine lunch with Paul Iz"
+- mood: "Ruminative, sober, slightly unsettled"
+- occasion: "Post-conversation processing"
+- utc: "2025-10-23T08:00:00Z"
 summary: >
   Exploring the concept of Entrepreneur’s Bias — the founder’s attachment to their own ideas — and the painful necessity of killing darlings to let value emerge through iteration.
 tags: [entrepreneurship, bias, iteration, cognition, crankbird, reflection]

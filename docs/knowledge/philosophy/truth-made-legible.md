@@ -28,7 +28,7 @@ It’s about **revealing structure**, turning complexity into clarity without di
 
 Every product we build, every diagram we draw, aims to turn invisible logic into visible trust.
 
-**Truth made legible** isn’t a tagline,   
+**Truth made legible** isn’t a tagline,
 It’s our design philosophy made explicit.
 
 ---

@@ -10,7 +10,7 @@ context: [
 ]
 summary: >
   Articulates an ethical framework for applying pattern teleology in media and brand design.
-  Proposes that pattern mechanisms should serve the generation of meaning and understanding, 
+  Proposes that pattern mechanisms should serve the generation of meaning and understanding,
   rather than compulsion or retention. Establishes “meaningful attention” as the goal of ethical brand systems.
 tags: [ethics, teleology, attention, design, brand-science, cognition, ai, media-theory]
 type: "framework"
@@ -26,9 +26,9 @@ attribution:
       ai: 0.35
       external: 0.05
   notes: >
-    This note evolves from the insight that pattern-teleology mechanisms in digital systems 
-    can either enslave attention or elevate it. It formalizes an ethical alternative: 
-    the intentional design of meaning-centered, self-terminating patterns that cultivate 
+    This note evolves from the insight that pattern-teleology mechanisms in digital systems
+    can either enslave attention or elevate it. It formalizes an ethical alternative:
+    the intentional design of meaning-centered, self-terminating patterns that cultivate
     cognitive coherence rather than behavioral dependency.
 
 links:
@@ -36,26 +36,26 @@ links:
   urls: []
 
 related_people:
-  - name: "Tristan Harris"
+- name: "Tristan Harris"
     key_reference: "harris2017"
-  - name: "Don Norman"
+- name: "Don Norman"
     key_reference: "norman2004"
-  - name: "Marshall McLuhan"
+- name: "Marshall McLuhan"
     key_reference: "mcluhan1964"
-  - name: "Richard Martin (Crankbird)"
+- name: "Richard Martin (Crankbird)"
 
 references:
-  - id: harris2017
+- id: harris2017
     author: "Harris, T."
     title: "How Technology Hijacks People’s Minds — from a Magician and Google’s Design Ethicist"
     year: 2017
-    url: "https://medium.com/thrive-global/how-technology-hijacks-peoples-minds-from-a-magician-and-google-s-design-ethicist-56d62ef5edf3"
-  - id: norman2004
+    url: "<https://medium.com/thrive-global/how-technology-hijacks-peoples-minds-from-a-magician-and-google-s-design-ethicist-56d62ef5edf3>"
+- id: norman2004
     author: "Norman, D. A."
     title: "Emotional Design: Why We Love (or Hate) Everyday Things"
     year: 2004
     publisher: "Basic Books"
-  - id: mcluhan1964
+- id: mcluhan1964
     author: "McLuhan, M."
     title: "Understanding Media: The Extensions of Man"
     year: 1964

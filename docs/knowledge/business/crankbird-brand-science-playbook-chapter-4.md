@@ -120,9 +120,9 @@ These safeguards express the same *"back-of-the-cabinet"* integrity that drives 
 ## References
 
 - Anderson, J. R. (1983). *The architecture of cognition.* Cambridge, MA: Harvard University Press. ISBN 9780674043079
-- Friston, K. (2010). The free-energy principle: A unified brain theory? *Nature Reviews Neuroscience, 11*(2), 127–138. https://doi.org/10.1038/nrn2787
+- Friston, K. (2010). The free-energy principle: A unified brain theory? *Nature Reviews Neuroscience, 11*(2), 127–138. <https://doi.org/10.1038/nrn2787>
 - Isaacson, W. (2011). *Steve Jobs.* New York: Simon & Schuster. ISBN 9781451648539
-- Reber, R., Schwarz, N., & Winkielman, P. (2004). Processing fluency and aesthetic pleasure: Is beauty in the perceiver's processing experience? *Personality and Social Psychology Review, 8*(4), 364–382. https://doi.org/10.1207/s15327957pspr0804_3
+- Reber, R., Schwarz, N., & Winkielman, P. (2004). Processing fluency and aesthetic pleasure: Is beauty in the perceiver's processing experience? *Personality and Social Psychology Review, 8*(4), 364–382. <https://doi.org/10.1207/s15327957pspr0804_3>
 - Romaniuk, J. (2018). *Building Distinctive Brand Assets.* Oxford University Press. ISBN 9780198802846
 - Schank, R. C., & Abelson, R. P. (1977). *Scripts, Plans, Goals, and Understanding: An Inquiry into Human Knowledge Structures.* Hillsdale, NJ: Lawrence Erlbaum Associates. ISBN 9780470990360
 

@@ -3,11 +3,11 @@ title: "Crankbird, Investment Thinking, and the Value Test"
 slug: crankbird-investment-thinking-and-the-value-test
 date: 2025-10-23
 context:
-  - timezone: "Australia/Sydney"
-  - setting: "Post-meeting reflection"
-  - mood: "Thoughtful, slightly uneasy but energized"
-  - occasion: "Wine & Dine lunch with Paul Iz"
-  - utc: "2025-10-22T22:00:00Z"
+- timezone: "Australia/Sydney"
+- setting: "Post-meeting reflection"
+- mood: "Thoughtful, slightly uneasy but energized"
+- occasion: "Wine & Dine lunch with Paul Iz"
+- utc: "2025-10-22T22:00:00Z"
 summary: >
   Reflection on a conversation reframing Crankbird through the lens of investability, rapid value creation, and pragmatic focus—balancing immediate utility with long-term conceptual depth.
 tags: [brand-science, entrepreneurship, iteration, crankbird, reflection, value-creation]

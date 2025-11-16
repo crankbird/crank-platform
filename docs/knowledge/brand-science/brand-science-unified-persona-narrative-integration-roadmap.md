@@ -93,6 +93,7 @@ To embed a coherent *Unified Persona and Narrative* framework within the Crankbi
 ---
 
 ## 📅 Summary of Milestones
+
 | Milestone | Title | Output | Due |
 |------------|--------|---------|-----|
 | 1 | Brand Science Ontology Addendum | v1.1 Schema update | Week 2 |

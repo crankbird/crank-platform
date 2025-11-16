@@ -3,11 +3,11 @@ title: "Investing Along the Tactile Moat"
 slug: investing-along-tactile-moat
 date: 2025-10-23
 context:
-  - timezone: "Australia/Sydney"
-  - setting: "Evening reflection"
-  - mood: "Analytical, opportunity-focused"
-  - occasion: "Follow-up to 'The Tactile Moat' thesis"
-  - utc: "2025-10-23T09:55:00Z"
+- timezone: "Australia/Sydney"
+- setting: "Evening reflection"
+- mood: "Analytical, opportunity-focused"
+- occasion: "Follow-up to 'The Tactile Moat' thesis"
+- utc: "2025-10-23T09:55:00Z"
 summary: >
   Identifies categories of businesses positioned to benefit from the scarcity and rising value of embodied, AI-resistant work.
 tags: [investment, tactile-moat, labour-economics, electrification, ai]
@@ -31,77 +31,77 @@ As AI increases productivity in digital sectors, the relative value of physical 
 
 This divergence produces investable opportunities in firms that enable, equip, or aggregate embodied work rather than attempt to replace it.
 
-| 
+|
 
 Theme
 
- | 
+ |
 
 Example
 
- | 
+ |
 
 Why it benefits
 
- | 
+ |
 | ---- | ---- | ----  |
-| 
+|
 
 1. Training & Credentialing
 
- | 
+ |
 
 Trade schools, VR/AR training simulators, apprenticeship platforms
 
- | 
+ |
 
 Supply bottleneck = pricing power; scalable human-capital pipeline
 
- | 
-| 
+ |
+|
 
-2. Tooling & Equipment
+1. Tooling & Equipment
 
- | 
+ |
 
 Electrical diagnostic tools, safety gear, robotics assistants (not replacements)
 
- | 
+ |
 
 AI complements human dexterity, raises per-worker productivity
 
- | 
-| 
+ |
+|
 
-3. Workflow Platforms
+1. Workflow Platforms
 
- | 
+ |
 
 Field-service SaaS (Simpro, AroFlo, ServiceM8)
 
- | 
+ |
 
 Digitises dispatch, compliance, quoting; scalable margins on rising trade activity
 
- | 
-| 
+ |
+|
 
-4. Aggregators / Roll-ups
+1. Aggregators / Roll-ups
 
- | 
+ |
 
 Regional electrical contracting consolidators
 
- | 
+ |
 
 Fragmented industry ripe for capital aggregation; leverage brand + systems
 
- | 
-| 
+ |
+|
 
-5. Supply Chain & Distribution
+1. Supply Chain & Distribution
 
- | 
+ |
 
 Wholesalers like John R. Turk, Middy's, Rex
 
@@ -110,4 +110,3 @@ Wholesalers like John R. Turk, Middy's, Rex
 The thesis: AI intensifies scarcity of human touchpoints, making the infrastructure that enables them a durable growth theme.
 
 Investing along the tactile moat means backing the ecosystem, not the algorithm.
-

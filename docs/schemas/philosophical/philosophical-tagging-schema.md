@@ -58,7 +58,7 @@ For each zettel, analyze content for manifestations of the Master Principle:
 
 **Examples:**
 - "Different person in different contexts"
-- "Persona-driven interface design" 
+- "Persona-driven interface design"
 - "Role-based access control"
 - "You are different depending on where you stand"
 
@@ -132,6 +132,7 @@ For each zettel, analyze content for manifestations of the Master Principle:
 5. **Document Connections** - Note links to other zettels or concepts
 
 ### Tagging Format
+
 ```yaml
 philosophical_analysis:
   primary_markers:

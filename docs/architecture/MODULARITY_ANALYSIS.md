@@ -197,7 +197,7 @@ self.bill_classifier = Pipeline([
 
 ### **Medium-term Separation (After ML Enhancement)**
 
-3. **🤖 Email Classifier**
+1. **🤖 Email Classifier**
 
    ```
    crank-email-classifier/

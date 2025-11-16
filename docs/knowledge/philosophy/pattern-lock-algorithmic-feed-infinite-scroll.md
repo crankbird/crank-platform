@@ -33,26 +33,26 @@ links:
   urls: []
 
 related_people:
-  - name: "B.F. Skinner"
+- name: "B.F. Skinner"
     key_reference: "skinner1938"
-  - name: "Daniel Kahneman"
+- name: "Daniel Kahneman"
     key_reference: "kahneman2011"
-  - name: "Tristan Harris"
+- name: "Tristan Harris"
     key_reference: "harris2017"
 
 references:
-  - id: skinner1938
+- id: skinner1938
     author: "Skinner, B. F."
     title: "The Behavior of Organisms: An Experimental Analysis"
     year: 1938
     publisher: "Appleton-Century-Crofts"
-  - id: kahneman2011
+- id: kahneman2011
     author: "Kahneman, D."
     title: "Thinking, Fast and Slow"
     year: 2011
     publisher: "Farrar, Straus and Giroux"
-  - id: harris2017
+- id: harris2017
     author: "Harris, T."
     title: "How Technology Hijacks People’s Minds — from a Magician and Google Design Ethicist"
     year: 2017
-    url: "https://medium.com/thrive-global/how-technology-hijacks-peoples-minds-from-a-magician-and-google-s-design-ethicist-56d62ef5edf3"
+    url: "<https://medium.com/thrive-global/how-technology-hijacks-peoples-minds-from-a-magician-and-google-s-design-ethicist-56d62ef5edf3>"

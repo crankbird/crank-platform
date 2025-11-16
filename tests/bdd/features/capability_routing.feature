@@ -1,4 +1,10 @@
 # language: en
+# feature_id: F-CAPABILITY-ROUTING
+# adr_refs: [0001, 0006, 0023]
+# personas: [zk20251112-002_upn-systems-architect]
+# proposals: [P-2025-11-faas-worker-spec]
+# strategic_context: Situated intelligence - compute where meaning lives (local-first routing)
+
 @principle(Integrity) @principle(Efficiency) @phase(1) @issue(28) @issue(31) @component(controller) @component(worker) @component(capability-schema)
 Feature: Capability-driven routing
 

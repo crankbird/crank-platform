@@ -36,25 +36,25 @@ links:
   urls: ["https://artisanal-intelligence.info/"]
 
 related_people:
-  - name: "Alan Weiss"
+- name: "Alan Weiss"
     key_reference: "weiss1992"
-  - name: "Richard Martin (Crankbird)"
+- name: "Richard Martin (Crankbird)"
     key_reference: "martin2025"
-  - name: "Marshall McLuhan"
+- name: "Marshall McLuhan"
     key_reference: "mcluhan1964"
 
 references:
-  - id: weiss1992
+- id: weiss1992
     author: "Weiss, A."
     title: "Million Dollar Consulting"
     year: 1992
     publisher: "McGraw-Hill"
-  - id: martin2025
+- id: martin2025
     author: "Martin, R."
     title: "The Magic Roundabout Playbook (v0.1)"
     year: 2025
     publisher: "Crankbird Brand Science Press"
-  - id: mcluhan1964
+- id: mcluhan1964
     author: "McLuhan, M."
     title: "Understanding Media: The Extensions of Man"
     year: 1964

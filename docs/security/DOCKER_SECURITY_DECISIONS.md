@@ -298,9 +298,11 @@ This document explains the security architecture of the Crank Platform's contain
 
 **P0 - Critical:**
 1. **Pin Base Image by SHA256**
+
    ```dockerfile
    FROM python:3.11-slim-bookworm@sha256:abc123...
    ```
+
    Prevents tag poisoning (someone updates `3.11-slim-bookworm` with malicious image)
 
 2. **Scan Images for CVEs**
@@ -310,23 +312,25 @@ This document explains the security architecture of the Crank Platform's contain
 
 **P1 - High:**
 3. **Private Package Mirror**
-   - PyPI mirror with approved packages only
-   - Prevents typosquatting attacks (piklow vs Pillow)
-   - Allows vulnerability scanning before approval
+- PyPI mirror with approved packages only
+- Prevents typosquatting attacks (piklow vs Pillow)
+- Allows vulnerability scanning before approval
 
-4. **Dependency Pinning with Hashes**
+1. **Dependency Pinning with Hashes**
+
    ```
    fastapi==0.104.1 --hash=sha256:abc123...
    ```
+
    Prevents supply chain injection via compromised PyPI
 
 **P2 - Medium:**
 5. **Image Signing**
-   - Cosign or Notary for image signature
-   - Verify signatures before deployment
-   - Prevents tampered images in registry
+- Cosign or Notary for image signature
+- Verify signatures before deployment
+- Prevents tampered images in registry
 
-6. **Software Bill of Materials (SBOM)**
+1. **Software Bill of Materials (SBOM)**
    - Generate SBOM for every image (syft, cyclonedx)
    - Track all dependencies and versions
    - Rapid CVE impact analysis

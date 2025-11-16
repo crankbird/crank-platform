@@ -3,11 +3,11 @@ title: "RevOps as Cognitive Infrastructure"
 slug: revops-as-cognitive-infrastructure
 date: 2025-10-23
 context:
-  - timezone: "Australia/Sydney"
-  - setting: "Conceptual synthesis"
-  - mood: "Visionary"
-  - occasion: "Late-evening insight synthesis"
-  - utc: "2025-10-23T09:10:00Z"
+- timezone: "Australia/Sydney"
+- setting: "Conceptual synthesis"
+- mood: "Visionary"
+- occasion: "Late-evening insight synthesis"
+- utc: "2025-10-23T09:10:00Z"
 summary: >
   Frames RevOps as a form of organisational cognition — a distributed thinking system that perceives, learns, and adapts through data.
 tags: [revops, cognition, organisational-intelligence, system-thinking]

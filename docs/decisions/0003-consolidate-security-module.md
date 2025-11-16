@@ -101,6 +101,7 @@ Library functions available, workers call them manually.
 ## Implementation Notes
 
 **Security Module Structure**:
+
 ```
 src/crank/security/
   __init__.py              # Public API
@@ -114,6 +115,7 @@ src/crank/security/
 ```
 
 **Clean Worker Pattern**:
+
 ```python
 def main() -> None:
     port = int(os.getenv("WORKER_HTTPS_PORT", "8500"))

@@ -66,7 +66,7 @@ Based on research from the uv + conda hybrid articles, here's the optimal approa
    pip install uv
    ```
 
-4. **Pure Python packages via uv**
+2. **Pure Python packages via uv**
 
    ```bash
    # HuggingFace ecosystem (pure Python, fast installation)

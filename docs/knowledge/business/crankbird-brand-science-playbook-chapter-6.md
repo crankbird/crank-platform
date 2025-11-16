@@ -29,13 +29,13 @@ Empirical evidence that brand growth is driven by mental and physical availabili
 
 ## B. Distinctive Assets & Processing Fluency  
 
-**Reber, R., Schwarz, N., & Winkielman, P. (2004).** Processing fluency and aesthetic pleasure: Is beauty in the perceiver’s processing experience? *Personality and Social Psychology Review, 8*(4), 364–382. https://doi.org/10.1207/s15327957pspr0804_3  
+**Reber, R., Schwarz, N., & Winkielman, P. (2004).** Processing fluency and aesthetic pleasure: Is beauty in the perceiver’s processing experience? *Personality and Social Psychology Review, 8*(4), 364–382. <https://doi.org/10.1207/s15327957pspr0804_3>  
 Shows that easily processed stimuli are judged as truer and more likable—empirical foundation for perceptual fluency.  
 
-**Graf, L. K. M., Mayer, S., & Landwehr, J. R. (2018).** A dual-process perspective on fluency-based aesthetics: Hedonic and amplification effects of processing fluency. *Journal of Experimental Social Psychology, 75*, 202–216. https://doi.org/10.1016/j.jesp.2017.11.009  
+**Graf, L. K. M., Mayer, S., & Landwehr, J. R. (2018).** A dual-process perspective on fluency-based aesthetics: Hedonic and amplification effects of processing fluency. *Journal of Experimental Social Psychology, 75*, 202–216. <https://doi.org/10.1016/j.jesp.2017.11.009>  
 Differentiates between hedonic and cognitive fluency pathways, linking design clarity to credibility and trust.  
 
-**Keller, K. L. (1993).** Conceptualizing, measuring, and managing customer-based brand equity. *Journal of Marketing, 57*(1), 1–22. https://doi.org/10.1177/002224299305700101  
+**Keller, K. L. (1993).** Conceptualizing, measuring, and managing customer-based brand equity. *Journal of Marketing, 57*(1), 1–22. <https://doi.org/10.1177/002224299305700101>  
 Introduces the associative-network model of brand equity; bridges cognitive psychology and brand measurement.  
 
 **Aaker, D. A. (1991).** *Managing Brand Equity.* New York: Free Press. ISBN 9780029001011  
@@ -51,20 +51,20 @@ Introduces schema theory—memory reconstruction through culturally shared patte
 **Schank, R. C., & Abelson, R. P. (1977).** *Scripts, Plans, Goals, and Understanding: An Inquiry into Human Knowledge Structures.* Hillsdale, NJ: Lawrence Erlbaum Associates. ISBN 9780470990360  
 Defines "scripts" as cognitive templates for action sequences; foundational for micronarrative automation.  
 
-**Graesser, A. C., Millis, K. K., & Zwaan, R. A. (1997).** Discourse comprehension. *Annual Review of Psychology, 48*, 163–189. https://doi.org/10.1146/annurev.psych.48.1.163  
+**Graesser, A. C., Millis, K. K., & Zwaan, R. A. (1997).** Discourse comprehension. *Annual Review of Psychology, 48*, 163–189. <https://doi.org/10.1146/annurev.psych.48.1.163>  
 Shows how schema-consistent stories enhance comprehension and recall—validates the narrative structure in brand messaging.
 
 ---
 
 ## D. Prediction, Proof & Trust  
 
-**Friston, K. (2010).** The free-energy principle: A unified brain theory? *Nature Reviews Neuroscience, 11*(2), 127–138. https://doi.org/10.1038/nrn2787  
+**Friston, K. (2010).** The free-energy principle: A unified brain theory? *Nature Reviews Neuroscience, 11*(2), 127–138. <https://doi.org/10.1038/nrn2787>  
 Explains cognition as prediction-error minimisation; provides neural justification for promise–proof loops.  
 
 **Hohwy, J. (2013).** *The Predictive Mind.* Oxford University Press.  
 Extends Friston’s model philosophically—beliefs stabilise through minimised surprise; underlies brand reliability.  
 
-**Mayer, R. C., Davis, J. H., & Schoorman, F. D. (1995).** An integrative model of organizational trust. *Academy of Management Review, 20*(3), 709–734. https://doi.org/10.5465/amr.1995.9508080335  
+**Mayer, R. C., Davis, J. H., & Schoorman, F. D. (1995).** An integrative model of organizational trust. *Academy of Management Review, 20*(3), 709–734. <https://doi.org/10.5465/amr.1995.9508080335>  
 Defines trust dimensions (ability, benevolence, integrity); provides measurable constructs for Crankbird's transparency studies.
 
 ---
@@ -74,10 +74,10 @@ Defines trust dimensions (ability, benevolence, integrity); provides measurable 
 **Thaler, R. H., & Sunstein, C. R. (2008).** *Nudge: Improving Decisions About Health, Wealth, and Happiness.* New Haven, CT: Yale University Press. ISBN 9780300122237  
 Foundational text on choice architecture and the ethics of design.  
 
-**Deci, E. L., & Ryan, R. M. (2000).** The “what” and “why” of goal pursuits: Human needs and the self-determination of behavior. *Psychological Inquiry, 11*(4), 227–268. https://doi.org/10.1207/S15327965PLI1104_01  
+**Deci, E. L., & Ryan, R. M. (2000).** The “what” and “why” of goal pursuits: Human needs and the self-determination of behavior. *Psychological Inquiry, 11*(4), 227–268. <https://doi.org/10.1207/S15327965PLI1104_01>  
 Defines autonomy, competence, and relatedness as intrinsic motivators—directly relevant to user control in system design.  
 
-**Fogg, B. J. (2009).** A behavior model for persuasive design. *Proceedings of the 4th International Conference on Persuasive Technology.* https://doi.org/10.1145/1541948.1541999  
+**Fogg, B. J. (2009).** A behavior model for persuasive design. *Proceedings of the 4th International Conference on Persuasive Technology.* <https://doi.org/10.1145/1541948.1541999>  
 Presents B=MAP model—links motivation, ability, and prompts; provides quantifiable basis for behavioural flow design.  
 
 **Gigerenzer, G., Todd, P. M., & the ABC Research Group. (1999).** *Simple Heuristics That Make Us Smart.* New York: Oxford University Press. ISBN 9780195143812  
@@ -104,7 +104,7 @@ Large-scale meta-analysis of marketing campaigns—supports dual horizons for ex
 **Zuboff, S. (2019).** *The Age of Surveillance Capitalism: The Fight for a Human Future at the New Frontier of Power.* New York: PublicAffairs. ISBN 9781610395694  
 Critique of data-extractive business models; informs Crankbird’s ethical stance of autonomy and user control.  
 
-**Lewicki, R. J., McAllister, D. J., & Bies, R. J. (1998).** Trust and distrust: New relationships and realities. *Academy of Management Review, 23*(3), 438–458. https://doi.org/10.2307/259288  
+**Lewicki, R. J., McAllister, D. J., & Bies, R. J. (1998).** Trust and distrust: New relationships and realities. *Academy of Management Review, 23*(3), 438–458. <https://doi.org/10.2307/259288>  
 Defines transparency and predictability as foundations of interpersonal and organisational trust.  
 
 ---

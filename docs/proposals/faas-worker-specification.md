@@ -10,6 +10,7 @@ A minimal Python-only FaaS worker for Crank-Mesh.
 - Enforces time/output limits.
 
 ## Job Schema
+
 ```json
 {
   "job_id": "1234",

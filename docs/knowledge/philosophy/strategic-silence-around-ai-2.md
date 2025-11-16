@@ -29,10 +29,10 @@ links:
   mentions: ["zk20251022-002", "zk20251022-003", "zk20251022-004"]
 ---
 
-In many sessions, AI appeared as background radiation rather than headline topic. 
+In many sessions, AI appeared as background radiation rather than headline topic.
 This absence was not ignorance but intentional—designed to prevent intellectual crowding and reclaim discursive oxygen for human systems, ethics, and governance.
 
-Leaders used omission as a way to perform maturity and reframe AI as one input among many. 
+Leaders used omission as a way to perform maturity and reframe AI as one input among many.
 The silence thus became an act of agenda hygiene rather than denial.
 
 ---

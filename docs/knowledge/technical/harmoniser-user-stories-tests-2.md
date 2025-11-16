@@ -29,6 +29,7 @@ attribution:
 **So that** analytics treat them as one mood
 
 **Acceptance (Gherkin)**
+
 ```
 Given a note with context mood: "thoughtful"
 When I run the harmoniser with the default vocabulary
@@ -43,6 +44,7 @@ And no other fields change
 **So that** downstream tools don’t break
 
 **Acceptance**
+
 ```
 Given a note missing the context field
 When I run the harmoniser
@@ -57,6 +59,7 @@ And suggests a minimal example snippet
 **So that** diffs remain human-readable
 
 **Acceptance**
+
 ```
 Given a note whose front-matter includes comments and custom ordering
 When I run the harmoniser
@@ -70,6 +73,7 @@ And only target fields are changed
 **So that** I can use custom moods without forking the core vocab
 
 **Acceptance**
+
 ```
 Given a project with ctx-overrides.yml extending mood mappings
 When I run the harmoniser

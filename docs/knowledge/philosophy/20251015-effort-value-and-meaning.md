@@ -43,7 +43,7 @@ This creates continuity between *doing*, *buying*, and *governing*—effort as a
 
 ## References
 - Festinger, L. (1957). *A Theory of Cognitive Dissonance.* Stanford University Press.  
-- Homburg, C., Jozić, D., & Kuehnl, C. (2017). Customer experience management: Toward implementing an evolving marketing concept. *Journal of the Academy of Marketing Science, 45*(3), 377–401. https://doi.org/10.1007/s11747-015-0460-7  
+- Homburg, C., Jozić, D., & Kuehnl, C. (2017). Customer experience management: Toward implementing an evolving marketing concept. *Journal of the Academy of Marketing Science, 45*(3), 377–401. <https://doi.org/10.1007/s11747-015-0460-7>  
 - Marx, K. (1867). *Das Kapital, Volume 1.* Hamburg: Otto Meissner Verlag.  
-- Norton, M. I., Mochon, D., & Ariely, D. (2012). The IKEA effect: When labor leads to love. *Journal of Consumer Psychology, 22*(3), 453–460. https://doi.org/10.1016/j.jcps.2011.08.002  
+- Norton, M. I., Mochon, D., & Ariely, D. (2012). The IKEA effect: When labor leads to love. *Journal of Consumer Psychology, 22*(3), 453–460. <https://doi.org/10.1016/j.jcps.2011.08.002>  
 - Veblen, T. (1899). *The Theory of the Leisure Class.* Macmillan.  

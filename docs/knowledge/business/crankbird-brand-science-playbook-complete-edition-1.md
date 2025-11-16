@@ -48,7 +48,6 @@ mindmap
 ## Abstract
 This paper develops a theoretical and empirical foundation for an automatable framework of brand development grounded in cognitive psychology, behavioural economics, and marketing science. It argues that brand strength arises from three measurable dynamics: (a) associative memory structures that determine mental availability, (b) perceptual fluency and distinctiveness that reduce cognitive effort and increase trust, and (c) alignment between promise and proof that minimises prediction error and builds belief stability through verified feedback loops. Integrating these mechanisms provides a scientific basis for testing and automating brand development. The framework is applied to Crankbird, an emerging ethical-technology venture whose design ethos emphasises autonomy, transparency, and legibility.
 
-
 ---
 
 ## 1.1 Introduction
@@ -192,7 +191,6 @@ brand_model:
     completion_rate: 0.94
 ```
 
-
 This schema allows machine agents to read, update, and test brand components autonomously while maintaining auditability—fulfilling the "back-of-the-cabinet" ethic of visible integrity.
 
 ---
@@ -226,10 +224,10 @@ Test whether increasing the number and salience of Category Entry Points improve
 1. **Sample:** n ≥ 300 participants per experimental cell, recruited via online panels.  
 2. **Design:** between-subjects; each participant exposed to one of two ad sets—control (generic messaging) vs. experimental (CEP-tied narratives).  
 3. **Measures:**  
- - Unaided recall: "Which brands come to mind when you think about [cue]?"  
- - Recognition: binary yes/no brand identification.  
- - Intent: self-reported likelihood to consider the brand.  
-4. **Analysis:** logistic regression predicting recall and intent from number of CEP exposures.  
+- Unaided recall: "Which brands come to mind when you think about [cue]?"  
+- Recognition: binary yes/no brand identification.  
+- Intent: self-reported likelihood to consider the brand.  
+1. **Analysis:** logistic regression predicting recall and intent from number of CEP exposures.  
 
 ### Expected Outcome  
 Significant main effect of CEP exposure on recall (β > 0, p < .05).  
@@ -261,10 +259,10 @@ Determine whether transparent feedback mechanisms increase trust and reduce unce
 1. **Design:** within-subjects; same task completed under two UI conditions—opaque vs. transparent.  
 2. **Manipulation:** display or hide visible receipts, BYOS toggles, and open pricing rules.  
 3. **Measures:**  
- - Self-reported trust (Mayer, Davis, & Schoorman, 1995).  
- - Perceived integrity and benevolence subscales.  
- - Support request frequency (objective behavioral data).  
-4. **Analysis:** paired t-tests and mediation models linking transparency → perceived integrity → trust.  
+- Self-reported trust (Mayer, Davis, & Schoorman, 1995).  
+- Perceived integrity and benevolence subscales.  
+- Support request frequency (objective behavioral data).  
+1. **Analysis:** paired t-tests and mediation models linking transparency → perceived integrity → trust.  
 
 ### Expected Outcome  
 Statistically significant increase in trust and reduced support tickets in the transparent condition.  
@@ -325,7 +323,6 @@ All experiments follow open-science standards: pre-registration, anonymised data
 
 # Chapter 4 – Application to Crankbird Automation  
 
-
 ## Case Study: Email Parser MVP (API-First, Ethical by Design)
 
 ### Context
@@ -363,8 +360,6 @@ Transparent + API-first design yields higher trust, fewer tickets, equal or bett
 - Extend BYOS to S3/GCS/WebDAV; keep local dev storage (MinIO) parity.  
 - Publish anonymised telemetry + bias/accessibility checks.
 
-
-
 ```mermaid
 flowchart TD
     A["Email Ingestion<br/>Webhook / IMAP-POP / Upload"] --> B["Parser Service API"];
@@ -392,8 +387,6 @@ flowchart TD
     class S3 ext;
 ```
 
-
-
 ```mermaid
 sequenceDiagram
     participant U as User
@@ -407,7 +400,6 @@ sequenceDiagram
     L-->>U: Signed receipt (hash, timings, cost, storage)
     Note over U,API: Expectation ≈ Outcome → Prediction error ↓ → Trust ↑
 ```
-
 
 This section translates the theoretical model and empirical methods into the Crankbird platform's operational design. Crankbird treats its brand as a living data system that can be measured, iterated, and expressed through every surface—from UI components to pricing logic.
 
@@ -521,7 +513,6 @@ These safeguards express the same *"back-of-the-cabinet"* integrity that drives 
 
 # Chapter 5 – Discussion, Ethical Implications & Conclusion  
 
-
 ```mermaid
 flowchart LR
     D[Detection<br/>Anomaly/Bias Flag] --> V[Verification<br/>Reproduce & Quantify]
@@ -530,7 +521,6 @@ flowchart LR
     A --> P[Public Summary<br/>Transparency Page]
     P --> M[Monitoring<br/>Post-fix Metrics]
 ```
-
 
 This chapter synthesises the findings of the Crankbird Brand Science Playbook, discusses the ethical implications of brand automation, and outlines opportunities for future research and application.  
 
@@ -618,13 +608,13 @@ Empirical evidence that brand growth is driven by mental and physical availabili
 
 ## B. Distinctive Assets & Processing Fluency  
 
-**Reber, R., Schwarz, N., & Winkielman, P. (2004).** Processing fluency and aesthetic pleasure: Is beauty in the perceiver's processing experience? *Personality and Social Psychology Review, 8*(4), 364–382. https://doi.org/10.1207/s15327957pspr0804_3  
+**Reber, R., Schwarz, N., & Winkielman, P. (2004).** Processing fluency and aesthetic pleasure: Is beauty in the perceiver's processing experience? *Personality and Social Psychology Review, 8*(4), 364–382. <https://doi.org/10.1207/s15327957pspr0804_3>  
 Shows that easily processed stimuli are judged as truer and more likable—empirical foundation for perceptual fluency.  
 
-**Graf, L. K. M., Mayer, S., & Landwehr, J. R. (2018).** A dual-process perspective on fluency-based aesthetics: Hedonic and amplification effects of processing fluency. *Journal of Experimental Social Psychology, 75*, 202–216. https://doi.org/10.1016/j.jesp.2017.11.009  
+**Graf, L. K. M., Mayer, S., & Landwehr, J. R. (2018).** A dual-process perspective on fluency-based aesthetics: Hedonic and amplification effects of processing fluency. *Journal of Experimental Social Psychology, 75*, 202–216. <https://doi.org/10.1016/j.jesp.2017.11.009>  
 Differentiates between hedonic and cognitive fluency pathways, linking design clarity to credibility and trust.  
 
-**Keller, K. L. (1993).** Conceptualizing, measuring, and managing customer-based brand equity. *Journal of Marketing, 57*(1), 1–22. https://doi.org/10.1177/002224299305700101  
+**Keller, K. L. (1993).** Conceptualizing, measuring, and managing customer-based brand equity. *Journal of Marketing, 57*(1), 1–22. <https://doi.org/10.1177/002224299305700101>  
 Introduces the associative-network model of brand equity; bridges cognitive psychology and brand measurement.  
 
 **Aaker, D. A. (1991).** *Managing Brand Equity.* New York: Free Press. ISBN 9780029001011  
@@ -640,20 +630,20 @@ Introduces schema theory—memory reconstruction through culturally shared patte
 **Schank, R. C., & Abelson, R. P. (1977).** *Scripts, Plans, Goals, and Understanding: An Inquiry into Human Knowledge Structures.* Hillsdale, NJ: Lawrence Erlbaum Associates. ISBN 9780470990360  
 Defines "scripts" as cognitive templates for action sequences; foundational for micronarrative automation.  
 
-**Graesser, A. C., Millis, K. K., & Zwaan, R. A. (1997).** Discourse comprehension. *Annual Review of Psychology, 48*, 163–189. https://doi.org/10.1146/annurev.psych.48.1.163  
+**Graesser, A. C., Millis, K. K., & Zwaan, R. A. (1997).** Discourse comprehension. *Annual Review of Psychology, 48*, 163–189. <https://doi.org/10.1146/annurev.psych.48.1.163>  
 Shows how schema-consistent stories enhance comprehension and recall—validates the narrative structure in brand messaging.  
 
 ---
 
 ## D. Prediction, Proof & Trust  
 
-**Friston, K. (2010).** The free-energy principle: A unified brain theory? *Nature Reviews Neuroscience, 11*(2), 127–138. https://doi.org/10.1038/nrn2787  
+**Friston, K. (2010).** The free-energy principle: A unified brain theory? *Nature Reviews Neuroscience, 11*(2), 127–138. <https://doi.org/10.1038/nrn2787>  
 Explains cognition as prediction-error minimisation; provides neural justification for promise–proof loops.  
 
 **Hohwy, J. (2013).** *The Predictive Mind.* Oxford University Press.  
 Extends Friston's model philosophically—beliefs stabilise through minimised surprise; underlies brand reliability.  
 
-**Mayer, R. C., Davis, J. H., & Schoorman, F. D. (1995).** An integrative model of organizational trust. *Academy of Management Review, 20*(3), 709–734. https://doi.org/10.5465/amr.1995.9508080335  
+**Mayer, R. C., Davis, J. H., & Schoorman, F. D. (1995).** An integrative model of organizational trust. *Academy of Management Review, 20*(3), 709–734. <https://doi.org/10.5465/amr.1995.9508080335>  
 Defines trust dimensions (ability, benevolence, integrity); provides measurable constructs for Crankbird's transparency studies.  
 
 ---
@@ -663,10 +653,10 @@ Defines trust dimensions (ability, benevolence, integrity); provides measurable 
 **Thaler, R. H., & Sunstein, C. R. (2008).** *Nudge: Improving Decisions About Health, Wealth, and Happiness.* New Haven, CT: Yale University Press. ISBN 9780300122237  
 Foundational text on choice architecture and the ethics of design.  
 
-**Deci, E. L., & Ryan, R. M. (2000).** The "what" and "why" of goal pursuits: Human needs and the self-determination of behavior. *Psychological Inquiry, 11*(4), 227–268. https://doi.org/10.1207/S15327965PLI1104_01  
+**Deci, E. L., & Ryan, R. M. (2000).** The "what" and "why" of goal pursuits: Human needs and the self-determination of behavior. *Psychological Inquiry, 11*(4), 227–268. <https://doi.org/10.1207/S15327965PLI1104_01>  
 Defines autonomy, competence, and relatedness as intrinsic motivators—directly relevant to user control in system design.  
 
-**Fogg, B. J. (2009).** A behavior model for persuasive design. *Proceedings of the 4th International Conference on Persuasive Technology.* https://doi.org/10.1145/1541948.1541999  
+**Fogg, B. J. (2009).** A behavior model for persuasive design. *Proceedings of the 4th International Conference on Persuasive Technology.* <https://doi.org/10.1145/1541948.1541999>  
 Presents B=MAP model—links motivation, ability, and prompts; provides quantifiable basis for behavioural flow design.  
 
 **Gigerenzer, G., Todd, P. M., & the ABC Research Group. (1999).** *Simple Heuristics That Make Us Smart.* New York: Oxford University Press. ISBN 9780195143812  
@@ -693,20 +683,20 @@ Large-scale meta-analysis of marketing campaigns—supports dual horizons for ex
 **Zuboff, S. (2019).** *The Age of Surveillance Capitalism: The Fight for a Human Future at the New Frontier of Power.* New York: PublicAffairs. ISBN 9781610395694  
 Critique of data-extractive business models; informs Crankbird's ethical stance of autonomy and user control.  
 
-**Lewicki, R. J., McAllister, D. J., & Bies, R. J. (1998).** Trust and distrust: New relationships and realities. *Academy of Management Review, 23*(3), 438–458. https://doi.org/10.2307/259288  
+**Lewicki, R. J., McAllister, D. J., & Bies, R. J. (1998).** Trust and distrust: New relationships and realities. *Academy of Management Review, 23*(3), 438–458. <https://doi.org/10.2307/259288>  
 Defines transparency and predictability as foundations of interpersonal and organisational trust.  
 
 ---
 
 ## I. Experimental Design and Statistical Methods
 
-**Baayen, R. H., Davidson, D. J., & Bates, D. M. (2008).** Mixed-effects modeling with crossed random effects for subjects and items. *Journal of Memory and Language, 59*(4), 390–412. https://doi.org/10.1016/j.jml.2007.12.005  
+**Baayen, R. H., Davidson, D. J., & Bates, D. M. (2008).** Mixed-effects modeling with crossed random effects for subjects and items. *Journal of Memory and Language, 59*(4), 390–412. <https://doi.org/10.1016/j.jml.2007.12.005>  
 Statistical methodology for analyzing repeated-measures experiments with multiple random factors; essential for brand perception studies.
 
-**Platt, J. R. (1964).** Strong inference. *Science, 146*(3642), 347–353. https://doi.org/10.1126/science.146.3642.347  
+**Platt, J. R. (1964).** Strong inference. *Science, 146*(3642), 347–353. <https://doi.org/10.1126/science.146.3642.347>  
 Methodology for hypothesis-driven research design; supports the experimental approach to brand testing.
 
-**Wilkinson, M. D., et al. (2016).** The FAIR Guiding Principles for scientific data management and stewardship. *Scientific Data, 3*, 160018. https://doi.org/10.1038/sdata.2016.18  
+**Wilkinson, M. D., et al. (2016).** The FAIR Guiding Principles for scientific data management and stewardship. *Scientific Data, 3*, 160018. <https://doi.org/10.1038/sdata.2016.18>  
 Standards for open, reproducible research data; aligns with Crankbird's transparency principles.
 
 ---

@@ -183,6 +183,7 @@ my-worker:
 **Cause**: Not using `worker.run()` method
 
 **Solution**:
+
 ```python
 # ✅ Use worker.run()
 def main() -> None:
@@ -200,6 +201,7 @@ uvicorn.run(worker.app, host="0.0.0.0", port=8500)
 **Causes & Solutions**:
 
 1. **Async main function**:
+
    ```python
    # ❌ Wrong
    async def main() -> None:
@@ -213,6 +215,7 @@ uvicorn.run(worker.app, host="0.0.0.0", port=8500)
    ```
 
 2. **Missing https_port parameter**:
+
    ```python
    # ❌ Wrong - worker doesn't know port
    worker = MyWorker()
@@ -223,6 +226,7 @@ uvicorn.run(worker.app, host="0.0.0.0", port=8500)
    ```
 
 3. **Permission denied** (Docker v28+):
+
    ```dockerfile
    # ❌ Wrong - files owned by root
    COPY requirements.txt /app/

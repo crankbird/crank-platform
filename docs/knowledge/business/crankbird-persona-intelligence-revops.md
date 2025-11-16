@@ -3,11 +3,11 @@ title: "Crankbird Persona Intelligence in the RevOps Stack"
 slug: crankbird-persona-intelligence-revops
 date: 2025-10-23
 context:
-  - timezone: "Australia/Sydney"
-  - setting: "Strategic synthesis"
-  - mood: "Analytical"
-  - occasion: "Positioning Crankbird in RevOps ecosystem"
-  - utc: "2025-10-23T08:40:00Z"
+- timezone: "Australia/Sydney"
+- setting: "Strategic synthesis"
+- mood: "Analytical"
+- occasion: "Positioning Crankbird in RevOps ecosystem"
+- utc: "2025-10-23T08:40:00Z"
 summary: >
   Positions Crankbird’s data-driven persona methodology as the cognitive layer of RevOps — transforming qualitative marketing insight into quantitative operational intelligence.
 tags: [revops, crankbird, persona-intelligence, marketingops, salesops]

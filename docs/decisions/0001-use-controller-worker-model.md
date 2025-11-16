@@ -97,9 +97,33 @@ Single platform service manages all capabilities internally.
 
 ## Links
 
-- [Related to] [docs/architecture/controller-worker-model.md]
-- [Related to] [docs/planning/phase-3-controller-extraction.md]
+### Architecture References
+
 - [Refined by] ADR-0002 (mTLS security model)
+- [Refined by] ADR-0006 (Capability registry integration)
+- [Refined by] ADR-0009 (CPU/GPU worker separation)
+- [Related to] ADR-0010 (Containers as primary deployment)
+
+### Upstream Context
+
+- [Informed by] docs/knowledge/philosophy/governed-service-fabric-agentic-economy.md
+- [Aligned with] docs/knowledge/personas/zk20251112-002_upn-systems-architect.md (distributed systems thinkers)
+
+### Behavioral Specifications
+
+- [Validated by] F-CONTROLLER-PRIVILEGE (tests/bdd/features/controller_privilege_boundary.feature)
+- [Validated by] F-WORKER-SANDBOXING (tests/bdd/features/worker_sandboxing.feature)
+- [Validated by] F-CAPABILITY-ROUTING (tests/bdd/features/capability_routing.feature)
+
+### Planning & Implementation
+
+- [Architecture doc] docs/architecture/CONTROLLER_WORKER_MODEL.md
+- [Roadmap] docs/planning/phase-3-controller-extraction.md
+- [Implemented in] src/crank/worker_runtime/, src/crank/capabilities/
+
+### Agent Guidance
+
+- [Constrains] .vscode/AGENT_CONTEXT.md (Sections: Architecture Refactor, Worker Development Pattern)
 
 ## Implementation Notes
 

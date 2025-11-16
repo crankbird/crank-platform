@@ -25,6 +25,7 @@ Our documentation has grown organically with inconsistent:
 ### docs/ (Root Level) — 28 files
 
 #### ✅ KEEP (Core References)
+
 | File | Status | Purpose | Action |
 |------|--------|---------|--------|
 | `README.md` | Active | Documentation index | Update with new structure |
@@ -33,6 +34,7 @@ Our documentation has grown organically with inconsistent:
 | `PLATFORM_SERVICES.md` | Active | Service descriptions | Keep |
 
 #### 🔄 CONSOLIDATE/RELOCATE
+
 | File | Status | Issue | Action |
 |------|--------|-------|--------|
 | `ARCHITECTURAL_MENAGERIE_GUIDE.md` | Active | Should be in architecture/ | Move |
@@ -44,6 +46,7 @@ Our documentation has grown organically with inconsistent:
 | `container-strategy.md` | Superseded | See DOCKER_SECURITY_DECISIONS.md | Archive |
 
 #### ⚠️ EVALUATE (Environment/Setup Docs)
+
 | File | Status | Purpose | Action |
 |------|--------|---------|--------|
 | `current-environment-baseline.md` | Historical | Snapshot doc | Move to reports/ |
@@ -55,6 +58,7 @@ Our documentation has grown organically with inconsistent:
 | `windows-agent-instructions.md` | Active | Windows setup | Move to development/ |
 
 #### 📊 REPORTS (Should be in reports/)
+
 | File | Current Location | Action |
 |------|------------------|--------|
 | `CODE_REVIEW_RESPONSE.md` | docs/ | Move to reports/ |
@@ -148,6 +152,7 @@ Our documentation has grown organically with inconsistent:
 ## Proposed Structure (After Cleanup)
 
 ### docs/ (Root — 4 Core Docs Only)
+
 ```
 README.md                          # Master index
 ARCHITECTURE.md                    # Current system design (AS-IS)
@@ -156,6 +161,7 @@ PLATFORM_SERVICES.md               # Service catalog
 ```
 
 ### docs/planning/ (Strategic Plans)
+
 ```
 REQUIREMENTS_TRACEABILITY.md       # ⭐ CRITICAL — Req → Test mapping
 ENHANCEMENT_ROADMAP.md             # ⭐ CRITICAL — Future plans (TO-BE)
@@ -168,6 +174,7 @@ TAXONOMY_AND_DEPLOYMENT.md         # Taxonomy (renamed)
 ```
 
 ### docs/architecture/ (Design Decisions — AS-IS)
+
 ```
 MESH_INTERFACE_DESIGN.md           # ⭐ CRITICAL — Mesh spec (renamed)
 WORKER_ARCHETYPE_PATTERNS.md       # Worker patterns
@@ -180,6 +187,7 @@ WORKER_SEPARATION_STRATEGY.md      # Mark status COMPLETED?
 ```
 
 ### docs/security/ (Security Architecture)
+
 ```
 DOCKER_SECURITY_DECISIONS.md       # ⭐ CRITICAL — Container security
 CAPABILITY_ACCESS_POLICY_ARCHITECTURE.md  # ⭐ CAP design
@@ -189,6 +197,7 @@ MTLS_STRATEGY.md                   # Consolidated mTLS docs
 ```
 
 ### docs/operations/ (Ops & Deployment)
+
 ```
 AZURE_DEPLOYMENT.md
 GITOPS_WORKFLOW.md
@@ -196,6 +205,7 @@ PORT_CONFIGURATION_STRATEGY.md
 ```
 
 ### docs/development/ (Dev Guides)
+
 ```
 CODE_QUALITY_STRATEGY.md           # ⭐ CRITICAL — Type safety
 TESTING_STRATEGY.md                # ⭐ CRITICAL — Test approach
@@ -212,6 +222,7 @@ MAC_DEVELOPMENT.md                 # macOS dev guide
 ```
 
 ### docs/reports/ (Historical Reports & Snapshots)
+
 ```
 CODE_REVIEW_RESPONSE.md
 AZURE_VM_TEST_RESULTS.md
@@ -284,15 +295,15 @@ Every document must have a header:
 4. `docs/architecture/MESH_INTERFACE_DESIGN.md` — Core interface contract
 
 ### Tier 2: Architecture Context
-5. `docs/architecture/WORKER_ARCHETYPE_PATTERNS.md` — How workers should work
-6. `docs/security/DOCKER_SECURITY_DECISIONS.md` — Security requirements
-7. `docs/development/CODE_QUALITY_STRATEGY.md` — Type safety & testing patterns
-8. `docs/development/TESTING_STRATEGY.md` — Test philosophy
+1. `docs/architecture/WORKER_ARCHETYPE_PATTERNS.md` — How workers should work
+2. `docs/security/DOCKER_SECURITY_DECISIONS.md` — Security requirements
+3. `docs/development/CODE_QUALITY_STRATEGY.md` — Type safety & testing patterns
+4. `docs/development/TESTING_STRATEGY.md` — Test philosophy
 
 ### Tier 3: Specific Domains
-9. `docs/architecture/LEGACY_INTEGRATION.md` — Protocol support
-10. `docs/security/CAPABILITY_ACCESS_POLICY_ARCHITECTURE.md` — Future CAP design
-11. `docs/planning/ENTERPRISE_READINESS_ASSESSMENT.md` — Enterprise gaps
+1. `docs/architecture/LEGACY_INTEGRATION.md` — Protocol support
+2. `docs/security/CAPABILITY_ACCESS_POLICY_ARCHITECTURE.md` — Future CAP design
+3. `docs/planning/ENTERPRISE_READINESS_ASSESSMENT.md` — Enterprise gaps
 
 ---
 
@@ -313,6 +324,7 @@ Every document must have a header:
 5. `CAPABILITY_ACCESS_POLICY_ARCHITECTURE.md` — Security scenarios
 
 **Extraction Pattern**:
+
 ```gherkin
 # For each capability/feature in roadmap:
 Feature: <Capability Name>

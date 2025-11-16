@@ -31,22 +31,22 @@ links:
   urls: []
 
 related_people:
-  - name: "Vannevar Bush"
-  - name: "Niklas Luhmann"
-  - name: "Tim Berners-Lee"
+- name: "Vannevar Bush"
+- name: "Niklas Luhmann"
+- name: "Tim Berners-Lee"
 
 references:
-  - id: bush1945
+- id: bush1945
     author: "Bush, V."
     title: "As We May Think"
     year: 1945
     journal: "The Atlantic Monthly"
-  - id: luhmann1992
+- id: luhmann1992
     author: "Luhmann, N."
     title: "The Differentiation of Society"
     year: 1992
     publisher: "Columbia University Press"
-  - id: bernerslee2001
+- id: bernerslee2001
     author: "Berners-Lee, T., Hendler, J., & Lassila, O."
     title: "The Semantic Web"
     year: 2001

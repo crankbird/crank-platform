@@ -3,11 +3,11 @@ title: "Narrative Threading as a Contextual Goal"
 slug: narrative-threading-contextual-goal
 date: 2025-10-23
 context:
-  - timezone: "Australia/Sydney"
-  - setting: "Afternoon reflection, bus ride"
-  - mood: "Imaginative, measured"
-  - occasion: "Meta reflection on project scoping"
-  - utc: "2025-10-23T06:45:00Z"
+- timezone: "Australia/Sydney"
+- setting: "Afternoon reflection, bus ride"
+- mood: "Imaginative, measured"
+- occasion: "Meta reflection on project scoping"
+- utc: "2025-10-23T06:45:00Z"
 summary: >
   Positions the idea of threading multiple narrative paths through a shared rhizome as a contextual goal — a future-oriented attractor guiding current design without imposing execution pressure.
 tags: [contextual-goal, narrative, rhizome, zettelkasten, cognition, crankbird]
@@ -28,8 +28,6 @@ Concept:
 The idea of threading multiple narrative paths through the same cognitive rhizome is acknowledged as a contextual goal -- a horizon marker, not a deliverable.
 
 It expresses intent: that the knowledge graph will one day support multi-linearity, crossovers, and re-entrant meaning, but does not demand immediate structure.
-
-  
 
 By holding it lightly, the system retains creative elasticity.
 

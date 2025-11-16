@@ -64,6 +64,7 @@ This intentional cue replaces the old *adrenaline jolt* with mindful activation.
 ---
 
 ## 5️⃣  Rationale
+
 | System | Effect |
 |--------|---------|
 | **Movement + Light** | Increases dopamine, serotonin, and BDNF; wakes PFC. |

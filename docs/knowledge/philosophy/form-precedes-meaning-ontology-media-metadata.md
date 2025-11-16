@@ -34,25 +34,25 @@ links:
   urls: []
 
 related_people:
-  - name: "Jean-Paul Sartre"
+- name: "Jean-Paul Sartre"
     key_reference: "sartre1943"
-  - name: "Marshall McLuhan"
+- name: "Marshall McLuhan"
     key_reference: "mcluhan1964"
-  - name: "Martin Heidegger"
+- name: "Martin Heidegger"
     key_reference: "heidegger1927"
 
 references:
-  - id: sartre1943
+- id: sartre1943
     author: "Sartre, J.-P."
     title: "Being and Nothingness"
     year: 1943
     publisher: "Gallimard"
-  - id: mcluhan1964
+- id: mcluhan1964
     author: "McLuhan, M."
     title: "Understanding Media: The Extensions of Man"
     year: 1964
     publisher: "McGraw-Hill"
-  - id: heidegger1927
+- id: heidegger1927
     author: "Heidegger, M."
     title: "Being and Time"
     year: 1927

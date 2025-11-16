@@ -29,4 +29,4 @@ Episodic memory enables future simulation—a cognitive “what if.” In **Bran
 
 > The DMN bridges temporal simulation (episodic future thinking) and semantic abstraction (conceptual self-modeling). This makes it a unifying neural mechanism for Tulving’s systems and their integration under predictive processing models like HERA.
 
-> In **Brand Engineering**, this is where narrative foresight lives — the user’s ability to _project_ ethical consistency and future reliability from past transparent experiences
+> In **Brand Engineering**, this is where narrative foresight lives — the user’s ability to *project* ethical consistency and future reliability from past transparent experiences

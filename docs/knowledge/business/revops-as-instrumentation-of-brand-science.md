@@ -68,4 +68,3 @@ graph TD
   SG --> RO[RevOps<br><small>Operational nervous system</small>]
   RO --> FB[Feedback Loop<br><small>Analytics & learning</small>]
   FB --> BS
-

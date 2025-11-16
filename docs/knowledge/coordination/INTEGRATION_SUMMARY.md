@@ -52,10 +52,10 @@ Developed systematic approach for:
 3. **PROMPT_FOR_CODEX_SECOND_PASS.md** - Instructions for Codex enhancement
 
 ### Core Transfers
-4. **Master Zettel** - Philosophical foundation preserved in synthesis/philosophical/
-5. **Persona Frameworks** - Business strategy documents in applications/personas/
-6. **Strategic Synthesis** - Platform strategy in synthesis/strategic/
-7. **Codex Metadata** - Complete provenance tracking in content/provenance/
+1. **Master Zettel** - Philosophical foundation preserved in synthesis/philosophical/
+2. **Persona Frameworks** - Business strategy documents in applications/personas/
+3. **Strategic Synthesis** - Platform strategy in synthesis/strategic/
+4. **Codex Metadata** - Complete provenance tracking in content/provenance/
 
 ## The Meta-Breakthrough
 

@@ -46,7 +46,7 @@ MASTER-ZETTEL-VAULT/                    [153 total files]
 1. **MASTER-ZETTEL-VAULT** = Primary working vault (USE THIS)
 2. **Other collections** = Preserved archives (DO NOT USE for active work)
 
-### Purpose of Each Directory:
+### Purpose of Each Directory
 - **01-core-philosophy**: Space, time, meaning, ontological foundations
 - **02-business-systems**: RevOps, strategy, Crankbird ecosystem
 - **03-cognitive-science**: Memory models, cortical networks, AI-human dialogue
@@ -59,13 +59,13 @@ MASTER-ZETTEL-VAULT/                    [153 total files]
 
 ## 🚀 OBSIDIAN INTEGRATION
 
-### How to Use:
+### How to Use
 1. **Open Vault**: File → Open Vault → `/MASTER-ZETTEL-VAULT/`
 2. **Start Navigation**: Open `MASTER-ZETTEL.md` as central hub
 3. **Explore Themes**: Browse directories by domain
 4. **Graph View**: Color-coded visualization (Philosophy=Purple, Business=Green, etc.)
 
-### Benefits:
+### Benefits
 - **Single source of truth**: No more hunting across repositories
 - **Thematic coherence**: Logical organization by domain
 - **Cross-links**: 200+ internal connections preserved

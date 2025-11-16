@@ -51,6 +51,7 @@ Each worker can empirically determine its own performance profile such as:
 This profile is *local*, discovered *autonomously*, and updated continuously.
 
 Example:
+
 ```
 capability: email.classify.spam-v1
 throughput_rps: 400

@@ -10,7 +10,6 @@ date: "2025-10-12"
 ## Abstract
 This paper develops a theoretical and empirical foundation for an automatable framework of brand development grounded in cognitive psychology, behavioural economics, and marketing science. It argues that brand strength arises from three measurable dynamics: (a) associative memory structures that determine mental availability, (b) perceptual fluency and distinctiveness that reduce cognitive effort and increase trust, and (c) alignment between promise and proof that minimises prediction error and builds belief stability through verified feedback loops. Integrating these mechanisms provides a scientific basis for testing and automating brand development. The framework is applied to Crankbird, an emerging ethical-technology venture whose design ethos emphasises autonomy, transparency, and legibility.
 
-
 ---
 
 ## 1.1 Introduction
@@ -57,16 +56,16 @@ Fogg’s (2009) behavioural model (B = M×A×P) provides a quantitative basis: s
 
 ## References
 
-- Anderson, J. R. (1983). *The architecture of cognition.* Cambridge, MA: Harvard University Press. ISBN 9780674043079 WorldCat Permalink: https://www.worldcat.org/oclc/9083497 
-Publisher page: https://www.hup.harvard.edu/books/9780674043079
+- Anderson, J. R. (1983). *The architecture of cognition.* Cambridge, MA: Harvard University Press. ISBN 9780674043079 WorldCat Permalink: <https://www.worldcat.org/oclc/9083497>
+Publisher page: <https://www.hup.harvard.edu/books/9780674043079>
 - Bartlett, F. C. (1932). *Remembering: A Study in Experimental and Social Psychology.* Cambridge University Press.
-- Deci, E. L., & Ryan, R. M. (2000). The “what” and “why” of goal pursuits: Human needs and the self-determination of behavior. *Psychological Inquiry, 11*(4), 227–268. https://doi.org/10.1207/S15327965PLI1104_01
-- Fogg, B. J. (2009). A behavior model for persuasive design. *Proceedings of the 4th International Conference on Persuasive Technology,* 1–7. https://doi.org/10.1145/1541948.1541999
-- Friston, K. (2010). The free-energy principle: A unified brain theory? *Nature Reviews Neuroscience, 11*(2), 127–138. https://doi.org/10.1038/nrn2787
-- Graf, L. K. M., Mayer, S., & Landwehr, J. R. (2018). A dual-process perspective on fluency-based aesthetics: Hedonic and amplification effects of processing fluency. *Journal of Experimental Social Psychology, 75,* 202–216. https://doi.org/10.1016/j.jesp.2017.11.009
-- Graesser, A. C., Millis, K. K., & Zwaan, R. A. (1997). Discourse comprehension. *Annual Review of Psychology, 48,* 163–189. https://doi.org/10.1146/annurev.psych.48.1.163
+- Deci, E. L., & Ryan, R. M. (2000). The “what” and “why” of goal pursuits: Human needs and the self-determination of behavior. *Psychological Inquiry, 11*(4), 227–268. <https://doi.org/10.1207/S15327965PLI1104_01>
+- Fogg, B. J. (2009). A behavior model for persuasive design. *Proceedings of the 4th International Conference on Persuasive Technology,* 1–7. <https://doi.org/10.1145/1541948.1541999>
+- Friston, K. (2010). The free-energy principle: A unified brain theory? *Nature Reviews Neuroscience, 11*(2), 127–138. <https://doi.org/10.1038/nrn2787>
+- Graf, L. K. M., Mayer, S., & Landwehr, J. R. (2018). A dual-process perspective on fluency-based aesthetics: Hedonic and amplification effects of processing fluency. *Journal of Experimental Social Psychology, 75,* 202–216. <https://doi.org/10.1016/j.jesp.2017.11.009>
+- Graesser, A. C., Millis, K. K., & Zwaan, R. A. (1997). Discourse comprehension. *Annual Review of Psychology, 48,* 163–189. <https://doi.org/10.1146/annurev.psych.48.1.163>
 - Hohwy, J. (2013). *The Predictive Mind.* Oxford University Press.
-- Reber, R., Schwarz, N., & Winkielman, P. (2004). Processing fluency and aesthetic pleasure: Is beauty in the perceiver’s processing experience? *Personality and Social Psychology Review, 8*(4), 364–382. https://doi.org/10.1207/s15327957pspr0804_3
+- Reber, R., Schwarz, N., & Winkielman, P. (2004). Processing fluency and aesthetic pleasure: Is beauty in the perceiver’s processing experience? *Personality and Social Psychology Review, 8*(4), 364–382. <https://doi.org/10.1207/s15327957pspr0804_3>
 - Romaniuk, J. (2018). *Building Distinctive Brand Assets.* Oxford University Press.
 - Romaniuk, J., & Sharp, B. (2016). *How Brands Grow Part 2: Emerging Markets, Services, Durables, New and Luxury Brands.* Oxford University Press.
 - Schank, R. C., & Abelson, R. P. (1977). *Scripts, Plans, Goals, and Understanding: An Inquiry into Human Knowledge Structures.* Lawrence Erlbaum.

@@ -36,39 +36,39 @@ links:
   urls: []
 
 related_people:
-  - name: "Robert Cialdini"
+- name: "Robert Cialdini"
     key_reference: "cialdini1984"
-  - name: "Daniel Kahneman"
+- name: "Daniel Kahneman"
     key_reference: "kahneman2011"
-  - name: "Chris Voss"
+- name: "Chris Voss"
     key_reference: "voss2016"
-  - name: "Judith Glaser"
+- name: "Judith Glaser"
     key_reference: "glaser2013"
-  - name: "Amy Cuddy"
+- name: "Amy Cuddy"
     key_reference: "cuddy2012"
 
 references:
-  - id: cialdini1984
+- id: cialdini1984
     author: "Cialdini, R. B."
     title: "Influence: The Psychology of Persuasion"
     year: 1984
     publisher: "Harper Business"
-  - id: kahneman2011
+- id: kahneman2011
     author: "Kahneman, D."
     title: "Thinking, Fast and Slow"
     year: 2011
     publisher: "Farrar, Straus and Giroux"
-  - id: voss2016
+- id: voss2016
     author: "Voss, C."
     title: "Never Split the Difference"
     year: 2016
     publisher: "Harper Business"
-  - id: glaser2013
+- id: glaser2013
     author: "Glaser, J."
     title: "Conversational Intelligence: How Great Leaders Build Trust and Get Extraordinary Results"
     year: 2013
     publisher: "Bibliomotion"
-  - id: cuddy2012
+- id: cuddy2012
     author: "Cuddy, A. J. C."
     title: "Presence: Bringing Your Boldest Self to Your Biggest Challenges"
     year: 2012

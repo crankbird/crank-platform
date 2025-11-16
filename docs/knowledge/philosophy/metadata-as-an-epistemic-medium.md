@@ -33,32 +33,32 @@ links:
   urls: []
 
 related_people:
-  - name: "Niklas Luhmann"
+- name: "Niklas Luhmann"
     key_reference: "luhmann1992"
-  - name: "Vannevar Bush"
+- name: "Vannevar Bush"
     key_reference: "bush1945"
-  - name: "Tim Berners-Lee"
+- name: "Tim Berners-Lee"
     key_reference: "bernerslee2001"
-  - name: "Douglas Engelbart"
+- name: "Douglas Engelbart"
     key_reference: "engelbart1962"
 
 references:
-  - id: luhmann1992
+- id: luhmann1992
     author: "Luhmann, N."
     title: "The Differentiation of Society"
     year: 1992
     publisher: "Columbia University Press"
-  - id: bush1945
+- id: bush1945
     author: "Bush, V."
     title: "As We May Think"
     year: 1945
     journal: "The Atlantic Monthly"
-  - id: bernerslee2001
+- id: bernerslee2001
     author: "Berners-Lee, T., Hendler, J., & Lassila, O."
     title: "The Semantic Web"
     year: 2001
     journal: "Scientific American"
-  - id: engelbart1962
+- id: engelbart1962
     author: "Engelbart, D. C."
     title: "Augmenting Human Intellect: A Conceptual Framework"
     year: 1962

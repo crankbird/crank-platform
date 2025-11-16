@@ -109,6 +109,7 @@ Both are working toward the same strategic goal:
 **Purpose:** Translate philosophical insights into testable behavioral requirements for AI systems
 
 **Example Gherkin Structure:**
+
 ```gherkin
 Feature: Context-Sensitive Intelligence
 

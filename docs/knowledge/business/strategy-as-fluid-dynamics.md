@@ -40,6 +40,7 @@ In reflecting on the conference’s obsession with *alignment* and its discomfor
 The strategist operates not as an engineer tuning a machine but as a navigator reading the flow of currents.
 
 ### 🌊 Conceptual Parallels
+
 | Fluid Concept | Strategic Analogue |
 |----------------|--------------------|
 | Velocity fields | Pace and direction of change |

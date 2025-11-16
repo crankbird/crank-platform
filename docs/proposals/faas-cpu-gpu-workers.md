@@ -7,6 +7,7 @@ Same worker codebase, different deployments.
 Workers advertise acceleration type:
 
 CPU Worker:
+
 ```json
 {
   "capabilities": [{
@@ -18,6 +19,7 @@ CPU Worker:
 ```
 
 GPU Worker:
+
 ```json
 {
   "capabilities": [{
@@ -30,6 +32,7 @@ GPU Worker:
 ```
 
 ## Job Constraint
+
 ```json
 "constraints": { "accelerator": "gpu" }
 ```

@@ -91,7 +91,7 @@ attribution: |
 - **Recognition:** "Field experience + AI capability = superior outcomes"
 
 ## Anti-Patterns That Repel Them
-- **Centralized AI:** "All decisions flow through the main algorithm" 
+- **Centralized AI:** "All decisions flow through the main algorithm"
 - **Context-free automation:** "The AI will handle it uniformly"
 - **Reporting overhead:** "Just enter the data and the system will optimize"
 - **Remote micromanagement:** "Central intelligence will direct field operations"

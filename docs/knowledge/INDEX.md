@@ -16,7 +16,7 @@
 
 ## 🗂️ Knowledge Navigation
 
-### 01-core-philosophy/ 
+### 01-core-philosophy/
 **Foundational worldview zettels**
 - Space, time, and meaning relationships
 - Ontological foundations  

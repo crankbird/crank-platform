@@ -60,15 +60,15 @@ By embedding personas, hats, and narratives into a single semantic layer, UPN ex
 ## References  
 Aaker, D. A. (1991). *Managing Brand Equity.* Free Press.  
 Bartlett, F. C. (1932). *Remembering: A Study in Experimental and Social Psychology.* Cambridge University Press.  
-Biddle, B. J. (1986). Recent developments in role theory. *Annual Review of Sociology, 12*, 67–92. https://doi.org/10.1146/annurev.so.12.080186.000435  
+Biddle, B. J. (1986). Recent developments in role theory. *Annual Review of Sociology, 12*, 67–92. <https://doi.org/10.1146/annurev.so.12.080186.000435>  
 Christensen, C. M., Hall, T., Dillon, K., & Duncan, D. S. (2016). *Competing Against Luck: The Story of Innovation and Customer Choice.* Harper Business.  
 Cooper, A. (1999). *The Inmates Are Running the Asylum.* Sams.  
-Friston, K. (2010). The free-energy principle: A unified brain theory? *Nature Reviews Neuroscience, 11*(2), 127–138. https://doi.org/10.1038/nrn2787  
-Homburg, C., Jozić, D., & Kuehnl, C. (2017). Customer experience management: Toward implementing an evolving marketing concept. *Journal of the Academy of Marketing Science, 45*(3), 377–401. https://doi.org/10.1007/s11747-015-0460-7  
+Friston, K. (2010). The free-energy principle: A unified brain theory? *Nature Reviews Neuroscience, 11*(2), 127–138. <https://doi.org/10.1038/nrn2787>  
+Homburg, C., Jozić, D., & Kuehnl, C. (2017). Customer experience management: Toward implementing an evolving marketing concept. *Journal of the Academy of Marketing Science, 45*(3), 377–401. <https://doi.org/10.1007/s11747-015-0460-7>  
 Martin, R. (2025). *Crankbird Brand Science Playbook – Technical Edition v1.0.* Crankbird Press.  
-Matthews, T. (2012). Designing and evaluating personas. *Communications of the ACM, 55*(3), 19–21. https://doi.org/10.1145/2093548.2093555  
+Matthews, T. (2012). Designing and evaluating personas. *Communications of the ACM, 55*(3), 19–21. <https://doi.org/10.1145/2093548.2093555>  
 Norman, D. A. (2013). *The Design of Everyday Things (Rev. ed.).* Basic Books.  
 Schank, R. C., & Abelson, R. P. (1977). *Scripts, Plans, Goals, and Understanding.* Lawrence Erlbaum.  
 Shneiderman, B. (2020). *Human-Centered AI.* Oxford University Press.  
 Thaler, R. H., & Sunstein, C. R. (2008). *Nudge: Improving Decisions About Health, Wealth, and Happiness.* Yale University Press.  
-Wilkinson, M. D., et al. (2016). The FAIR Guiding Principles for scientific data management and stewardship. *Scientific Data, 3*, 160018. https://doi.org/10.1038/sdata.2016.18  
+Wilkinson, M. D., et al. (2016). The FAIR Guiding Principles for scientific data management and stewardship. *Scientific Data, 3*, 160018. <https://doi.org/10.1038/sdata.2016.18>  

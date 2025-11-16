@@ -46,6 +46,7 @@ The platform architecture follows the philosophical framework:
 ## Content Pipeline Integration
 
 ### Publication Readiness Calculation
+
 ```yaml
 factors:
   - title_present: 1.0
@@ -58,6 +59,7 @@ max_score: 5.0
 ```
 
 ### Persona Mapping
+
 ```yaml
 SHM: ["systems_architect", "field_decision_maker"]
 TUD: ["future_sensing_executive", "distributed_researcher"] 

@@ -29,7 +29,7 @@ links:
   mentions: ["zk20251022-001", "zk20251022-002", "zk20251022-004"]
 ---
 
-In a room full of strategists, "alignment" became both the mantra and the metric of success. 
+In a room full of strategists, "alignment" became both the mantra and the metric of success.
 It promised harmony, but what it often delivered was homogeneity—compliance masquerading as coherence.
 
 The obsession with alignment reflects a deep organisational longing for control in fragmented, uncertain contexts.

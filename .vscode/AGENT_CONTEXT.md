@@ -1,7 +1,23 @@
+---
+agent_id: agent-platform-dev
+agent_scope: Platform architecture, worker development, security patterns, testing
+authoritative_refs:
+  adrs: [0001, 0002, 0003, 0008, 0009, 0010, 0019, 0020, 0021, 0022]
+  features: [F-CAPABILITY-ROUTING, F-WORKER-SANDBOXING, F-SECURITY-MTLS, F-CONTROLLER-PRIVILEGE]
+  proposals: [P-2025-11-faas-worker-spec]
+  knowledge_base:
+    - docs/knowledge/philosophy/governed-service-fabric-agentic-economy.md
+    - docs/knowledge/personas/zk20251112-002_upn-systems-architect.md
+reorientation_protocol: docs/knowledge/agent-orientation.md
+last_updated: 2025-11-16
+---
+
 # CRITICAL CONTEXT FOR CODING AGENTS
 
 This file is loaded by Codex / Copilot / GPT-5 when assisting with this repository.
 It defines **non-negotiable architectural rules**, **service boundaries**, and **tooling expectations**.
+
+**⚠️ CONTEXT LOST?** → Read [docs/knowledge/agent-orientation.md](../docs/knowledge/agent-orientation.md) to rebuild context using the document graph.
 
 ---
 

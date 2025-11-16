@@ -31,18 +31,18 @@ links:
   urls: []
 
 related_people:
-  - name: "Russell Barkley"
+- name: "Russell Barkley"
     key_reference: "barkley2015"
-  - name: "Robert Sapolsky"
+- name: "Robert Sapolsky"
     key_reference: "sapolsky2004"
 
 references:
-  - id: barkley2015
+- id: barkley2015
     author: "Barkley, R. A."
     title: "Attention-Deficit Hyperactivity Disorder: A Handbook for Diagnosis and Treatment (4th ed.)"
     year: 2015
     publisher: "Guilford Press"
-  - id: sapolsky2004
+- id: sapolsky2004
     author: "Sapolsky, R. M."
     title: "Why Zebras Don’t Get Ulcers (3rd ed.)"
     year: 2004

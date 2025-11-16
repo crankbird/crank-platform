@@ -9,8 +9,8 @@ context: [
   {"occasion": "Misc inquiries – 21 Oct 25"}
 ]
 summary: >
-  Explores how patterns become teleological by coupling structural predictability with affective reward. 
-  Meaning and motivation emerge when the brain links the completion or continuation of a pattern to reward signals, 
+  Explores how patterns become teleological by coupling structural predictability with affective reward.
+  Meaning and motivation emerge when the brain links the completion or continuation of a pattern to reward signals,
   turning structure into purpose. This mechanism bridges “form precedes meaning” and “pattern-lock” in Brand Science.
 tags: [teleology, cognition, affect, prediction, dopamine, pattern, brand-science, meaning]
 type: "insight"
@@ -28,7 +28,7 @@ attribution:
   notes: >
     Derived from reflection on the gap between structural and behavioral teleology.
     Integrates predictive processing, affective neuroscience, and semiotic design
-    to explain how patterns become motivationally charged — the foundation of both 
+    to explain how patterns become motivationally charged — the foundation of both
     narrative resonance and algorithmic compulsion.
 
 links:
@@ -36,15 +36,15 @@ links:
   urls: []
 
 related_people:
-  - name: "Karl Friston"
+- name: "Karl Friston"
     key_reference: "friston2010"
-  - name: "Jaak Panksepp"
+- name: "Jaak Panksepp"
     key_reference: "panksepp1998"
-  - name: "Donald Norman"
+- name: "Donald Norman"
     key_reference: "norman2004"
 
 references:
-  - id: friston2010
+- id: friston2010
     author: "Friston, K."
     title: "The free-energy principle: a unified brain theory?"
     year: 2010
@@ -52,12 +52,12 @@ references:
     volume: 11
     issue: 2
     pages: "127–138"
-  - id: panksepp1998
+- id: panksepp1998
     author: "Panksepp, J."
     title: "Affective Neuroscience: The Foundations of Human and Animal Emotions"
     year: 1998
     publisher: "Oxford University Press"
-  - id: norman2004
+- id: norman2004
     author: "Norman, D. A."
     title: "Emotional Design: Why We Love (or Hate) Everyday Things"
     year: 2004
