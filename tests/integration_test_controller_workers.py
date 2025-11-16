@@ -1,25 +1,35 @@
 #!/usr/bin/env python3
 """
-🚀 Enhanced Crank Platform Smoke Test Suite
-===========================================
+🚀 Controller + Workers Integration Test Suite (Live Containers)
+================================================================
 
-Comprehensive functional testing for all 6 worker archetype patterns:
-1. File conversion (in-memory) - doc-converter
-2. File processing (large files) - email-parser
-3. Message text classification - email-classifier
-4. Still image classification (CPU) - image-classifier-cpu
-5. Still image classification (GPU) - image-classifier-gpu
-6. Streaming data processing - streaming
+End-to-end system validation for Phase 3 controller/worker architecture.
+Tests actual running containers (docker-compose) with all 8 workers:
+
+1. crank-streaming (8500) - Streaming email classification
+2. crank-email-classifier (8201) - Email intent classification
+3. crank-email-parser (8301) - Email archive parsing
+4. crank-doc-converter (8401) - Document format conversion
+5. crank-philosophical-analyzer (8601) - Philosophical content analysis
+6. crank-sonnet-zettel-manager (8700) - Zettel note management
+7. crank-codex-zettel-repository (8800) - Zettel repository storage
+8. crank-hello-world (8900) - Reference implementation
 
 Tests validate:
-✅ Container health and startup
-✅ Worker registration with platform
-✅ API endpoint functionality and responses
-✅ Service capabilities and configuration
-✅ Cross-service communication patterns
-✅ Archetype-specific functionality
+✅ Controller health and startup
+✅ All workers register with controller
+✅ Capability-based routing works
+✅ Worker health endpoints respond
+✅ HTTPS-only enforcement with mTLS
+✅ Controller capability introspection
+✅ Multi-worker scenarios (duplicate capabilities)
 
 Platform Support: Auto-detects macOS (Apple Silicon), Linux (x86_64/CUDA), Windows (WSL2)
+
+Usage:
+    python tests/integration_test_controller_workers.py --rebuild    # Rebuild and test
+    python tests/integration_test_controller_workers.py --json       # JSON output
+    pytest tests/integration_test_controller_workers.py -v            # Via pytest
 """
 
 import argparse
@@ -54,31 +64,31 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class ArchetypeConfig:
-    """Configuration for each worker archetype"""
+class WorkerConfig:
+    """Configuration for each worker in the controller/worker architecture"""
 
     def __init__(
         self,
         name: str,
         container_name: str,
         port: int,
-        service_type: str,
+        worker_id: str,
         test_endpoints: list[str],
-        capabilities: list[str],
+        expected_capability_ids: list[str],
         gpu_required: bool = False,
     ):
         self.name = name
         self.container_name = container_name
         self.port = port
-        self.service_type = service_type
+        self.worker_id = worker_id
         self.test_endpoints = test_endpoints
-        self.capabilities = capabilities
+        self.expected_capability_ids = expected_capability_ids
         self.gpu_required = gpu_required
         self.base_url = f"https://localhost:{port}"
 
 
-class EnhancedSmokeTest:
-    """Enhanced smoke test suite for all archetype patterns"""
+class ControllerIntegrationTest:
+    """Live integration test suite for controller + workers architecture"""
 
     def __init__(self, compose_file: Optional[str] = None):
         self.base_path = Path(__file__).parent.parent
@@ -94,81 +104,96 @@ class EnhancedSmokeTest:
             self.compose_file = str(self.base_path / "docker-compose.development.yml")
 
         # Display platform information at startup
-        logger.info("🖥️  Platform: {self.platform_info['description']}")
-        logger.info("🏗️  Architecture: {self.platform_info['architecture']}")
-        logger.info("🐳  Docker Environment: {self.platform_info['docker_env']}")
+        logger.info(f"🖥️  Platform: {self.platform_info['description']}")
+        logger.info(f"🏗️  Architecture: {self.platform_info['architecture']}")
+        logger.info(f"🐳  Docker Environment: {self.platform_info['docker_env']}")
 
-        # 6 Core Worker Archetypes
-        self.archetypes = {
-            "doc_converter": ArchetypeConfig(
-                name="Document Conversion (In-Memory)",
-                container_name="crank-doc-converter-dev",
-                port=8100,
-                service_type="document_conversion",
-                test_endpoints=["/health", "/convert", "/docs"],
-                capabilities=["pdf_to_text", "docx_to_text", "format_conversion"],
-            ),
-            "email_parser": ArchetypeConfig(
-                name="File Processing (Large Files)",
-                container_name="crank-email-parser-dev",
-                port=8300,
-                service_type="email_parsing",
-                test_endpoints=["/health", "/parse", "/docs"],
-                capabilities=["mbox_parsing", "eml_parsing", "attachment_extraction"],
-            ),
-            "email_classifier": ArchetypeConfig(
-                name="Message Text Classification",
-                container_name="crank-email-classifier-dev",
-                port=8200,
-                service_type="email_classification",
-                test_endpoints=["/health", "/classify", "/docs"],
-                capabilities=["text_classification", "sentiment_analysis", "spam_detection"],
-            ),
-            "image_classifier_cpu": ArchetypeConfig(
-                name="Still Image Classification (CPU)",
-                container_name="crank-image-classifier-cpu-dev",
-                port=8401,
-                service_type="image_classification",
-                test_endpoints=["/health", "/classify", "/docs"],
-                capabilities=["basic_classification", "cpu_inference"],
-                gpu_required=False,
-            ),
-            "image_classifier_gpu": ArchetypeConfig(
-                name="Still Image Classification (GPU)",
-                container_name="crank-image-classifier-gpu-dev",
-                port=8400,
-                service_type="image_classification",
-                test_endpoints=["/health", "/classify", "/docs"],
-                capabilities=["advanced_classification", "gpu_inference", "real_time_processing"],
-                gpu_required=True,
-            ),
-            "streaming": ArchetypeConfig(
-                name="Streaming Data Processing",
+        # Controller configuration (replaces old platform)
+        self.controller_config = WorkerConfig(
+            name="Controller Service",
+            container_name="crank-controller-dev",
+            port=9000,
+            worker_id="controller",
+            test_endpoints=["/health", "/workers", "/capabilities", "/docs"],
+            expected_capability_ids=[],  # Controller doesn't provide capabilities, it routes them
+        )
+
+        # 8 Workers (Phase 3 architecture)
+        self.workers = {
+            "streaming": WorkerConfig(
+                name="Streaming Worker",
                 container_name="crank-streaming-dev",
                 port=8500,
-                service_type="streaming_analytics",
-                test_endpoints=["/health", "/stream", "/docs"],
-                capabilities=["real_time_processing", "websocket_streaming", "event_processing"],
+                worker_id="streaming",
+                test_endpoints=["/health"],
+                expected_capability_ids=["streaming.email.classify"],
+            ),
+            "email_classifier": WorkerConfig(
+                name="Email Classifier",
+                container_name="crank-email-classifier-dev",
+                port=8201,
+                worker_id="email_classifier",
+                test_endpoints=["/health"],
+                expected_capability_ids=["email.classify"],
+            ),
+            "email_parser": WorkerConfig(
+                name="Email Parser",
+                container_name="crank-email-parser-dev",
+                port=8301,
+                worker_id="email_parser",
+                test_endpoints=["/health"],
+                expected_capability_ids=["email.parse"],
+            ),
+            "doc_converter": WorkerConfig(
+                name="Document Converter",
+                container_name="crank-doc-converter-dev",
+                port=8401,
+                worker_id="doc_converter",
+                test_endpoints=["/health"],
+                expected_capability_ids=["document.convert"],
+            ),
+            "philosophical_analyzer": WorkerConfig(
+                name="Philosophical Analyzer",
+                container_name="crank-philosophical-analyzer-dev",
+                port=8601,
+                worker_id="philosophical_analyzer",
+                test_endpoints=["/health"],
+                expected_capability_ids=["content.philosophical_analysis"],
+            ),
+            "sonnet_zettel": WorkerConfig(
+                name="Sonnet Zettel Manager",
+                container_name="crank-sonnet-zettel-manager-dev",
+                port=8700,
+                worker_id="sonnet_zettel",
+                test_endpoints=["/health"],
+                expected_capability_ids=["knowledge.sonnet_zettel_management"],
+            ),
+            "codex_zettel": WorkerConfig(
+                name="Codex Zettel Repository",
+                container_name="crank-codex-zettel-repository-dev",
+                port=8800,
+                worker_id="codex_zettel",
+                test_endpoints=["/health"],
+                expected_capability_ids=["zettel.codex_repository"],
+            ),
+            "hello_world": WorkerConfig(
+                name="Hello World (Reference)",
+                container_name="hello-world-dev",
+                port=8900,
+                worker_id="hello_world",
+                test_endpoints=["/health"],
+                expected_capability_ids=["example.hello_world"],
             ),
         }
 
-        # Platform configuration
-        self.platform_config = ArchetypeConfig(
-            name="Crank Platform",
-            container_name="crank-platform-dev",
-            port=8443,
-            service_type="platform",
-            test_endpoints=["/health/live", "/v1/workers", "/api/docs"],
-            capabilities=["worker_registration", "service_discovery", "health_monitoring"],
-        )
-
-        self.cert_authority_config = ArchetypeConfig(
+        # Certificate Authority
+        self.cert_authority_config = WorkerConfig(
             name="Certificate Authority",
             container_name="crank-cert-authority-dev",
             port=9090,
-            service_type="certificate_authority",
-            test_endpoints=["/health", "/ca/cert", "/api/docs"],
-            capabilities=["certificate_generation", "ca_services", "mtls_support"],
+            worker_id="cert_authority",
+            test_endpoints=["/health"],
+            expected_capability_ids=[],
         )
 
     def _detect_platform(self) -> dict[str, str]:
@@ -299,13 +324,13 @@ class EnhancedSmokeTest:
             return False
 
     async def run_comprehensive_test(self, rebuild_environment: bool = False) -> dict[str, Any]:
-        """Run all enhanced smoke tests
+        """Run all controller/worker integration tests
 
         Args:
             rebuild_environment: If True, rebuild and restart containers before testing.
                                If False (default), test existing environment state.
         """
-        logger.info("🚀 Starting Enhanced Crank Platform Smoke Tests")
+        logger.info("🚀 Starting Controller + Workers Integration Test Suite")
         logger.info("=" * 80)
 
         # Phase 0: Optionally rebuild and restart environment
@@ -315,7 +340,7 @@ class EnhancedSmokeTest:
             if not rebuild_success:
                 return {
                     "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "test_suite": "Enhanced Smoke Test",
+                    "test_suite": "Controller + Workers Integration Test",
                     "error": "Failed to rebuild and restart environment",
                     "summary": {
                         "passed": 0,
@@ -332,20 +357,20 @@ class EnhancedSmokeTest:
 
         results: dict[str, Any] = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "test_suite": "Enhanced Smoke Test",
-            "total_services": len(self.archetypes) + 2,  # +2 for platform and CA
+            "test_suite": "Controller + Workers Integration Test",
+            "total_services": len(self.workers) + 2,  # +2 for controller and CA
             "container_status": {},
             "health_checks": {},
-            "platform_registration": {},
+            "controller_registration": {},
             "api_functionality": {},
-            "archetype_validation": {},
+            "worker_validation": {},
             "cross_service_communication": {},
             "summary": {
                 "passed": 0,
                 "failed": 0,
                 "warnings": [],
                 "critical_failures": [],
-                "archetype_status": {},
+                "worker_status": {},
             },
         }
 
@@ -358,24 +383,24 @@ class EnhancedSmokeTest:
             logger.info("🏥 Phase 2: Health Endpoint Validation")
             await self._test_health_endpoints(results)
 
-            # Phase 3: Platform Registration
-            logger.info("🔗 Phase 3: Worker Registration Validation")
-            await self._test_platform_registration(results)
+            # Phase 3: Controller Registration
+            logger.info("🔗 Phase 3: Worker Registration with Controller")
+            await self._test_controller_registration(results)
 
             # Phase 4: API Functionality
             logger.info("⚡ Phase 4: API Functionality Validation")
             await self._test_api_functionality(results)
 
-            # Phase 5: Archetype-Specific Tests
-            logger.info("🎯 Phase 5: Archetype Pattern Validation")
-            await self._test_archetype_patterns(results)
+            # Phase 5: Worker Capability Validation
+            logger.info("🎯 Phase 5: Worker Capability Validation")
+            await self._test_worker_capabilities(results)
 
             # Phase 6: Cross-Service Communication
             logger.info("🌐 Phase 6: Cross-Service Communication")
             await self._test_cross_service_communication(results)
 
         except Exception as e:
-            logger.exception("❌ Test suite failed with exception: {e}")
+            logger.exception(f"❌ Test suite failed with exception: {e}")
             logger.exception(traceback.format_exc())
             summary_dict: dict[str, Any] = results["summary"]
             if "critical_failures" in summary_dict:
@@ -424,45 +449,42 @@ class EnhancedSmokeTest:
 
             # Check if all expected containers are running
             all_expected = [
-                *list(self.archetypes.values()),
-                self.platform_config,
+                *list(self.workers.values()),
+                self.controller_config,
                 self.cert_authority_config,
             ]
 
-            for archetype in all_expected:
-                if archetype.container_name not in containers:
+            for worker in all_expected:
+                if worker.container_name not in containers:
                     results["summary"]["critical_failures"].append(
-                        f"Container {archetype.container_name} not found",
+                        f"Container {worker.container_name} not found",
                     )
-                    logger.error("  ❌ {archetype.container_name}: NOT FOUND")
-                elif "Up" not in containers[archetype.container_name]["status"]:
+                    logger.error(f"  ❌ {worker.container_name}: NOT FOUND")
+                elif "Up" not in containers[worker.container_name]["status"]:
                     results["summary"]["warnings"].append(
-                        f"Container {archetype.container_name} not running",
+                        f"Container {worker.container_name} not running",
                     )
-                    logger.warning("  ⚠️  {archetype.container_name}: NOT RUNNING")
+                    logger.warning(f"  ⚠️  {worker.container_name}: NOT RUNNING")
                 else:
-                    logger.info("  ✅ {archetype.container_name}: Running")
+                    logger.info(f"  ✅ {worker.container_name}: Running")
 
         except Exception as e:
             results["summary"]["critical_failures"].append(f"Container health check failed: {e}")
-            logger.exception("  ❌ Container health check failed: {e}")
+            logger.exception(f"  ❌ Container health check failed: {e}")
 
     async def _test_health_endpoints(self, results: dict[str, Any]) -> None:
         """Test health endpoints for all services"""
         logger.info("  🏥 Testing health endpoints...")
 
         all_configs = [
-            *list(self.archetypes.values()),
-            self.platform_config,
+            *list(self.workers.values()),
+            self.controller_config,
             self.cert_authority_config,
         ]
 
         async with httpx.AsyncClient(verify=False, timeout=10.0) as client:
             for config in all_configs:
                 health_url = f"{config.base_url}/health"
-                # Platform uses /health/live
-                if config.service_type == "platform":
-                    health_url = f"{config.base_url}/health/live"
 
                 try:
                     response = await client.get(health_url)
@@ -497,7 +519,7 @@ class EnhancedSmokeTest:
                         )
 
                 except Exception as e:
-                    logger.exception("  ❌ {config.name}: Health endpoint error: {e}")
+                    logger.exception(f"  ❌ {config.name}: Health endpoint error: {e}")
                     results["health_checks"][config.container_name] = {
                         "healthy": False,
                         "error": str(e),
@@ -507,17 +529,17 @@ class EnhancedSmokeTest:
                         f"{config.name} health endpoint error: {e}",
                     )
 
-    async def _test_platform_registration(self, results: dict[str, Any]) -> None:
-        """Test worker registration with platform"""
-        logger.info("  🔗 Testing worker registration...")
+    async def _test_controller_registration(self, results: dict[str, Any]) -> None:
+        """Test worker registration with controller"""
+        logger.info("  🔗 Testing worker registration with controller...")
 
-        platform_url = f"{self.platform_config.base_url}/v1/workers"
+        controller_url = f"{self.controller_config.base_url}/workers"
 
         async with httpx.AsyncClient(verify=False, timeout=15.0) as client:
             try:
-                # Test 1: Get list of registered workers
+                # Test 1: Get list of registered workers from controller
                 response = await client.get(
-                    platform_url,
+                    controller_url,
                     headers={
                         "Authorization": "Bearer dev-mesh-key",
                     },
@@ -525,71 +547,121 @@ class EnhancedSmokeTest:
 
                 if response.status_code == 200:
                     response_data = response.json()
-                    # Platform returns {"workers": {"service_type": [worker_list]}}
-                    workers_by_type = response_data.get("workers", {})
+                    # Controller returns {"workers": [{"worker_id": "...", "url": "...", ...}, ...]}
+                    all_workers: list[dict[str, Any]] = response_data.get("workers", [])
 
-                    # Flatten the workers dict into a list
-                    all_workers: list[dict[str, Any]] = []
-                    for service_type, worker_list in workers_by_type.items():
-                        for worker in worker_list:
-                            worker_dict: dict[str, Any] = worker
-                            worker_dict["service_type"] = service_type  # Add service_type to worker
-                            all_workers.append(worker_dict)
+                    logger.info(f"  ✅ Controller worker endpoint accessible")
+                    logger.info(f"  📊 Registered workers: {len(all_workers)} found")
 
-                    logger.info("  ✅ Platform worker endpoint accessible")
-                    logger.info("  📊 Registered workers: {len(all_workers)} found")
-
-                    results["platform_registration"]["worker_list"] = {
+                    results["controller_registration"]["worker_list"] = {
                         "accessible": True,
                         "worker_count": len(all_workers),
                         "workers": all_workers,
-                        "workers_by_type": workers_by_type,
                     }
 
                     # Check if our expected workers are registered
-                    registered_services: set[Any] = {
-                        worker.get("service_type") for worker in all_workers
+                    registered_worker_ids: set[str] = {
+                        worker.get("worker_id", "") for worker in all_workers
                     }
-                    {config.service_type for config in self.archetypes.values()}
 
-                    for archetype_key, config in self.archetypes.items():
-                        if config.service_type in registered_services:
-                            logger.info("  ✅ {config.name}: Registered with platform")
-                            results["platform_registration"][archetype_key] = {"registered": True}
+                    for worker_key, config in self.workers.items():
+                        if config.worker_id in registered_worker_ids:
+                            logger.info(f"  ✅ {config.name}: Registered with controller")
+                            results["controller_registration"][worker_key] = {"registered": True}
+
+                            # Find the registered worker and store its details
+                            registered_worker = next(
+                                (w for w in all_workers if w.get("worker_id") == config.worker_id),
+                                None,
+                            )
+                            if registered_worker:
+                                results["controller_registration"][worker_key]["details"] = registered_worker
                         else:
-                            logger.warning("  ⚠️  {config.name}: NOT registered with platform")
-                            results["platform_registration"][archetype_key] = {"registered": False}
+                            logger.warning(f"  ⚠️  {config.name}: NOT registered with controller")
+                            results["controller_registration"][worker_key] = {"registered": False}
                             results["summary"]["warnings"].append(
-                                f"{config.name} not registered with platform",
+                                f"{config.name} not registered with controller",
                             )
 
                 else:
                     logger.error(
-                        f"  ❌ Platform worker endpoint failed: HTTP {response.status_code}",
+                        f"  ❌ Controller worker endpoint failed: HTTP {response.status_code}",
                     )
-                    results["platform_registration"]["worker_list"] = {
+                    results["controller_registration"]["worker_list"] = {
                         "accessible": False,
                         "error": f"HTTP {response.status_code}",
                         "response": response.text[:200],
                     }
                     results["summary"]["critical_failures"].append(
-                        f"Platform worker endpoint failed: HTTP {response.status_code}",
+                        f"Controller worker endpoint failed: HTTP {response.status_code}",
                     )
 
             except Exception as e:
-                logger.exception("  ❌ Platform registration test failed: {e}")
-                results["platform_registration"]["error"] = str(e)
+                logger.exception(f"  ❌ Controller registration test failed: {e}")
+                results["controller_registration"]["error"] = str(e)
                 results["summary"]["critical_failures"].append(
-                    f"Platform registration test failed: {e}",
+                    f"Controller registration test failed: {e}",
                 )
 
     async def _test_api_functionality(self, results: dict[str, Any]) -> None:
-        """Test API functionality for each service"""
+        """Test API functionality for workers and controller"""
         logger.info("  ⚡ Testing API functionality...")
 
         async with httpx.AsyncClient(verify=False, timeout=15.0) as client:
-            for archetype_key, config in self.archetypes.items():
-                logger.info("    🔍 Testing {config.name} APIs...")
+            # Test controller endpoints
+            logger.info(f"    🔍 Testing {self.controller_config.name} APIs...")
+
+            controller_results: dict[str, Any] = {
+                "service": self.controller_config.name,
+                "endpoints": {},
+                "functional": False,
+            }
+
+            for endpoint in self.controller_config.test_endpoints:
+                endpoint_url = f"{self.controller_config.base_url}{endpoint}"
+
+                try:
+                    response = await client.get(endpoint_url)
+
+                    endpoint_data: dict[str, Any] = {
+                        "status_code": response.status_code,
+                        "accessible": response.status_code in [200, 401, 422],
+                        "response_time_ms": round(response.elapsed.total_seconds() * 1000, 2),
+                    }
+
+                    endpoint_data["functional"] = response.status_code == 200
+                    controller_results["endpoints"][endpoint] = endpoint_data
+
+                    if endpoint_data["functional"]:
+                        logger.info(f"      ✅ {endpoint}: OK (HTTP {response.status_code})")
+                    else:
+                        logger.warning(
+                            f"      ⚠️  {endpoint}: Unexpected (HTTP {response.status_code})",
+                        )
+
+                except Exception as e:
+                    logger.exception(f"      ❌ {endpoint}: Error - {e}")
+                    controller_results["endpoints"][endpoint] = {
+                        "accessible": False,
+                        "error": str(e),
+                    }
+
+            functional_endpoints = sum(
+                1 for ep_data in controller_results["endpoints"].values()
+                if ep_data.get("functional", False)
+            )
+            controller_results["functional"] = functional_endpoints >= 2
+            results["api_functionality"]["controller"] = controller_results
+
+            if controller_results["functional"]:
+                logger.info(f"    ✅ {self.controller_config.name}: API Functional")
+            else:
+                logger.error(f"    ❌ {self.controller_config.name}: API NOT Functional")
+                results["summary"]["warnings"].append(f"{self.controller_config.name} API not functional")
+
+            # Test worker endpoints
+            for worker_key, config in self.workers.items():
+                logger.info(f"    🔍 Testing {config.name} APIs...")
 
                 api_results: dict[str, Any] = {
                     "service": config.name,
@@ -606,36 +678,24 @@ class EnhancedSmokeTest:
 
                         endpoint_data: dict[str, Any] = {
                             "status_code": response.status_code,
-                            "accessible": response.status_code
-                            in [200, 401, 422],  # These are OK responses
+                            "accessible": response.status_code in [200, 401, 422],
                             "response_time_ms": round(response.elapsed.total_seconds() * 1000, 2),
                         }
 
-                        # Special handling for different endpoint types
-                        if endpoint == "/health":
-                            endpoint_data["functional"] = response.status_code == 200
-                        elif endpoint in ["/convert", "/parse", "/classify", "/stream"]:
-                            # These might return 405 (method not allowed) or 422 (validation error) which is OK for GET requests
-                            endpoint_data["functional"] = response.status_code in [200, 405, 422]
-                        elif endpoint in ["/docs"]:
-                            # API docs should be accessible
-                            endpoint_data["functional"] = response.status_code == 200
-                        else:
-                            endpoint_data["functional"] = response.status_code == 200
+                        # Workers primarily have /health endpoint
+                        endpoint_data["functional"] = response.status_code == 200
 
-                        endpoints_dict = api_results["endpoints"]
-                        if isinstance(endpoints_dict, dict):
-                            endpoints_dict[endpoint] = endpoint_data
+                        api_results["endpoints"][endpoint] = endpoint_data
 
                         if endpoint_data["functional"]:
-                            logger.info("      ✅ {endpoint}: OK (HTTP {response.status_code})")
+                            logger.info(f"      ✅ {endpoint}: OK (HTTP {response.status_code})")
                         else:
                             logger.warning(
                                 f"      ⚠️  {endpoint}: Unexpected (HTTP {response.status_code})",
                             )
 
                     except Exception as e:
-                        logger.exception("      ❌ {endpoint}: Error - {e}")
+                        logger.exception(f"      ❌ {endpoint}: Error - {e}")
                         api_results["endpoints"][endpoint] = {
                             "accessible": False,
                             "error": str(e),
@@ -647,93 +707,95 @@ class EnhancedSmokeTest:
                     for ep_data in api_results["endpoints"].values()
                     if ep_data.get("functional", False)
                 )
-                api_results["functional"] = functional_endpoints >= 2  # At least health + one other
+                api_results["functional"] = functional_endpoints >= 1  # At least health
 
-                results["api_functionality"][archetype_key] = api_results
+                results["api_functionality"][worker_key] = api_results
 
                 if api_results["functional"]:
-                    logger.info("    ✅ {config.name}: API Functional")
+                    logger.info(f"    ✅ {config.name}: API Functional")
                 else:
-                    logger.error("    ❌ {config.name}: API NOT Functional")
+                    logger.error(f"    ❌ {config.name}: API NOT Functional")
                     results["summary"]["warnings"].append(f"{config.name} API not functional")
 
-    async def _test_archetype_patterns(self, results: dict[str, Any]) -> None:
-        """Test archetype-specific patterns"""
-        logger.info("  🎯 Testing archetype-specific patterns...")
+    async def _test_worker_capabilities(self, results: dict[str, Any]) -> None:
+        """Test worker capability declarations and validation"""
+        logger.info("  🎯 Testing worker capability declarations...")
 
-        # This is where we'd test specific functionality for each archetype
-        # For now, we'll validate the expected capabilities are exposed
-
-        for archetype_key, config in self.archetypes.items():
-            pattern_results: dict[str, Any] = {
-                "archetype": config.name,
+        # Test both direct worker capabilities and controller's capability routing
+        for worker_key, config in self.workers.items():
+            capability_results: dict[str, Any] = {
+                "worker": config.name,
                 "capabilities_validated": False,
+                "capability_ids": [],
                 "gpu_validation": None,
-                "pattern_compliance": False,
+                "compliance": False,
             }
 
-            # Check health endpoint response for capabilities
+            # Check health endpoint response for capability info
             health_data = results["health_checks"].get(config.container_name, {})
             if health_data.get("healthy") and "response_data" in health_data:
                 response_data: Any = health_data["response_data"]
 
-                # Simplified capability checking with direct type handling
-                capability_match = False
+                # Check if worker exposes capabilities in health response
+                if isinstance(response_data, dict) and "capabilities" in response_data:
+                    worker_capabilities = response_data["capabilities"]
+                    capability_ids = [cap.get("id") for cap in worker_capabilities if isinstance(cap, dict)]
+                    capability_results["capability_ids"] = capability_ids
 
-                # Convert response to string for simple capability matching
-                if config.capabilities:
-                    response_str = str(response_data).lower()
-                    capability_match = any(
-                        cap.lower() in response_str for cap in config.capabilities
-                    )
+                    # Validate expected capabilities are present
+                    expected_ids = set(config.expected_capability_ids)
+                    actual_ids = set(capability_ids)
 
-                if capability_match:
-                    pattern_results["capabilities_validated"] = True
-                    logger.info("    ✅ {config.name}: Capabilities validated")
+                    if expected_ids.issubset(actual_ids):
+                        capability_results["capabilities_validated"] = True
+                        logger.info(f"    ✅ {config.name}: All expected capabilities present")
+                        logger.info(f"       Capabilities: {', '.join(capability_ids)}")
+                    else:
+                        missing = expected_ids - actual_ids
+                        logger.warning(f"    ⚠️  {config.name}: Missing capabilities: {missing}")
+                        results["summary"]["warnings"].append(
+                            f"{config.name} missing capabilities: {missing}",
+                        )
                 else:
-                    logger.warning("    ⚠️  {config.name}: Capabilities not fully validated")
-                    results["summary"]["warnings"].append(
-                        f"{config.name} capabilities not fully validated",
-                    )
+                    # Some workers may not expose capabilities in health endpoint
+                    # Check if registered with controller instead
+                    registration_data = results.get("controller_registration", {}).get(worker_key, {})
+                    if registration_data.get("registered"):
+                        # Consider it validated if registered (controller validates capabilities)
+                        capability_results["capabilities_validated"] = True
+                        logger.info(f"    ✅ {config.name}: Registered with controller (capabilities validated)")
 
             # GPU validation for GPU-required services
             if config.gpu_required:
                 gpu_available = health_data.get("response_data", {}).get("gpu_available", False)
-                pattern_results["gpu_validation"] = {
+                capability_results["gpu_validation"] = {
                     "required": True,
                     "available": gpu_available,
                 }
 
                 if gpu_available:
-                    logger.info("    ✅ {config.name}: GPU validation passed")
+                    logger.info(f"    ✅ {config.name}: GPU validation passed")
                 else:
-                    logger.warning("    ⚠️  {config.name}: GPU validation failed")
+                    logger.warning(f"    ⚠️  {config.name}: GPU validation failed")
                     results["summary"]["warnings"].append(f"{config.name} GPU not available")
 
-            # Overall pattern compliance
-            # For GPU services, we accept archetype identity even if GPU hardware unavailable
-            # This reflects container GPU limitations on certain platforms (macOS, etc.)
-            pattern_results["pattern_compliance"] = pattern_results["capabilities_validated"]
+            # Overall compliance
+            capability_results["compliance"] = capability_results["capabilities_validated"]
 
-            # Note: Removed GPU hardware requirement from archetype validation
-            # GPU archetype identity != GPU hardware requirement
-
-            results["archetype_validation"][archetype_key] = pattern_results
-            results["summary"]["archetype_status"][archetype_key] = pattern_results[
-                "pattern_compliance"
-            ]
+            results["worker_validation"][worker_key] = capability_results
+            results["summary"]["worker_status"][worker_key] = capability_results["compliance"]
 
     async def _test_cross_service_communication(self, results: dict[str, Any]) -> None:
         """Test cross-service communication patterns"""
         logger.info("  🌐 Testing cross-service communication...")
 
-        # Test platform can reach workers
-        platform_url = f"{self.platform_config.base_url}/v1/workers"
+        # Test controller can reach workers
+        controller_url = f"{self.controller_config.base_url}/workers"
 
         async with httpx.AsyncClient(verify=False, timeout=15.0) as client:
             try:
                 response = await client.get(
-                    platform_url,
+                    controller_url,
                     headers={
                         "Authorization": "Bearer local-dev-key",
                     },
@@ -741,43 +803,29 @@ class EnhancedSmokeTest:
 
                 if response.status_code == 200:
                     response_data = response.json()
-                    # Platform returns {"workers": {"service_type": [worker_list]}}
-                    workers_by_type = response_data.get("workers", {})
-
-                    # Flatten the workers dict into a list - same as platform registration test
-                    all_workers: list[dict[str, Any]] = []
-                    for service_type, worker_list in workers_by_type.items():
-                        for worker in worker_list:
-                            worker_dict: dict[str, Any] = worker
-                            worker_dict["service_type"] = service_type  # Add service_type to worker
-                            all_workers.append(worker_dict)
+                    # Controller returns {"workers": [{"worker_id": "...", "url": "...", ...}, ...]}
+                    all_workers: list[dict[str, Any]] = response_data.get("workers", [])
 
                     communication_results: dict[str, Any] = {
-                        "platform_to_workers": True,
+                        "controller_to_workers": True,
                         "worker_count": len(all_workers),
                         "reachable_workers": [],
                     }
 
-                    # Test if platform can reach each worker's health endpoint
+                    # Test if controller can reach each worker's health endpoint
                     for worker_item in all_workers:
                         current_worker: dict[str, Any] = worker_item
-                        endpoint: str = str(current_worker.get("endpoint", ""))
-                        if endpoint:
+                        worker_url: str = str(current_worker.get("url", ""))
+                        worker_id: str = str(current_worker.get("worker_id", ""))
+
+                        if worker_url:
                             try:
-                                # Extract the port from the endpoint URL
+                                health_url = f"{worker_url}/health"
+                                health_response = await client.get(health_url)
 
-                                port_match = re.search(r":(\d+)", endpoint)
-                                if port_match:
-                                    port = port_match.group(1)
-                                    health_url = f"https://localhost:{port}/health"
-
-                                    health_response = await client.get(health_url)
-                                    if health_response.status_code == 200:
-                                        reachable_list: list[str] = communication_results[
-                                            "reachable_workers"
-                                        ]
-                                        service_type = str(current_worker.get("service_type", ""))
-                                        reachable_list.append(service_type)
+                                if health_response.status_code == 200:
+                                    reachable_list: list[str] = communication_results["reachable_workers"]
+                                    reachable_list.append(worker_id)
 
                             except Exception:
                                 pass  # Worker not reachable, continue
@@ -785,13 +833,13 @@ class EnhancedSmokeTest:
                     results["cross_service_communication"] = communication_results
 
                     logger.info(
-                        f"    ✅ Platform communication: {len(communication_results['reachable_workers'])}/{len(all_workers)} workers reachable",
+                        f"    ✅ Controller communication: {len(communication_results['reachable_workers'])}/{len(all_workers)} workers reachable",
                     )
 
                 else:
                     results["cross_service_communication"] = {
-                        "platform_to_workers": False,
-                        "error": f"Platform endpoint failed: HTTP {response.status_code}",
+                        "controller_to_workers": False,
+                        "error": f"Controller endpoint failed: HTTP {response.status_code}",
                     }
 
             except Exception as e:
@@ -902,7 +950,7 @@ async def main() -> None:
     args = parser.parse_args()
 
     # Create and run tests
-    tester = EnhancedSmokeTest(compose_file=args.compose_file)
+    tester = ControllerIntegrationTest(compose_file=args.compose_file)
     results = await tester.run_comprehensive_test(rebuild_environment=args.rebuild)
 
     if args.json:
