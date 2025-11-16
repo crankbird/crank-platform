@@ -30,6 +30,7 @@ Integrate `crank_hello_world` worker with the controller service, implementing t
 **File**: `services/crank_hello_world.py`
 
 **Changes Needed**:
+
 ```python
 # Add controller registration on startup
 class HelloWorldWorker(WorkerApplication):
@@ -72,6 +73,7 @@ class HelloWorldWorker(WorkerApplication):
 **File**: `tests/integration/test_worker_controller_integration.py`
 
 **Test Flow**:
+
 ```python
 def test_hello_world_registers_with_controller():
     """Test full worker registration lifecycle."""

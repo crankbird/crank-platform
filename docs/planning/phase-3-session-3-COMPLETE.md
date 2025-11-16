@@ -17,6 +17,7 @@ Successfully implemented worker→controller registration pattern, establishing 
 **File**: `services/crank_hello_world.py` (additions to existing worker)
 
 #### Registration Flow
+
 ```python
 async def on_startup(self) -> None:
     """Register with controller on startup (if configured)."""
@@ -59,6 +60,7 @@ async def _register_with_controller(self) -> None:
 **Test Results**: 4/4 passing (0.35s execution)
 
 #### Testing Pattern (Manual Registration)
+
 ```python
 # TestClient is in-process, not real HTTPS server
 # So we register manually instead of calling worker.on_startup()
@@ -136,6 +138,7 @@ Complete session planning document with:
 **Pattern**: All worker→controller communication uses HTTPS with mTLS.
 
 **Implementation**:
+
 ```python
 async with httpx.AsyncClient(
     cert=(ssl_config["ssl_certfile"], ssl_config["ssl_keyfile"]),
